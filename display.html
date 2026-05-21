@@ -29,8 +29,16 @@
       <section class="cdisp-view cdisp-cart" data-view="cart">
         <div class="cdisp-cart__list" id="cartList"></div>
         <footer class="cdisp-cart__footer">
-          <p class="cdisp-cart__total-label">合計應付</p>
-          <p class="cdisp-cart__total" id="cartTotal">$0</p>
+          <div class="cdisp-cart__footer-row cdisp-cart__footer-row--single" id="cartFooterRow">
+            <div class="cdisp-cart__discount-wrap hidden" id="cartDiscountWrap">
+              <p class="cdisp-cart__total-label">折扣金額</p>
+              <p class="cdisp-cart__amount cdisp-cart__discount" id="cartDiscount">-$0</p>
+            </div>
+            <div class="cdisp-cart__total-wrap">
+              <p class="cdisp-cart__total-label">合計應付</p>
+              <p class="cdisp-cart__amount cdisp-cart__total" id="cartTotal">$0</p>
+            </div>
+          </div>
         </footer>
       </section>
 
@@ -52,9 +60,10 @@
     </div>
   </div>
 
-  <div class="cdisp__error" id="displayError"></div>
+  <div class="cdisp__errors" id="displayErrors" aria-live="polite"></div>
 
   <script src="js/supabase-client.js"></script>
+  <script src="js/product-thumb.js"></script>
   <script src="js/display.js"></script>
 </body>
 </html>

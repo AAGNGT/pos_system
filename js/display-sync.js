@@ -26,8 +26,10 @@
       id: DISPLAY_ID,
       session_key: 'main',
       items: items.map((i) => ({
+        product_id: i.product_id,
         name: i.name,
         code: i.code,
+        image_url: window.posProductThumb?.resolveThumb?.(i, window.posProductCatalog) || null,
         qty: i.qty,
         unit_price: i.unit_price,
         line_total: i.line_total,

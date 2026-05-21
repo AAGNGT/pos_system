@@ -91,10 +91,21 @@ html, body {
 .cdisp-cart__item {
   display: flex;
   align-items: center;
-  justify-content: space-between;
   gap: 16px;
   padding: 16px 0;
   border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+}
+.cdisp-cart__thumb {
+  width: clamp(64px, 10vw, 96px);
+  height: clamp(64px, 10vw, 96px);
+  flex-shrink: 0;
+  object-fit: cover;
+  border-radius: 12px;
+  background: rgba(255, 255, 255, 0.08);
+}
+.cdisp-cart__info {
+  flex: 1;
+  min-width: 0;
 }
 .cdisp-cart__name {
   font-size: clamp(1.4rem, 3.5vw, 2.2rem);
@@ -116,19 +127,40 @@ html, body {
   flex-shrink: 0;
   padding-top: 20px;
   border-top: 2px solid rgba(255, 255, 255, 0.15);
+}
+.cdisp-cart__footer-row {
+  display: flex;
+  align-items: flex-end;
+  justify-content: center;
+  gap: clamp(40px, 4vw, 48px);
+}
+.cdisp-cart__footer-row--single .cdisp-cart__total-wrap {
   text-align: center;
+}
+.cdisp-cart__discount-wrap,
+.cdisp-cart__total-wrap {
+  flex: 0 0 auto;
+  text-align: center;
+}
+.cdisp-cart__discount-wrap.hidden {
+  display: none;
 }
 .cdisp-cart__total-label {
   font-size: clamp(1.2rem, 2.5vw, 1.6rem);
   color: #94a3b8;
   margin: 0 0 8px;
 }
-.cdisp-cart__total {
+.cdisp-cart__amount {
   font-size: clamp(3rem, 8vw, 5rem);
   font-weight: 900;
   margin: 0;
-  color: #3b82f6;
   line-height: 1.1;
+}
+.cdisp-cart__discount {
+  color: #4ade80;
+}
+.cdisp-cart__total {
+  color: #3b82f6;
 }
 
 /* checkout */
@@ -173,16 +205,48 @@ html, body {
   font-weight: 800;
 }
 
-.cdisp__error {
+.cdisp__errors {
   position: fixed;
   bottom: 16px;
   left: 50%;
   transform: translateX(-50%);
+  display: none;
+  flex-direction: column;
+  gap: 8px;
+  max-width: min(520px, calc(100vw - 32px));
+  width: 100%;
+  z-index: 100;
+}
+.cdisp__errors.show {
+  display: flex;
+}
+.cdisp__error-item {
+  display: flex;
+  align-items: center;
+  gap: 12px;
   background: #dc2626;
   color: #fff;
-  padding: 10px 20px;
+  padding: 10px 12px 10px 16px;
   border-radius: 8px;
   font-size: 14px;
-  display: none;
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.25);
 }
-.cdisp__error.show { display: block; }
+.cdisp__error-msg {
+  flex: 1;
+  line-height: 1.4;
+}
+.cdisp__error-dismiss {
+  flex-shrink: 0;
+  width: 32px;
+  height: 32px;
+  border: none;
+  border-radius: 6px;
+  background: rgba(0, 0, 0, 0.2);
+  color: #fff;
+  font-size: 1.25rem;
+  line-height: 1;
+  cursor: pointer;
+}
+.cdisp__error-dismiss:hover {
+  background: rgba(0, 0, 0, 0.35);
+}

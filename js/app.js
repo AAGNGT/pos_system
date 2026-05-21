@@ -108,8 +108,7 @@
   };
 
   function placeholderImg(name) {
-    const t = encodeURIComponent((name || '商品').slice(0, 8));
-    return `https://placehold.co/200x200/e2e8f0/64748b?text=${t}`;
+    return window.posProductThumb?.svgPlaceholder?.(name) || 'images.png';
   }
 
   function renderProducts() {
@@ -280,6 +279,7 @@
 
   async function loadProducts() {
     products = await window.posApi.fetchProducts();
+    window.posProductCatalog = products;
     renderProducts();
   }
 

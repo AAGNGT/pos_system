@@ -10,11 +10,15 @@
     if (existing) {
       existing.qty += qty;
       existing.line_total = existing.qty * existing.unit_price;
+      if (!existing.image_url && product.image_url) {
+        existing.image_url = product.image_url;
+      }
     } else {
       state.items.push({
         product_id: product.id,
         code: product.code,
         name: product.name,
+        image_url: product.image_url || null,
         unit_price: Number(product.price),
         qty,
         line_total: Number(product.price) * qty,
