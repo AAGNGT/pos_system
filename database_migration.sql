@@ -97,7 +97,21 @@ create table if not exists public.pos_settings (
   updated_at timestamptz not null default now()
 );
 
--- 8) EOD 報表
+-- 8) 客戶顯示屏即時狀態（單一收銀台 id=1）
+create table if not exists public.pos_display_state (
+  id integer primary key default 1 check (id = 1),
+  session_key text not null default 'main',
+  phase text not null default 'idle' check (phase in ('idle', 'cart', 'checkout', 'thankyou')),
+  items jsonb not null default '[]'::jsonb,
+  subtotal numeric(10,2) not null default 0,
+  discount numeric(10,2) not null default 0,
+  total numeric(10,2) not null default 0,
+  amount_received numeric(10,2) not null default 0,
+  change_amount numeric(10,2) not null default 0,
+  updated_at timestamptz not null default now()
+);
+
+-- 9) EOD 報表
 create table if not exists public.pos_eod_reports (
   id bigserial primary key,
   report_date date not null unique,
@@ -137,6 +151,10 @@ insert into public.pos_settings (key, value) values
   ('default_sort', 'default')
 on conflict (key) do nothing;
 
+insert into public.pos_display_state (id, session_key, phase, items) values
+  (1, 'main', 'idle', '[]'::jsonb)
+on conflict (id) do update set phase = excluded.phase;
+
 -- RLS
 alter table public.pos_categories enable row level security;
 alter table public.pos_products enable row level security;
@@ -146,13 +164,17 @@ alter table public.pos_order_items enable row level security;
 alter table public.pos_inventory_movements enable row level security;
 alter table public.pos_settings enable row level security;
 alter table public.pos_eod_reports enable row level security;
+alter table public.pos_display_state enable row level security;
+
+-- Realtime：請在 Supabase Dashboard → Database → Replication 啟用 pos_display_state
 
 do $$
 declare t text;
 begin
   foreach t in array array[
     'pos_categories','pos_products','pos_staff','pos_orders',
-    'pos_order_items','pos_inventory_movements','pos_settings','pos_eod_reports'
+    'pos_order_items','pos_inventory_movements','pos_settings','pos_eod_reports',
+    'pos_display_state'
   ] loop
     execute format('drop policy if exists public_read_all_%s on public.%s', t, t);
     execute format('drop policy if exists public_write_all_%s on public.%s', t, t);

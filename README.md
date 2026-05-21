@@ -27,6 +27,7 @@
 | 路徑 | 說明 |
 |------|------|
 | `index.html` | 主 POS |
+| `display.html` | 客戶顯示屏（即時同步） |
 | `manager.html` | 資料管理 |
 | `SETUP_INSTRUCTIONS.md` | 詳細設定 |
 

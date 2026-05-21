@@ -263,6 +263,10 @@ body.sidebar-pinned.sidebar-rail .pos-sidebar__pin {
   color: #fff;
 }
 .pos-nav__icon { width: 18px; text-align: center; opacity: 0.9; }
+.pos-nav__link {
+  text-decoration: none;
+  display: flex;
+}
 .pos-sidebar__footer {
   margin-top: auto;
   padding-top: 16px;

@@ -58,6 +58,7 @@
     requestAnimationFrame(() => {
       requestAnimationFrame(() => modal.classList.add('is-anim-in'));
     });
+    window.posDisplaySync?.syncCheckout?.(dueAmount);
   }
 
   function closeCheckoutModal() {
@@ -75,6 +76,9 @@
       modal.setAttribute('aria-hidden', 'true');
       receivedValue = 0;
       dueAmount = 0;
+      if (window.posCart?.getItems?.()?.length) {
+        window.posDisplaySync?.syncCart?.();
+      }
     };
     setTimeout(done, 240);
   }
@@ -180,6 +184,11 @@
           staff_id: staff?.id,
         });
       }
+      await window.posDisplaySync?.syncThankYou?.({
+        total: due,
+        received,
+        change,
+      });
       window.posCart.clear();
       closeCheckoutModal();
       window.ui.toast(`結帳成功 #${order.id}，找續 ${formatMoney(change)}`, 'success');

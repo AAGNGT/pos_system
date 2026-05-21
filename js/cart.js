@@ -67,6 +67,11 @@
   }
   function notify() {
     if (typeof onChange === 'function') onChange(getItems());
+    if (window.posDisplaySync) {
+      const items = getItems();
+      if (items.length) window.posDisplaySync.syncCart();
+      else if (!window.posDisplaySync.isThankYouActive?.()) window.posDisplaySync.syncIdle();
+    }
   }
 
   window.posCart = {
