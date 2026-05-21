@@ -1,0 +1,95 @@
+/* 全站按鈕點擊回饋 */
+button,
+.pos-btn-charge,
+.pos-btn-primary,
+.pos-btn-icon,
+.pos-pill,
+.pos-nav__item,
+.pos-menu-btn,
+.pos-checkout__exact,
+.pos-checkout__confirm,
+.pos-checkout__cancel,
+.pos-order__clear,
+.pos-sidebar__logout,
+.pos-product-card {
+  transition: transform 0.12s ease, box-shadow 0.15s ease, background 0.15s ease, opacity 0.15s ease;
+}
+
+button:active:not(:disabled),
+.pos-btn-charge:active:not(:disabled),
+.pos-btn-primary:active:not(:disabled),
+.pos-btn-icon:active,
+.pos-pill:active,
+.pos-nav__item:active,
+.pos-menu-btn:active,
+.pos-checkout__exact:active,
+.pos-checkout__confirm:active:not(:disabled),
+.pos-checkout__cancel:active,
+.pos-order__clear:active,
+.pos-sidebar__logout:active,
+.pos-product-card:active {
+  transform: scale(0.96);
+}
+
+.pos-keypad button:active {
+  transform: scale(0.94);
+}
+
+/* 結帳視窗漸變動畫 */
+#checkoutModal {
+  opacity: 0;
+  visibility: hidden;
+  transition: opacity 0.28s ease, visibility 0.28s ease;
+  background: rgba(15, 23, 42, 0);
+}
+
+#checkoutModal.active,
+body.checkout-open #checkoutModal {
+  display: flex !important;
+  opacity: 1;
+  visibility: visible;
+  background: rgba(15, 23, 42, 0.55);
+  transition: opacity 0.32s ease, visibility 0s, background 0.35s ease;
+}
+
+#checkoutModal .pos-checkout {
+  opacity: 0;
+  transform: scale(0.94) translateY(16px);
+  transition: opacity 0.28s ease, transform 0.35s cubic-bezier(0.22, 1, 0.36, 1);
+}
+
+#checkoutModal.is-anim-in .pos-checkout,
+#checkoutModal.active.is-anim-in .pos-checkout {
+  opacity: 1;
+  transform: scale(1) translateY(0);
+}
+
+#checkoutModal.is-leaving {
+  opacity: 0;
+  background: rgba(15, 23, 42, 0);
+}
+
+#checkoutModal.is-leaving .pos-checkout {
+  opacity: 0;
+  transform: scale(0.96) translateY(8px);
+  transition: opacity 0.2s ease, transform 0.22s ease;
+}
+
+/* Loading 置頂（高於結帳視窗） */
+.pos-loading {
+  z-index: 10000 !important;
+}
+
+.pos-loading.active {
+  display: flex !important;
+  animation: posLoadingFadeIn 0.2s ease;
+}
+
+@keyframes posLoadingFadeIn {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+
+.toast-stack {
+  z-index: 10050;
+}

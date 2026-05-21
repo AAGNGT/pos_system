@@ -37,9 +37,13 @@
       overlay.innerHTML = '<div class="pos-loading__card"><div class="pos-loading__spinner"></div><p id="posLoadingTitle"></p></div>';
       document.body.appendChild(overlay);
     }
+    if (overlay.parentElement !== document.body) {
+      document.body.appendChild(overlay);
+    }
     const t = overlay.querySelector('#posLoadingTitle');
     if (t) t.textContent = title;
     overlay.classList.toggle('active', !!active);
+    overlay.style.zIndex = '10000';
   }
 
   window.ui = { toast, setLoading, escapeHtml };

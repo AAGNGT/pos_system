@@ -193,9 +193,6 @@
     if (checkout) checkout.style.display = mode === 'sale' ? 'block' : 'none';
     if (invPanel) invPanel.style.display = ['restock', 'return', 'damage'].includes(mode) ? 'block' : 'none';
 
-    const chargeBtn = document.getElementById('btnCharge');
-    if (chargeBtn) chargeBtn.style.display = mode === 'sale' ? 'block' : 'none';
-
     document.querySelectorAll('.pos-nav__item[data-mode]').forEach((btn) => {
       btn.classList.toggle('active', btn.dataset.mode === mode);
     });

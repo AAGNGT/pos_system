@@ -51,18 +51,32 @@
       window.ui.toast('找不到結帳視窗', 'error');
       return;
     }
+    modal.classList.remove('is-leaving');
     modal.classList.add('active');
     document.body.classList.add('checkout-open');
     modal.setAttribute('aria-hidden', 'false');
+    requestAnimationFrame(() => {
+      requestAnimationFrame(() => modal.classList.add('is-anim-in'));
+    });
   }
 
   function closeCheckoutModal() {
     const modal = getModal();
-    modal?.classList.remove('active');
-    document.body.classList.remove('checkout-open');
-    modal?.setAttribute('aria-hidden', 'true');
-    receivedValue = 0;
-    dueAmount = 0;
+    if (!modal?.classList.contains('active')) {
+      receivedValue = 0;
+      dueAmount = 0;
+      return;
+    }
+    modal.classList.remove('is-anim-in');
+    modal.classList.add('is-leaving');
+    const done = () => {
+      modal.classList.remove('active', 'is-leaving');
+      document.body.classList.remove('checkout-open');
+      modal.setAttribute('aria-hidden', 'true');
+      receivedValue = 0;
+      dueAmount = 0;
+    };
+    setTimeout(done, 240);
   }
 
   function handleKey(key) {
@@ -141,7 +155,7 @@
     const payNote = `實收:${formatMoney(received)} 找續:${formatMoney(change)}`;
     const note = baseNote ? `${baseNote} | ${payNote}` : payNote;
 
-    window.ui.setLoading(true, '結帳中…');
+    window.ui.setLoading(true, '確認收款中…');
     try {
       const order = await window.posApi.createOrder({
         mode: 'sale',

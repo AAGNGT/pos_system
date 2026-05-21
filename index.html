@@ -14,6 +14,8 @@
 
   <link rel="stylesheet" href="css/pos-theme.css">
 
+  <link rel="stylesheet" href="css/pos-animations.css">
+
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 
   <script src="config.js"></script>
@@ -114,6 +116,11 @@
 
         <span class="pos-main-header__mode" id="headerModeLabel">銷售</span>
 
+        <div class="pos-main-header__search">
+          <input type="search" id="orderSearch" placeholder="搜尋商品…" aria-label="搜尋商品">
+          <button type="button" class="pos-btn-icon" id="btnRefresh" title="重新整理">↻</button>
+        </div>
+
         <span class="pos-main-header__user" id="headerUser"></span>
 
       </header>
@@ -166,14 +173,6 @@
 
     <aside class="pos-order">
 
-      <div class="pos-order__search">
-
-        <input type="search" id="orderSearch" placeholder="搜尋商品…" aria-label="搜尋商品">
-
-        <button type="button" id="btnRefresh" title="重新整理">↻</button>
-
-      </div>
-
       <div class="pos-order__head">
 
         <h2 class="pos-order__title">訂單 <span class="pos-badge-sale" id="orderModeBadge">銷售</span></h2>
@@ -182,29 +181,19 @@
 
       </div>
 
-      <div class="pos-order__items" id="cartItems">
-
-        <p class="pos-order__empty">尚無商品</p>
-
+      <div class="pos-order__scroll">
+        <div class="pos-order__items" id="cartItems">
+          <p class="pos-order__empty">尚無商品</p>
+        </div>
+        <div class="pos-inv-panel" id="invPanel" style="display:none">
+          <p id="invSelectedName" style="margin:0 0 8px;font-size:13px;color:#64748b">請點選商品</p>
+          <input type="number" id="fieldInvQty" min="1" value="1" placeholder="數量">
+          <input type="text" id="fieldInvReason" placeholder="原因（選填）">
+          <button type="button" class="pos-btn-charge" id="btnInvConfirm">確認異動</button>
+        </div>
       </div>
 
-
-
-      <div class="pos-inv-panel" id="invPanel" style="display:none">
-
-        <p id="invSelectedName" style="margin:0 0 8px;font-size:13px;color:#64748b">請點選商品</p>
-
-        <input type="number" id="fieldInvQty" min="1" value="1" placeholder="數量">
-
-        <input type="text" id="fieldInvReason" placeholder="原因（選填）">
-
-        <button type="button" class="pos-btn-charge" id="btnInvConfirm">確認異動</button>
-
-      </div>
-
-
-
-      <div class="pos-order__checkout" id="saleCheckout">
+      <div class="pos-order__footer pos-order__checkout" id="saleCheckout">
 
         <select id="fieldPayment" aria-label="付款方式">
 
@@ -318,7 +307,7 @@
 
             <button type="button" class="pos-checkout__cancel" id="btnCheckoutCancel">取消</button>
 
-            <button type="button" class="pos-checkout__confirm" id="btnCheckoutConfirm" disabled>確認付款</button>
+            <button type="button" class="pos-checkout__confirm" id="btnCheckoutConfirm" disabled>確認收款</button>
 
           </div>
 
