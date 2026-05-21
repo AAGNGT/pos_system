@@ -306,7 +306,32 @@
     renderCart();
 
     document.getElementById('btnClear')?.addEventListener('click', () => window.posCart.clear());
-    document.getElementById('fieldDiscount')?.addEventListener('input', renderCart);
+
+    window.posOnDiscountApplied = () => {
+      renderCart();
+      window.posDisplaySync?.syncFromRegister?.();
+    };
+    window.posDiscountModal?.bind?.();
+
+    const resetModal = document.getElementById('resetDisplayModal');
+    const openResetModal = () => {
+      resetModal?.classList.add('active');
+      resetModal?.setAttribute('aria-hidden', 'false');
+    };
+    const closeResetModal = () => {
+      resetModal?.classList.remove('active');
+      resetModal?.setAttribute('aria-hidden', 'true');
+    };
+    document.getElementById('btnResetDisplay')?.addEventListener('click', openResetModal);
+    document.getElementById('btnResetDisplayCancel')?.addEventListener('click', closeResetModal);
+    resetModal?.addEventListener('click', (e) => {
+      if (e.target === resetModal) closeResetModal();
+    });
+    document.getElementById('btnResetDisplayConfirm')?.addEventListener('click', async () => {
+      closeResetModal();
+      await window.posDisplaySync?.resetDisplay?.();
+      window.ui.toast('客戶顯示屏已重設', 'success');
+    });
 
     const notePopover = document.getElementById('notePopover');
     const fieldNote = document.getElementById('fieldNote');
@@ -362,9 +387,12 @@
         closeSidebar();
         window.posModes.sale.closeCheckoutModal?.();
         document.getElementById('notePopover')?.classList.add('hidden');
+        document.getElementById('discountModal')?.classList.add('hidden');
+        window.posDiscountModal?.close?.();
+        resetModal?.classList.remove('active');
+        resetModal?.setAttribute('aria-hidden', 'true');
       }
     });
-    document.getElementById('btnRefresh')?.addEventListener('click', loadProducts);
     document.getElementById('orderSearch')?.addEventListener('input', (e) => {
       productSearch = e.target.value.trim();
       renderProducts();

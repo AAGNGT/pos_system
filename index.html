@@ -126,7 +126,7 @@
 
         <div class="pos-main-header__search">
           <input type="search" id="orderSearch" placeholder="搜尋商品…" aria-label="搜尋商品">
-          <button type="button" class="pos-btn-icon" id="btnRefresh" title="重新整理">↻</button>
+          <button type="button" class="pos-btn-reset-display" id="btnResetDisplay" title="重設顯示屏">重設顯示屏</button>
         </div>
 
         <span class="pos-main-header__user" id="headerUser"></span>
@@ -211,13 +211,11 @@
               <option value="WeChat Pay">WeChat Pay</option>
             </select>
           </label>
-          <label class="pos-field-row pos-field-row--discount">
-            <span class="pos-field-label pos-field-label--sm">折扣</span>
-            <span class="pos-order__discount-wrap">
-              <input type="number" id="fieldDiscount" min="0" step="0.01" value="0" aria-label="折扣金額">
-              <span class="pos-field-suffix">$</span>
-            </span>
-          </label>
+          <div class="pos-field-row pos-field-row--discount">
+            <span class="pos-field-label pos-field-label--sm">折扣金額</span>
+            <button type="button" class="pos-btn-discount" id="btnOpenDiscount" aria-haspopup="dialog">點擊輸入</button>
+            <input type="hidden" id="fieldDiscount" value="0">
+          </div>
         </div>
         <button type="button" class="pos-btn-note" id="btnToggleNote">＋ 訂單備註</button>
         <div class="pos-order__summary pos-order__summary--compact">
@@ -320,6 +318,34 @@
 
 
 
+  <div class="pos-modal" id="resetDisplayModal" aria-hidden="true">
+    <div class="pos-modal__box pos-modal__box--confirm">
+      <h2>重設顯示屏</h2>
+      <p class="pos-modal__hint">確定將客戶顯示屏重設為歡迎畫面？收銀台購物車不會被清空。</p>
+      <div class="pos-modal__actions">
+        <button type="button" class="pos-modal__btn-secondary" id="btnResetDisplayCancel">取消</button>
+        <button type="button" class="pos-btn-reset-display pos-modal__btn-confirm" id="btnResetDisplayConfirm">確認重設</button>
+      </div>
+    </div>
+  </div>
+
+  <div class="pos-note-popover hidden" id="discountModal" aria-hidden="true">
+    <div class="pos-note-popover__backdrop" id="discountModalBackdrop"></div>
+    <div class="pos-note-popover__panel pos-discount-panel">
+      <h3 class="pos-note-popover__title">折扣金額</h3>
+      <p class="pos-discount-panel__hint">點擊輸入折扣金額</p>
+      <label class="pos-discount-input-wrap">
+        <input type="text" inputmode="decimal" id="discountInput" placeholder="0" autocomplete="off" aria-label="折扣金額">
+        <span class="pos-discount-input-suffix">$</span>
+      </label>
+      <div class="pos-discount-modal__actions">
+        <button type="button" class="pos-modal__btn-secondary" id="btnDiscountCancel">取消</button>
+        <button type="button" class="pos-btn-discount-clear" id="btnDiscountClear">清空</button>
+        <button type="button" class="pos-btn-primary" id="btnDiscountConfirm">確定</button>
+      </div>
+    </div>
+  </div>
+
   <div class="pos-note-popover hidden" id="notePopover" aria-hidden="true">
     <div class="pos-note-popover__backdrop" id="notePopoverBackdrop"></div>
     <div class="pos-note-popover__panel">
@@ -374,6 +400,8 @@
   <script src="js/modes/inventory.js"></script>
 
   <script src="js/modes/management.js"></script>
+
+  <script src="js/discount-modal.js"></script>
 
   <script src="js/app.js"></script>
 
