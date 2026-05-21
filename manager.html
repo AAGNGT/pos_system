@@ -90,9 +90,11 @@
       ]},
       { id: 'pos_orders', label: '訂單', fields: [
         { name: 'mode', label: '模式', type: 'select', options: ['sale','restock','return','damage'], default: 'sale' },
-        { name: 'payment_method', label: '付款', default: 'Cash' },
-        { name: 'payment_status', label: '狀態', default: 'Paid' },
-        { name: 'total', label: '總額', type: 'number', default: 0 },
+        { name: 'payment_method', label: '付款方式', type: 'select', options: ['現金','AlipayHK','WeChat Pay'], default: '現金' },
+        { name: 'subtotal', label: '小計', type: 'number', default: 0 },
+        { name: 'total', label: '合計', type: 'number', default: 0 },
+        { name: 'amount_received', label: '實收', type: 'number', default: 0 },
+        { name: 'change_amount', label: '找續', type: 'number', default: 0 },
         { name: 'staff_id', label: '員工ID', type: 'number' },
       ]},
       { id: 'pos_order_items', label: '訂單明細', fields: [

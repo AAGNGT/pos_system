@@ -8,11 +8,14 @@
         el.innerHTML = '<p class="pos-order__empty">尚無訂單</p>';
         return;
       }
-      el.innerHTML = `<table class="pos-table"><thead><tr><th>ID</th><th>模式</th><th>總額</th><th>時間</th></tr></thead><tbody>${orders.map((o) => `
+      const modeZh = { sale: '銷售', restock: '補貨', return: '退貨', damage: '損壞' };
+      el.innerHTML = `<table class="pos-table"><thead><tr><th>編號</th><th>模式</th><th>合計</th><th>實收</th><th>找續</th><th>時間</th></tr></thead><tbody>${orders.map((o) => `
         <tr>
           <td>#${o.id}</td>
-          <td>${o.mode}</td>
+          <td>${modeZh[o.mode] || o.mode}</td>
           <td>$${Number(o.total).toFixed(2)}</td>
+          <td>$${Number(o.amount_received || 0).toFixed(2)}</td>
+          <td>$${Number(o.change_amount || 0).toFixed(2)}</td>
           <td>${new Date(o.created_at).toLocaleString('zh-TW')}</td>
         </tr>`).join('')}</tbody></table>`;
     } catch (e) {
@@ -65,7 +68,10 @@
     const staff = await window.posApi.fetchStaff();
     el.innerHTML = `
       <table class="pos-table"><thead><tr><th>名稱</th><th>角色</th><th>狀態</th></tr></thead>
-      <tbody>${staff.map((s) => `<tr><td>${s.display_name}</td><td>${s.role}</td><td>${s.is_active ? '啟用' : '停用'}</td></tr>`).join('')}</tbody></table>
+      <tbody>${staff.map((s) => {
+        const role = s.role === 'ADMIN' ? '管理員' : '員工';
+        return `<tr><td>${s.display_name}</td><td>${role}</td><td>${s.is_active ? '啟用' : '停用'}</td></tr>`;
+      }).join('')}</tbody></table>
       <p style="margin-top:12px"><a href="manager.html">在資料管理新增員工</a></p>`;
   }
 
@@ -79,12 +85,12 @@
       <div class="pos-form-card">
         <p>今日訂單：${orders.length} 筆</p>
         <p>今日銷售額：$${total.toFixed(2)}</p>
-        <button class="pos-btn-charge" type="button" id="btnEodGenerate">產生 EOD 報表</button>
+        <button class="pos-btn-charge" type="button" id="btnEodGenerate">產生日終報告</button>
       </div>`;
     document.getElementById('btnEodGenerate').onclick = async () => {
       const d = new Date().toISOString().slice(0, 10);
       await window.posApi.createEodReport(d, { orders: sales, generated_at: new Date().toISOString() });
-      window.ui.toast('EOD 報表已儲存', 'success');
+      window.ui.toast('日終報告已儲存', 'success');
     };
   }
 

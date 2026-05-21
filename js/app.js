@@ -24,11 +24,42 @@
     return { getMode: () => mode, getStaff, reloadProducts: loadProducts };
   }
 
+  function roleLabel(role) {
+    return role === 'ADMIN' ? '管理員' : '員工';
+  }
+
   function updateStaffUI() {
     const s = getStaff();
     const el = document.getElementById('sidebarUser');
-    if (el) el.textContent = s ? `${s.display_name} (${s.role})` : '未登入';
+    const header = document.getElementById('headerUser');
+    const text = s ? `${s.display_name}（${roleLabel(s.role)}）` : '未登入';
+    if (el) el.textContent = text;
+    if (header) header.textContent = text;
   }
+
+  function openSidebar() {
+    document.getElementById('posSidebar')?.classList.add('open');
+    document.getElementById('sidebarBackdrop')?.classList.add('active');
+    document.getElementById('btnOpenMenu')?.setAttribute('aria-expanded', 'true');
+    document.body.classList.add('sidebar-open');
+  }
+
+  function closeSidebar() {
+    document.getElementById('posSidebar')?.classList.remove('open');
+    document.getElementById('sidebarBackdrop')?.classList.remove('active');
+    document.getElementById('btnOpenMenu')?.setAttribute('aria-expanded', 'false');
+    document.body.classList.remove('sidebar-open');
+  }
+
+  const MODE_LABELS = {
+    sale: '銷售', restock: '補貨', return: '退貨', damage: '損壞',
+    products: '產品', history: '歷史紀錄', dashboard: '儀表板',
+    settings: '設定', staff: '員工', eod: '日終報告',
+  };
+
+  const MODE_BADGES = {
+    sale: '銷售', restock: '補貨', return: '退貨', damage: '損壞',
+  };
 
   function placeholderImg(name) {
     const t = encodeURIComponent((name || '商品').slice(0, 8));
@@ -84,7 +115,7 @@
   function renderCategoryPills() {
     const bar = document.getElementById('categoryPills');
     if (!bar) return;
-    const pills = [{ id: null, name: 'All' }, ...categories];
+    const pills = [{ id: null, name: '全部' }, ...categories];
     bar.innerHTML = pills.map((c) => `
       <button type="button" class="pos-pill ${activeCategoryId === c.id ? 'active' : ''}" data-cat="${c.id ?? ''}">${c.name}</button>
     `).join('');
@@ -107,7 +138,7 @@
     if (!list) return;
 
     if (!items.length) {
-      list.innerHTML = '<p class="pos-order__empty">Empty</p>';
+      list.innerHTML = '<p class="pos-order__empty">尚無商品</p>';
     } else {
       list.innerHTML = items.map((i) => `
         <div class="pos-cart-line">
@@ -144,15 +175,14 @@
     if (discEl) discEl.textContent = `-$${disc.toFixed(2)}`;
     if (totEl) totEl.textContent = `$${total.toFixed(2)}`;
     if (chargeBtn) {
-      chargeBtn.textContent = `Charge $${total.toFixed(2)}`;
+      chargeBtn.textContent = `結帳 $${total.toFixed(2)}`;
       chargeBtn.disabled = mode !== 'sale' || !items.length;
     }
   }
 
   function updateModeUI() {
     const badge = document.getElementById('orderModeBadge');
-    const labels = { sale: 'SALE', restock: 'RESTOCK', return: 'RETURN', damage: 'DAMAGE' };
-    if (badge) badge.textContent = labels[mode] || mode.toUpperCase();
+    if (badge) badge.textContent = MODE_BADGES[mode] || MODE_LABELS[mode] || mode;
 
     const showProducts = ['sale', 'restock', 'return', 'damage'].includes(mode);
     document.getElementById('productArea')?.classList.toggle('hidden', !showProducts);
@@ -192,11 +222,15 @@
   function setMode(m) {
     if (m === 'logout') {
       sessionStorage.removeItem(STAFF_KEY);
+      closeSidebar();
       showLoginModal();
       return;
     }
     if (m === 'dark') return;
     mode = m;
+    closeSidebar();
+    const headerLabel = document.getElementById('headerModeLabel');
+    if (headerLabel) headerLabel.textContent = MODE_LABELS[m] || m;
     updateModeUI();
     if (['sale', 'restock', 'return', 'damage'].includes(mode)) renderProducts();
   }
@@ -230,7 +264,20 @@
 
     document.getElementById('btnClear')?.addEventListener('click', () => window.posCart.clear());
     document.getElementById('fieldDiscount')?.addEventListener('input', renderCart);
-    document.getElementById('btnCharge')?.addEventListener('click', () => window.posModes.sale.checkout(ctx()));
+    window.posModes.sale?.bindCheckoutModal?.(ctx());
+    window.posModes.sale?.bindChargeButton?.();
+    document.getElementById('btnOpenMenu')?.addEventListener('click', () => {
+      const open = document.getElementById('posSidebar')?.classList.contains('open');
+      if (open) closeSidebar();
+      else openSidebar();
+    });
+    document.getElementById('sidebarBackdrop')?.addEventListener('click', closeSidebar);
+    document.addEventListener('keydown', (e) => {
+      if (e.key === 'Escape') {
+        closeSidebar();
+        window.posModes.sale.closeCheckoutModal?.();
+      }
+    });
     document.getElementById('btnRefresh')?.addEventListener('click', loadProducts);
     document.getElementById('orderSearch')?.addEventListener('input', (e) => {
       productSearch = e.target.value.trim();
@@ -242,7 +289,9 @@
     });
 
     document.querySelectorAll('.pos-nav__item[data-mode]').forEach((btn) => {
-      btn.addEventListener('click', () => setMode(btn.dataset.mode));
+      btn.addEventListener('click', () => {
+        setMode(btn.dataset.mode);
+      });
     });
 
     document.getElementById('darkToggle')?.addEventListener('click', () => {
@@ -267,7 +316,7 @@
     const modal = document.getElementById('loginModal');
     const sel = document.getElementById('loginStaff');
     const staff = await window.posApi.fetchStaff();
-    sel.innerHTML = staff.map((s) => `<option value="${s.id}">${s.display_name} (${s.role})</option>`).join('');
+    sel.innerHTML = staff.map((s) => `<option value="${s.id}">${s.display_name}（${roleLabel(s.role)}）</option>`).join('');
     modal.classList.add('active');
   }
 
@@ -289,5 +338,5 @@
     init();
   });
 
-  window.posApp = { setMode, getStaff, ctx };
+  window.posApp = { setMode, getStaff, ctx, openSidebar, closeSidebar, roleLabel };
 })();

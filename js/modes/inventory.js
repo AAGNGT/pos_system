@@ -39,7 +39,7 @@
       const order = await window.posApi.createOrder({
         mode,
         payment_method: 'N/A',
-        payment_status: 'N/A',
+        payment_status: '已支付',
         subtotal: 0,
         discount_amount: 0,
         total: 0,

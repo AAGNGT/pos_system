@@ -47,16 +47,15 @@ create table if not exists public.pos_staff (
 create table if not exists public.pos_orders (
   id bigserial primary key,
   mode text not null default 'sale' check (mode in ('sale', 'restock', 'return', 'damage')),
-  payment_method text not null default 'Cash',
-  payment_status text not null default 'Paid',
-  customer_name text,
-  contact text,
-  email text,
+  payment_method text not null default '現金',
+  payment_status text not null default '已支付',
   discount numeric(10,2) not null default 0,
   note text,
   subtotal numeric(10,2) not null default 0,
   discount_amount numeric(10,2) not null default 0,
   total numeric(10,2) not null default 0,
+  amount_received numeric(10,2) not null default 0,
+  change_amount numeric(10,2) not null default 0,
   staff_id bigint references public.pos_staff(id) on delete set null,
   created_at timestamptz not null default now()
 );
@@ -134,7 +133,7 @@ on conflict (code) do nothing;
 
 insert into public.pos_settings (key, value) values
   ('store_name', 'ASSTUDIOHK'),
-  ('default_payment', 'Cash'),
+  ('default_payment', '現金'),
   ('default_sort', 'default')
 on conflict (key) do nothing;
 

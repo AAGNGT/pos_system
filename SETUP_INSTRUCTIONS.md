@@ -9,6 +9,8 @@
 
 這會建立 `pos_*` 資料表、示範分類/商品，以及預設管理員（PIN: `1234`）。
 
+若你先前已執行過舊版 migration，請再執行 [`database_migration_patch.sql`](database_migration_patch.sql)（新增 **實收**、**找續**，並移除 `customer_name`、`contact`、`email`）。
+
 ## 2. 前端連線
 
 編輯 [`config.js`](config.js)：
