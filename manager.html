@@ -1,0 +1,277 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>POS 資料管理 - ASSTUDIOHK</title>
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+  <script src="config.js"></script>
+  <style>
+    :root {
+      --bg-soft: #f6f7fb;
+      --border: rgba(15,23,42,0.08);
+      --text: #0f172a;
+      --muted: rgba(15,23,42,0.62);
+      --brand: #3b82f6;
+      --danger: #ef4444;
+      --success: #16a34a;
+      --radius-lg: 16px;
+      --radius-sm: 8px;
+    }
+    * { box-sizing: border-box; }
+    body { margin: 0; font-family: system-ui, sans-serif; background: #f1f5f9; color: var(--text); }
+    .container { max-width: 1200px; margin: 0 auto; padding: 24px; }
+    .app-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px; }
+    .app-header h1 { margin: 0; font-size: 22px; }
+    .btn { padding: 8px 14px; border-radius: var(--radius-sm); border: none; font-weight: 600; cursor: pointer; text-decoration: none; display: inline-block; font-size: 14px; }
+    .btn-primary { background: var(--brand); color: #fff; }
+    .btn-ghost { background: #e2e8f0; color: var(--text); }
+    .btn-danger { background: var(--danger); color: #fff; }
+    .btn-small { padding: 4px 10px; font-size: 12px; }
+    .tabs { display: flex; flex-wrap: wrap; gap: 8px; margin-bottom: 16px; }
+    .tab { padding: 8px 14px; border: 1px solid var(--border); background: #fff; border-radius: 999px; cursor: pointer; font-weight: 600; color: var(--muted); }
+    .tab.active { background: var(--brand); color: #fff; border-color: var(--brand); }
+    .tab-content { display: none; }
+    .tab-content.active { display: block; }
+    .form-section, .stat-card { background: #fff; padding: 16px; border-radius: var(--radius-lg); margin-bottom: 16px; box-shadow: 0 1px 3px rgba(0,0,0,0.06); }
+    .form-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); gap: 12px; }
+    .form-group label { font-size: 11px; font-weight: 700; color: var(--muted); text-transform: uppercase; }
+    .form-group input, .form-group select { width: 100%; padding: 8px; border: 1px solid var(--border); border-radius: var(--radius-sm); margin-top: 4px; }
+    .data-table { width: 100%; border-collapse: collapse; background: #fff; border-radius: var(--radius-lg); overflow: hidden; font-size: 13px; }
+    .data-table th, .data-table td { padding: 10px; border-bottom: 1px solid var(--border); text-align: left; }
+    .data-table th { background: var(--bg-soft); font-size: 11px; text-transform: uppercase; color: var(--muted); }
+    .stats-bar { display: flex; flex-wrap: wrap; gap: 12px; margin-bottom: 16px; }
+    .stat-card { flex: 1; min-width: 120px; }
+    .stat-value { font-size: 22px; font-weight: 800; color: var(--brand); }
+    .stat-label { font-size: 11px; color: var(--muted); }
+    .empty-state { text-align: center; padding: 32px; color: var(--muted); }
+    .message { padding: 12px; border-radius: 8px; margin-bottom: 12px; }
+    .message.success { background: rgba(22,163,74,0.1); color: var(--success); }
+    .message.error { background: rgba(239,68,68,0.1); color: var(--danger); }
+    .table-wrapper { overflow-x: auto; }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <div class="app-header">
+      <h1>POS 資料管理</h1>
+      <a href="index.html" class="btn btn-ghost">← 返回 POS</a>
+    </div>
+    <div id="messageArea"></div>
+    <div class="stats-bar" id="statsBar"></div>
+    <div class="tabs" id="tabsBar"></div>
+    <div id="tabPanels"></div>
+  </div>
+
+  <script src="js/ui.js"></script>
+  <script>
+    const TABLES = [
+      { id: 'pos_categories', label: '分類', fields: [
+        { name: 'name', label: '名稱', required: true },
+        { name: 'slug', label: 'Slug', required: true },
+        { name: 'sort_order', label: '排序', type: 'number', default: 0 },
+        { name: 'is_active', label: '啟用', type: 'bool', default: true },
+      ]},
+      { id: 'pos_products', label: '商品', fields: [
+        { name: 'code', label: '代碼', required: true },
+        { name: 'name', label: '名稱', required: true },
+        { name: 'price', label: '價格', type: 'number', default: 0 },
+        { name: 'category_id', label: '分類ID', type: 'number' },
+        { name: 'stock_count', label: '庫存', type: 'number', default: 0 },
+        { name: 'image_url', label: '圖片URL' },
+        { name: 'sort_order', label: '排序', type: 'number', default: 0 },
+        { name: 'is_active', label: '啟用', type: 'bool', default: true },
+      ]},
+      { id: 'pos_staff', label: '員工', fields: [
+        { name: 'display_name', label: '名稱', required: true },
+        { name: 'role', label: '角色', type: 'select', options: ['ADMIN', 'STAFF'], default: 'STAFF' },
+        { name: 'pin', label: 'PIN', required: true },
+        { name: 'is_active', label: '啟用', type: 'bool', default: true },
+      ]},
+      { id: 'pos_orders', label: '訂單', fields: [
+        { name: 'mode', label: '模式', type: 'select', options: ['sale','restock','return','damage'], default: 'sale' },
+        { name: 'payment_method', label: '付款', default: 'Cash' },
+        { name: 'payment_status', label: '狀態', default: 'Paid' },
+        { name: 'total', label: '總額', type: 'number', default: 0 },
+        { name: 'staff_id', label: '員工ID', type: 'number' },
+      ]},
+      { id: 'pos_order_items', label: '訂單明細', fields: [
+        { name: 'order_id', label: '訂單ID', type: 'number', required: true },
+        { name: 'product_id', label: '商品ID', type: 'number', required: true },
+        { name: 'qty', label: '數量', type: 'number', default: 1 },
+        { name: 'unit_price', label: '單價', type: 'number', default: 0 },
+        { name: 'line_total', label: '小計', type: 'number', default: 0 },
+      ]},
+      { id: 'pos_inventory_movements', label: '庫存異動', fields: [
+        { name: 'product_id', label: '商品ID', type: 'number', required: true },
+        { name: 'delta', label: '變動', type: 'number', required: true },
+        { name: 'reason', label: '原因' },
+        { name: 'order_id', label: '訂單ID', type: 'number' },
+        { name: 'staff_id', label: '員工ID', type: 'number' },
+      ]},
+      { id: 'pos_settings', label: '設定', fields: [
+        { name: 'key', label: 'Key', required: true },
+        { name: 'value', label: 'Value' },
+      ]},
+      { id: 'pos_eod_reports', label: 'EOD', fields: [
+        { name: 'report_date', label: '日期', required: true },
+        { name: 'total_sales', label: '銷售額', type: 'number', default: 0 },
+        { name: 'order_count', label: '訂單數', type: 'number', default: 0 },
+        { name: 'payload', label: 'Payload JSON', type: 'json', default: '{}' },
+      ]},
+    ];
+
+    let supabaseClient;
+    let currentTab = TABLES[0].id;
+
+    function initSupabase() {
+      if (typeof supabase === 'undefined' || typeof SUPABASE_CONFIG === 'undefined') return false;
+      supabaseClient = supabase.createClient(SUPABASE_CONFIG.url, SUPABASE_CONFIG.anonKey);
+      return true;
+    }
+
+    function showMessage(msg, type) {
+      if (window.ui?.toast) { window.ui.toast(msg, type); return; }
+      const area = document.getElementById('messageArea');
+      area.innerHTML = `<div class="message ${type}">${msg}</div>`;
+      if (type !== 'error') setTimeout(() => area.innerHTML = '', 3000);
+    }
+
+    function buildUI() {
+      const tabsBar = document.getElementById('tabsBar');
+      const panels = document.getElementById('tabPanels');
+      tabsBar.innerHTML = TABLES.map((t, i) =>
+        `<button type="button" class="tab ${i === 0 ? 'active' : ''}" data-tab="${t.id}">${t.label}</button>`
+      ).join('');
+      panels.innerHTML = TABLES.map((t, i) => `
+        <div id="${t.id}" class="tab-content ${i === 0 ? 'active' : ''}">
+          <div class="form-section">
+            <h3>新增 ${t.label}</h3>
+            <form id="form_${t.id}">${renderFormFields(t)}<button type="submit" class="btn btn-primary" style="margin-top:12px">新增</button></form>
+          </div>
+          <div id="table_${t.id}"></div>
+        </div>`).join('');
+
+      tabsBar.querySelectorAll('.tab').forEach((btn) => {
+        btn.addEventListener('click', () => switchTab(btn.dataset.tab, btn));
+      });
+      TABLES.forEach((t) => {
+        document.getElementById(`form_${t.id}`).addEventListener('submit', (e) => addRecord(t.id, e, t.fields));
+      });
+    }
+
+    function renderFormFields(table) {
+      return `<div class="form-grid">${table.fields.map((f) => {
+        if (f.type === 'bool') return `<div class="form-group"><label>${f.label}</label><select name="${f.name}"><option value="true">true</option><option value="false">false</option></select></div>`;
+        if (f.type === 'select') return `<div class="form-group"><label>${f.label}</label><select name="${f.name}">${(f.options||[]).map(o=>`<option value="${o}">${o}</option>`).join('')}</select></div>`;
+        return `<div class="form-group"><label>${f.label}</label><input name="${f.name}" type="${f.type === 'number' ? 'number' : 'text'}" ${f.required ? 'required' : ''} value="${f.default ?? ''}"></div>`;
+      }).join('')}</div>`;
+    }
+
+    function switchTab(tabName, btnEl) {
+      document.querySelectorAll('.tab').forEach((t) => t.classList.remove('active'));
+      document.querySelectorAll('.tab-content').forEach((c) => c.classList.remove('active'));
+      btnEl.classList.add('active');
+      document.getElementById(tabName).classList.add('active');
+      currentTab = tabName;
+      loadTable(tabName);
+    }
+
+    async function loadStats() {
+      const stats = {};
+      for (const t of TABLES) {
+        const { count } = await supabaseClient.from(t.id).select('*', { count: 'exact', head: true });
+        stats[t.id] = count || 0;
+      }
+      document.getElementById('statsBar').innerHTML = TABLES.map((t) => `
+        <div class="stat-card"><div class="stat-value">${stats[t.id]}</div><div class="stat-label">${t.label}</div></div>
+      `).join('');
+    }
+
+    async function loadTable(tableName) {
+      try {
+        const { data, error } = await supabaseClient.from(tableName).select('*').order('id', { ascending: false }).limit(100);
+        if (error) throw error;
+        const div = document.getElementById(`table_${tableName}`);
+        if (!data?.length) { div.innerHTML = '<div class="empty-state">無資料</div>'; return; }
+        const cols = Object.keys(data[0]);
+        let html = '<div class="table-wrapper"><table class="data-table"><thead><tr>';
+        cols.forEach((c) => html += `<th>${c}</th>`);
+        html += '<th>操作</th></tr></thead><tbody>';
+        data.forEach((row) => {
+          html += '<tr>';
+          cols.forEach((c) => {
+            let v = row[c];
+            if (v === null) v = '—';
+            else if (typeof v === 'object') v = JSON.stringify(v).slice(0, 40);
+            else if (String(v).length > 40) v = String(v).slice(0, 40) + '…';
+            html += `<td>${v}</td>`;
+          });
+          html += `<td><button class="btn btn-danger btn-small" onclick="deleteRecord('${tableName}', ${row.id})">刪除</button></td></tr>`;
+        });
+        html += '</tbody></table></div>';
+        div.innerHTML = html;
+      } catch (e) {
+        showMessage(`載入失敗: ${e.message}`, 'error');
+      }
+    }
+
+    async function addRecord(tableName, event, fields) {
+      event.preventDefault();
+      const fd = new FormData(event.target);
+      const data = {};
+      fields.forEach((f) => {
+        const v = fd.get(f.name);
+        if (v === '' || v === null) return;
+        if (f.type === 'number') data[f.name] = parseFloat(v) || 0;
+        else if (f.type === 'bool') data[f.name] = v === 'true';
+        else if (f.type === 'json') {
+          try { data[f.name] = JSON.parse(v); } catch { showMessage('JSON 錯誤', 'error'); throw new Error('json'); }
+        } else data[f.name] = v;
+      });
+      try {
+        const { error } = await supabaseClient.from(tableName).insert(data);
+        if (error) throw error;
+        showMessage('新增成功', 'success');
+        event.target.reset();
+        await loadTable(tableName);
+        await loadStats();
+      } catch (e) {
+        if (e.message !== 'json') showMessage(`新增失敗: ${e.message}`, 'error');
+      }
+    }
+
+    async function deleteRecord(tableName, id) {
+      if (!confirm('確定刪除？')) return;
+      try {
+        const { error } = await supabaseClient.from(tableName).delete().eq('id', id);
+        if (error) throw error;
+        showMessage('已刪除', 'success');
+        await loadTable(tableName);
+        await loadStats();
+      } catch (e) {
+        showMessage(`刪除失敗: ${e.message}`, 'error');
+      }
+    }
+
+    function requireAdminGate() {
+      const key = 'pos_manager_verified';
+      if (sessionStorage.getItem(key) === '1') return true;
+      const pin = prompt('管理後台 PIN（預設與員工 PIN 相同：1234）');
+      if (pin === '1234') { sessionStorage.setItem(key, '1'); return true; }
+      alert('驗證失敗');
+      window.location.href = 'index.html';
+      return false;
+    }
+
+    window.onload = async () => {
+      if (!requireAdminGate()) return;
+      if (!initSupabase()) { showMessage('無法初始化 Supabase', 'error'); return; }
+      buildUI();
+      await loadStats();
+      await loadTable(currentTab);
+      document.querySelector('.tab').addEventListener('click', function () {});
+    };
+  </script>
+</body>
+</html>

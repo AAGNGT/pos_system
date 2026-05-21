@@ -1,0 +1,23 @@
+body.dark {
+  background: #0f172a;
+}
+body.dark .pos-main { background: #1e293b; }
+body.dark .pos-toolbar { background: #334155; border-color: #475569; }
+body.dark .pos-pill { background: #475569; border-color: #64748b; color: #e2e8f0; }
+body.dark .pos-pill.active { background: #3b82f6; border-color: #3b82f6; }
+body.dark .pos-product-card { background: #334155; }
+body.dark .pos-product-card__name { color: #f1f5f9; }
+body.dark .pos-order { background: #1e293b; border-color: #334155; }
+body.dark .pos-order__search input,
+body.dark .pos-order__checkout select,
+body.dark .pos-order__checkout input,
+body.dark .pos-order__checkout textarea {
+  background: #334155;
+  border-color: #475569;
+  color: #f1f5f9;
+}
+body.dark .pos-order__checkout { background: #0f172a; }
+body.dark .pos-stat-card,
+body.dark .pos-table,
+body.dark .pos-form-card { background: #334155; color: #e2e8f0; }
+body.dark .pos-panel-view { color: #e2e8f0; }
