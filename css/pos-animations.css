@@ -10,6 +10,8 @@ button,
 .pos-checkout__confirm,
 .pos-checkout__cancel,
 .pos-order__clear,
+.pos-btn-note,
+.pos-sidebar__pin,
 .pos-sidebar__logout,
 .pos-product-card {
   transition: transform 0.12s ease, box-shadow 0.15s ease, background 0.15s ease, opacity 0.15s ease;
@@ -26,6 +28,8 @@ button:active:not(:disabled),
 .pos-checkout__confirm:active:not(:disabled),
 .pos-checkout__cancel:active,
 .pos-order__clear:active,
+.pos-btn-note:active,
+.pos-sidebar__pin:active,
 .pos-sidebar__logout:active,
 .pos-product-card:active {
   transform: scale(0.96);

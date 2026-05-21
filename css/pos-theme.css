@@ -29,6 +29,12 @@ body.dark .pos-btn-icon { background: #475569; border-color: #64748b; color: #e2
 body.dark .pos-menu-btn { background: #475569; border-color: #64748b; }
 body.dark .pos-menu-btn__bar { background: #e2e8f0; }
 body.dark .pos-order__footer { background: #0f172a; border-color: #334155; }
+body.dark .pos-order__checkout select,
+body.dark .pos-order__checkout input { background: #334155; border-color: #475569; color: #f1f5f9; }
+body.dark .pos-btn-note { background: #334155; border-color: #475569; color: #cbd5e1; }
+body.dark .pos-btn-note.has-note { background: #1e3a5f; border-color: #3b82f6; color: #93c5fd; }
+body.dark .pos-note-popover__panel { background: #334155; color: #f1f5f9; }
+body.dark .pos-note-popover__panel textarea { background: #475569; border-color: #64748b; color: #f1f5f9; }
 body.dark .pos-checkout { background: #334155; }
 body.dark .pos-checkout__title,
 body.dark .pos-checkout__amount { color: #f1f5f9; }

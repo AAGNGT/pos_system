@@ -10,6 +10,10 @@
 
   <title>POS 收銀系統 - ASSTUDIOHK</title>
 
+  <link rel="icon" href="images.png" type="image/png">
+
+  <link rel="apple-touch-icon" href="images.png">
+
   <link rel="stylesheet" href="css/pos-layout.css">
 
   <link rel="stylesheet" href="css/pos-theme.css">
@@ -32,15 +36,17 @@
 
       <div class="pos-sidebar__brand">
 
-        <div class="pos-sidebar__avatar" aria-hidden="true"></div>
+        <img class="pos-sidebar__logo" src="images.png" alt="POS" width="40" height="40">
 
-        <div>
+        <div class="pos-sidebar__meta">
 
           <p class="pos-sidebar__name">POS 商店</p>
 
           <span class="pos-sidebar__badge">專業會員</span>
 
         </div>
+
+        <button type="button" class="pos-sidebar__pin" id="btnSidebarPin" title="釘選工作列" aria-label="釘選工作列" aria-pressed="false">📌</button>
 
       </div>
 
@@ -104,7 +110,7 @@
 
       <header class="pos-main-header">
 
-        <button type="button" class="pos-menu-btn" id="btnOpenMenu" aria-label="開啟選單" aria-expanded="false" aria-controls="posSidebar">
+        <button type="button" class="pos-menu-btn" id="btnOpenMenu" aria-label="更多功能" aria-expanded="false" aria-controls="posSidebar" title="更多功能">
 
           <span class="pos-menu-btn__bar"></span>
 
@@ -194,39 +200,30 @@
       </div>
 
       <div class="pos-order__footer pos-order__checkout" id="saleCheckout">
-
-        <select id="fieldPayment" aria-label="付款方式">
-
-          <option value="現金">現金</option>
-
-          <option value="AlipayHK">AlipayHK</option>
-
-          <option value="WeChat Pay">WeChat Pay</option>
-
-        </select>
-
-        <div class="pos-order__discount-wrap">
-
-          <input type="number" id="fieldDiscount" min="0" step="0.01" value="0" placeholder="折扣">
-
-          <span>$</span>
-
+        <div class="pos-checkout-fields">
+          <label class="pos-field-row">
+            <span class="pos-field-label">支付方式</span>
+            <select id="fieldPayment" aria-label="支付方式">
+              <option value="現金">現金</option>
+              <option value="AlipayHK">AlipayHK</option>
+              <option value="WeChat Pay">WeChat Pay</option>
+            </select>
+          </label>
+          <label class="pos-field-row pos-field-row--discount">
+            <span class="pos-field-label pos-field-label--sm">折扣</span>
+            <span class="pos-order__discount-wrap">
+              <input type="number" id="fieldDiscount" min="0" step="0.01" value="0" aria-label="折扣金額">
+              <span class="pos-field-suffix">$</span>
+            </span>
+          </label>
         </div>
-
-        <textarea id="fieldNote" rows="2" placeholder="訂單備註（例如：5 號枱、禮品包裝）"></textarea>
-
-        <div class="pos-order__summary">
-
-          <div><span>小計：</span><span id="sumSubtotal">$0.00</span></div>
-
-          <div><span>折扣：</span><span id="sumDiscount">-$0.00</span></div>
-
-          <div class="total"><span>合計：</span><span id="sumTotal">$0.00</span></div>
-
+        <button type="button" class="pos-btn-note" id="btnToggleNote">＋ 訂單備註</button>
+        <div class="pos-order__summary pos-order__summary--compact">
+          <div><span>小計</span><span id="sumSubtotal">$0.00</span></div>
+          <div><span>折扣</span><span id="sumDiscount">-$0.00</span></div>
+          <div class="total"><span>合計</span><span id="sumTotal">$0.00</span></div>
         </div>
-
         <button type="button" class="pos-btn-charge" id="btnCharge" disabled>結帳 $0.00</button>
-
       </div>
 
     </aside>
@@ -320,6 +317,15 @@
   </div>
 
 
+
+  <div class="pos-note-popover hidden" id="notePopover" aria-hidden="true">
+    <div class="pos-note-popover__backdrop" id="notePopoverBackdrop"></div>
+    <div class="pos-note-popover__panel">
+      <h3 class="pos-note-popover__title">訂單備註</h3>
+      <textarea id="fieldNote" rows="3" placeholder="例如：5 號枱、禮品包裝"></textarea>
+      <button type="button" class="pos-btn-primary pos-note-popover__done" id="btnNoteDone">確定</button>
+    </div>
+  </div>
 
   <div class="pos-modal" id="loginModal" aria-hidden="true">
 

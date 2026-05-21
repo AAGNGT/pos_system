@@ -9,8 +9,17 @@ body {
 
 .pos-app {
   display: grid;
-  grid-template-columns: 1fr 340px;
+  grid-template-columns: 0 1fr 340px;
   height: 100vh;
+  transition: grid-template-columns 0.25s ease;
+}
+
+body.sidebar-pinned .pos-app {
+  grid-template-columns: 220px 1fr 340px;
+}
+
+body.sidebar-pinned.sidebar-rail .pos-app {
+  grid-template-columns: 72px 1fr 340px;
 }
 
 /* Sidebar drawer */
@@ -36,12 +45,59 @@ body {
   flex-direction: column;
   padding: 16px 12px;
   overflow-y: auto;
+  overflow-x: hidden;
   transform: translateX(-100%);
-  transition: transform 0.25s ease;
+  transition: transform 0.25s ease, width 0.25s ease;
   box-shadow: 4px 0 24px rgba(0, 0, 0, 0.2);
+  grid-column: 1;
+  grid-row: 1;
 }
 .pos-sidebar.open {
   transform: translateX(0);
+}
+
+/* 釘選：工作列常駐，縮窄時保留 emoji 圖示 */
+body.sidebar-pinned .pos-sidebar {
+  position: relative;
+  transform: translateX(0) !important;
+  width: 100%;
+  min-width: 0;
+  box-shadow: none;
+}
+body.sidebar-pinned .pos-sidebar-backdrop {
+  display: none !important;
+}
+body.sidebar-pinned.sidebar-rail .pos-sidebar {
+  padding: 12px 8px;
+}
+body.sidebar-pinned.sidebar-rail .pos-sidebar__brand {
+  flex-direction: column;
+  align-items: center;
+  gap: 6px;
+}
+body.sidebar-pinned.sidebar-rail .pos-sidebar__meta,
+body.sidebar-pinned.sidebar-rail .pos-nav__label,
+body.sidebar-pinned.sidebar-rail .pos-nav__item > span:not(.pos-nav__icon),
+body.sidebar-pinned.sidebar-rail .pos-toggle-row > span,
+body.sidebar-pinned.sidebar-rail .pos-sidebar__user,
+body.sidebar-pinned.sidebar-rail .pos-sidebar__logout,
+body.sidebar-pinned.sidebar-rail .pos-sidebar__powered {
+  display: none !important;
+}
+body.sidebar-pinned.sidebar-rail .pos-nav__item {
+  justify-content: center;
+  padding: 10px 8px;
+}
+body.sidebar-pinned.sidebar-rail .pos-nav__icon {
+  width: auto;
+  font-size: 20px;
+}
+body.sidebar-pinned.sidebar-rail .pos-toggle-row {
+  justify-content: center;
+  padding: 8px 4px;
+}
+body.sidebar-pinned.sidebar-rail .pos-sidebar__pin {
+  margin: 0;
 }
 
 .pos-main-header {
@@ -117,20 +173,49 @@ body {
   flex-direction: column;
   overflow: hidden;
   background: #f8fafc;
+  grid-column: 2;
+  min-width: 0;
 }
 .pos-sidebar__brand {
   display: flex;
   align-items: center;
   gap: 10px;
-  margin-bottom: 20px;
+  margin-bottom: 16px;
   padding: 0 4px;
+  flex-shrink: 0;
 }
-.pos-sidebar__avatar {
+.pos-sidebar__logo {
   width: 40px;
   height: 40px;
-  border-radius: 50%;
-  background: linear-gradient(135deg, #64748b, #334155);
+  object-fit: contain;
   flex-shrink: 0;
+  border-radius: 8px;
+  background: rgba(255, 255, 255, 0.08);
+}
+.pos-sidebar__meta {
+  flex: 1;
+  min-width: 0;
+}
+.pos-sidebar__pin {
+  flex-shrink: 0;
+  width: 36px;
+  height: 36px;
+  border: 1px solid rgba(255, 255, 255, 0.15);
+  border-radius: 8px;
+  background: rgba(255, 255, 255, 0.06);
+  color: #94a3b8;
+  font-size: 16px;
+  cursor: pointer;
+  transition: background 0.15s, color 0.15s, transform 0.12s;
+}
+.pos-sidebar__pin:hover {
+  background: rgba(255, 255, 255, 0.12);
+  color: #f1f5f9;
+}
+.pos-sidebar__pin.is-pinned {
+  background: #3b82f6;
+  border-color: #60a5fa;
+  color: #fff;
 }
 .pos-sidebar__name {
   color: #f8fafc;
@@ -351,12 +436,14 @@ body {
 
 /* Order column */
 .pos-order {
+  grid-column: 3;
   background: #fff;
   border-left: 1px solid #e2e8f0;
   display: flex;
   flex-direction: column;
   height: 100vh;
   overflow: hidden;
+  min-width: 0;
 }
 .pos-order__head {
   flex-shrink: 0;
@@ -432,38 +519,102 @@ body {
 }
 .pos-order__footer {
   flex-shrink: 0;
-  padding: 12px;
+  padding: 10px 12px 12px;
   border-top: 1px solid #e2e8f0;
   background: #f8fafc;
   box-shadow: 0 -6px 20px rgba(15, 23, 42, 0.08);
   z-index: 20;
 }
-.pos-order__row2 {
+.pos-checkout-fields {
   display: grid;
   grid-template-columns: 1fr 1fr;
-  gap: 8px;
+  gap: 8px 10px;
   margin-bottom: 8px;
 }
+.pos-field-row {
+  display: grid;
+  grid-template-columns: auto 1fr;
+  align-items: center;
+  gap: 6px;
+  margin: 0;
+  min-width: 0;
+}
+.pos-field-row--discount {
+  grid-template-columns: auto 1fr;
+}
+.pos-field-label {
+  font-size: 12px;
+  font-weight: 600;
+  color: #64748b;
+  white-space: nowrap;
+}
+.pos-field-label--sm {
+  font-size: 11px;
+  font-weight: 500;
+}
 .pos-order__checkout select,
-.pos-order__checkout input,
-.pos-order__checkout textarea {
+.pos-order__checkout input[type="number"] {
   width: 100%;
-  padding: 10px;
+  min-width: 0;
+  padding: 8px 10px;
   border: 1px solid #e2e8f0;
   border-radius: 8px;
   font-size: 13px;
-  margin-bottom: 8px;
   font-family: inherit;
+  margin: 0;
+  background: #fff;
 }
 .pos-order__discount-wrap {
   position: relative;
+  display: block;
+  min-width: 0;
 }
-.pos-order__discount-wrap span {
+.pos-order__discount-wrap input {
+  padding-right: 22px !important;
+}
+.pos-field-suffix {
   position: absolute;
-  right: 12px;
+  right: 8px;
   top: 50%;
   transform: translateY(-50%);
   color: #94a3b8;
+  font-size: 12px;
+  pointer-events: none;
+}
+.pos-btn-note {
+  width: 100%;
+  padding: 7px 10px;
+  margin-bottom: 8px;
+  border: 1px dashed #cbd5e1;
+  border-radius: 8px;
+  background: #fff;
+  color: #64748b;
+  font-size: 12px;
+  cursor: pointer;
+  text-align: left;
+}
+.pos-btn-note.has-note {
+  border-color: #3b82f6;
+  color: #3b82f6;
+  background: #eff6ff;
+}
+.pos-order__summary--compact {
+  margin: 0 0 8px;
+  font-size: 13px;
+}
+.pos-order__summary--compact div {
+  display: flex;
+  justify-content: space-between;
+  margin-bottom: 2px;
+  color: #64748b;
+}
+.pos-order__summary--compact .total {
+  font-size: 17px;
+  font-weight: 800;
+  color: #0f172a;
+  margin-top: 4px;
+  padding-top: 4px;
+  border-top: 1px solid #e2e8f0;
 }
 .pos-order__summary {
   margin: 12px 0;
@@ -480,6 +631,62 @@ body {
   font-weight: 800;
   color: #0f172a;
   margin-top: 8px;
+}
+
+/* 訂單備註彈層 */
+.pos-note-popover {
+  position: fixed;
+  inset: 0;
+  z-index: 1800;
+  display: flex;
+  align-items: flex-end;
+  justify-content: center;
+  padding: 16px;
+  pointer-events: none;
+}
+.pos-note-popover:not(.hidden) {
+  pointer-events: auto;
+}
+.pos-note-popover.hidden {
+  display: none !important;
+}
+.pos-note-popover__backdrop {
+  position: absolute;
+  inset: 0;
+  background: rgba(15, 23, 42, 0.35);
+}
+.pos-note-popover__panel {
+  position: relative;
+  width: min(400px, 100%);
+  background: #fff;
+  border-radius: 16px 16px 12px 12px;
+  padding: 16px;
+  box-shadow: 0 -8px 32px rgba(0, 0, 0, 0.15);
+  z-index: 1;
+}
+.pos-note-popover__title {
+  margin: 0 0 10px;
+  font-size: 16px;
+  font-weight: 700;
+}
+.pos-note-popover__panel textarea {
+  width: 100%;
+  padding: 10px;
+  border: 1px solid #e2e8f0;
+  border-radius: 8px;
+  font-size: 14px;
+  font-family: inherit;
+  resize: vertical;
+  min-height: 72px;
+  margin-bottom: 10px;
+}
+.pos-note-popover__done {
+  width: 100%;
+  padding: 12px;
+  border: none;
+  border-radius: 10px;
+  font-weight: 700;
+  cursor: pointer;
 }
 .pos-btn-charge {
   width: 100%;
@@ -770,25 +977,88 @@ body.checkout-open #checkoutModal {
 .pos-inv-panel input { width: 100%; padding: 10px; margin-bottom: 8px; border-radius: 8px; border: 1px solid #e2e8f0; }
 
 @media (max-width: 1024px) {
-  .pos-app { grid-template-columns: 1fr 300px; }
+  .pos-app { grid-template-columns: 0 1fr minmax(260px, 34vw); }
+  body.sidebar-pinned .pos-app { grid-template-columns: 220px 1fr minmax(260px, 34vw); }
+  body.sidebar-pinned.sidebar-rail .pos-app { grid-template-columns: 72px 1fr minmax(260px, 34vw); }
+  .pos-order__footer {
+    padding: 8px 10px 10px;
+  }
+  .pos-checkout-fields {
+    gap: 6px 8px;
+  }
+  .pos-btn-charge {
+    padding: 12px;
+    font-size: 15px;
+  }
 }
+
+/* 平板直向／窄螢幕：訂單欄改為底部抽屜，優先顯示結帳區 */
+@media (max-width: 900px) {
+  .pos-app {
+    grid-template-columns: 0 1fr;
+    grid-template-rows: 1fr auto;
+  }
+  body.sidebar-pinned .pos-app {
+    grid-template-columns: 72px 1fr;
+    grid-template-rows: 1fr auto;
+  }
+  body.sidebar-pinned:not(.sidebar-rail) .pos-app {
+    grid-template-columns: 200px 1fr;
+  }
+  .pos-sidebar {
+    grid-column: 1;
+    grid-row: 1 / -1;
+  }
+  body.sidebar-pinned .pos-sidebar {
+    position: relative;
+  }
+  .pos-main {
+    grid-column: 2;
+    grid-row: 1;
+    min-height: 0;
+    height: calc(100vh - min(280px, 38vh));
+  }
+  .pos-order {
+    grid-column: 2;
+    grid-row: 2;
+  }
+  .pos-order {
+    position: relative;
+    height: auto;
+    max-height: min(380px, 42vh);
+    min-height: 240px;
+    border-left: none;
+    border-top: 1px solid #e2e8f0;
+    box-shadow: 0 -4px 16px rgba(0, 0, 0, 0.08);
+  }
+  .pos-order__scroll {
+    max-height: 100px;
+    flex: 0 1 auto;
+  }
+  .pos-order__footer {
+    flex: 0 0 auto;
+  }
+  .pos-note-popover {
+    align-items: center;
+    padding-bottom: max(16px, env(safe-area-inset-bottom));
+  }
+}
+
 @media (max-width: 768px) {
-  .pos-app { grid-template-columns: 1fr; }
   .pos-main-header__search {
     width: min(200px, 35vw);
   }
-  .pos-order {
-    position: fixed;
-    bottom: 0;
-    left: 0;
-    right: 0;
-    height: auto;
-    max-height: 50vh;
-    z-index: 100;
-    box-shadow: 0 -4px 20px rgba(0, 0, 0, 0.12);
+  .pos-main {
+    height: calc(100vh - min(300px, 45vh));
   }
-  .pos-order__footer {
-    position: sticky;
-    bottom: 0;
+  .pos-order {
+    max-height: min(320px, 48vh);
+    min-height: 260px;
+  }
+  .pos-order__scroll {
+    max-height: 90px;
+  }
+  .pos-checkout-fields {
+    grid-template-columns: 1fr 1fr;
   }
 }

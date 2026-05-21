@@ -37,7 +37,52 @@
     if (header) header.textContent = text;
   }
 
+  const PIN_KEY = 'pos_sidebar_pinned';
+  const RAIL_BREAKPOINT = 1100;
+
+  function isSidebarPinned() {
+    return document.body.classList.contains('sidebar-pinned');
+  }
+
+  function updateSidebarRail() {
+    if (!isSidebarPinned()) {
+      document.body.classList.remove('sidebar-rail');
+      return;
+    }
+    const rail = window.innerWidth < RAIL_BREAKPOINT;
+    document.body.classList.toggle('sidebar-rail', rail);
+  }
+
+  function updatePinButton() {
+    const btn = document.getElementById('btnSidebarPin');
+    if (!btn) return;
+    const pinned = isSidebarPinned();
+    btn.classList.toggle('is-pinned', pinned);
+    btn.setAttribute('aria-pressed', pinned ? 'true' : 'false');
+    btn.title = pinned ? '取消釘選' : '釘選工作列';
+  }
+
+  function setSidebarPinned(pinned) {
+    document.body.classList.toggle('sidebar-pinned', pinned);
+    localStorage.setItem(PIN_KEY, pinned ? '1' : '0');
+    const sidebar = document.getElementById('posSidebar');
+    if (pinned) {
+      sidebar?.classList.add('open');
+      document.body.classList.add('sidebar-open');
+      document.getElementById('btnOpenMenu')?.setAttribute('aria-expanded', 'true');
+    } else {
+      closeSidebar();
+    }
+    updateSidebarRail();
+    updatePinButton();
+  }
+
+  function toggleSidebarPin() {
+    setSidebarPinned(!isSidebarPinned());
+  }
+
   function openSidebar() {
+    if (isSidebarPinned()) return;
     document.getElementById('posSidebar')?.classList.add('open');
     document.getElementById('sidebarBackdrop')?.classList.add('active');
     document.getElementById('btnOpenMenu')?.setAttribute('aria-expanded', 'true');
@@ -45,6 +90,7 @@
   }
 
   function closeSidebar() {
+    if (isSidebarPinned()) return;
     document.getElementById('posSidebar')?.classList.remove('open');
     document.getElementById('sidebarBackdrop')?.classList.remove('active');
     document.getElementById('btnOpenMenu')?.setAttribute('aria-expanded', 'false');
@@ -261,18 +307,61 @@
 
     document.getElementById('btnClear')?.addEventListener('click', () => window.posCart.clear());
     document.getElementById('fieldDiscount')?.addEventListener('input', renderCart);
+
+    const notePopover = document.getElementById('notePopover');
+    const fieldNote = document.getElementById('fieldNote');
+    const btnToggleNote = document.getElementById('btnToggleNote');
+    const syncNoteBtn = () => {
+      if (!btnToggleNote) return;
+      const has = !!(fieldNote?.value?.trim());
+      btnToggleNote.classList.toggle('has-note', has);
+      btnToggleNote.textContent = has ? '✎ 已填寫備註' : '＋ 訂單備註';
+    };
+    const openNote = () => {
+      notePopover?.classList.remove('hidden');
+      notePopover?.setAttribute('aria-hidden', 'false');
+      fieldNote?.focus();
+    };
+    const closeNote = () => {
+      notePopover?.classList.add('hidden');
+      notePopover?.setAttribute('aria-hidden', 'true');
+      syncNoteBtn();
+    };
+    btnToggleNote?.addEventListener('click', openNote);
+    document.getElementById('btnNoteDone')?.addEventListener('click', closeNote);
+    document.getElementById('notePopoverBackdrop')?.addEventListener('click', closeNote);
+    fieldNote?.addEventListener('input', syncNoteBtn);
+    syncNoteBtn();
     window.posModes.sale?.bindCheckoutModal?.(ctx());
     window.posModes.sale?.bindChargeButton?.();
     document.getElementById('btnOpenMenu')?.addEventListener('click', () => {
+      if (isSidebarPinned()) {
+        document.body.classList.toggle('sidebar-rail');
+        if (!document.body.classList.contains('sidebar-rail') && window.innerWidth < RAIL_BREAKPOINT) {
+          document.body.classList.add('sidebar-rail');
+        } else if (window.innerWidth >= RAIL_BREAKPOINT) {
+          document.body.classList.remove('sidebar-rail');
+        }
+        updateSidebarRail();
+        return;
+      }
       const open = document.getElementById('posSidebar')?.classList.contains('open');
       if (open) closeSidebar();
       else openSidebar();
     });
+    document.getElementById('btnSidebarPin')?.addEventListener('click', toggleSidebarPin);
+    window.addEventListener('resize', updateSidebarRail);
+    if (localStorage.getItem(PIN_KEY) === '1') {
+      setSidebarPinned(true);
+    } else {
+      updatePinButton();
+    }
     document.getElementById('sidebarBackdrop')?.addEventListener('click', closeSidebar);
     document.addEventListener('keydown', (e) => {
       if (e.key === 'Escape') {
         closeSidebar();
         window.posModes.sale.closeCheckoutModal?.();
+        document.getElementById('notePopover')?.classList.add('hidden');
       }
     });
     document.getElementById('btnRefresh')?.addEventListener('click', loadProducts);
@@ -335,5 +424,8 @@
     init();
   });
 
-  window.posApp = { setMode, getStaff, ctx, openSidebar, closeSidebar, roleLabel };
+  window.posApp = {
+    setMode, getStaff, ctx, openSidebar, closeSidebar, roleLabel,
+    toggleSidebarPin, setSidebarPinned, isSidebarPinned,
+  };
 })();
