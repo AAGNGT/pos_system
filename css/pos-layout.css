@@ -138,7 +138,7 @@ body.sidebar-pinned.sidebar-rail .pos-sidebar__pin {
   display: flex;
   align-items: center;
   gap: 8px;
-  width: min(280px, 42vw);
+  width: min(360px, 48vw);
   flex-shrink: 1;
 }
 .pos-main-header__search input {
@@ -754,6 +754,140 @@ body.checkout-open #checkoutModal {
 }
 .pos-btn-primary { background: #3b82f6; color: #fff; }
 .pos-btn-secondary { background: #e2e8f0; color: #334155; }
+.pos-modal__hint {
+  margin: 0 0 16px;
+  font-size: 14px;
+  line-height: 1.5;
+  color: #64748b;
+}
+.pos-modal__btn-secondary {
+  flex: 1;
+  padding: 12px;
+  border-radius: 10px;
+  border: 1px solid #e2e8f0;
+  background: #f8fafc;
+  color: #334155;
+  font-weight: 600;
+  font-size: 14px;
+  cursor: pointer;
+}
+.pos-modal__btn-secondary:hover { background: #f1f5f9; }
+.pos-modal__btn-confirm { flex: 1; }
+#resetDisplayModal { z-index: 1850; }
+
+.pos-btn-reset-display {
+  flex-shrink: 0;
+  padding: 8px 14px;
+  border: none;
+  border-radius: 999px;
+  background: #16a34a;
+  color: #fff;
+  font-size: 13px;
+  font-weight: 600;
+  font-family: inherit;
+  cursor: pointer;
+  white-space: nowrap;
+  transition: background 0.15s ease;
+}
+.pos-btn-reset-display:hover { background: #15803d; }
+.pos-btn-reset-display:active { background: #166534; }
+
+.pos-btn-discount {
+  width: 100%;
+  min-width: 0;
+  padding: 8px 12px;
+  border: 1px solid #e2e8f0;
+  border-radius: 10px;
+  background: #f8fafc;
+  color: #334155;
+  font-size: 13px;
+  font-weight: 600;
+  font-family: inherit;
+  text-align: left;
+  cursor: pointer;
+  transition: border-color 0.15s ease, background 0.15s ease;
+}
+.pos-btn-discount:hover {
+  border-color: #cbd5e1;
+  background: #fff;
+}
+.pos-btn-discount.has-value {
+  color: #0f172a;
+  border-color: #93c5fd;
+  background: #eff6ff;
+}
+.pos-btn-discount:not(.has-value) {
+  color: #64748b;
+}
+.pos-discount-panel { padding: 20px; border-radius: 16px; }
+.pos-discount-panel__hint {
+  margin: 0 0 12px;
+  font-size: 13px;
+  color: #64748b;
+}
+.pos-discount-input-wrap {
+  position: relative;
+  display: block;
+  margin-bottom: 16px;
+}
+.pos-btn-discount-clear {
+  color: #dc2626;
+  border: 1px solid #fecaca;
+  background: #fef2f2;
+}
+.pos-btn-discount-clear:hover {
+  border-color: #fca5a5;
+  background: #fee2e2;
+}
+.pos-discount-input-wrap input {
+  width: 100%;
+  padding: 14px 36px 14px 14px;
+  border: 1px solid #e2e8f0;
+  border-radius: 12px;
+  font-size: 22px;
+  font-weight: 600;
+  font-family: inherit;
+  margin: 0;
+}
+.pos-discount-input-wrap input:focus {
+  outline: none;
+  border-color: #3b82f6;
+  box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.15);
+}
+.pos-discount-input-suffix {
+  position: absolute;
+  right: 14px;
+  top: 50%;
+  transform: translateY(-50%);
+  color: #94a3b8;
+  font-size: 18px;
+  font-weight: 600;
+  pointer-events: none;
+}
+.pos-discount-modal__actions {
+  display: flex;
+  gap: 10px;
+}
+.pos-discount-modal__actions button {
+  flex: 1;
+  padding: 12px;
+  border-radius: 10px;
+  font-size: 15px;
+  font-weight: 600;
+  cursor: pointer;
+  font-family: inherit;
+  border: none;
+}
+.pos-discount-modal__actions .pos-modal__btn-secondary {
+  border: 1px solid #e2e8f0;
+  background: #f8fafc;
+}
+.pos-discount-modal__actions .pos-btn-discount-clear {
+  border: 1px solid #fecaca;
+}
+.pos-discount-modal__actions .pos-btn-primary {
+  border: none;
+}
 
 /* Checkout modal */
 .pos-checkout {

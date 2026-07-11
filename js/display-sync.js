@@ -109,11 +109,39 @@
     }, 8000);
   }
 
+  async function syncFromRegister() {
+    const items = window.posCart?.getItems?.() || [];
+    if (items.length) await syncCart();
+    else if (!thankYouActive) await syncIdle();
+  }
+
+  async function resetDisplay() {
+    thankYouActive = false;
+    if (thankYouTimer) {
+      clearTimeout(thankYouTimer);
+      thankYouTimer = null;
+    }
+    await pushState({
+      id: DISPLAY_ID,
+      session_key: 'main',
+      phase: 'idle',
+      items: [],
+      subtotal: 0,
+      discount: 0,
+      total: 0,
+      amount_received: 0,
+      change_amount: 0,
+      updated_at: new Date().toISOString(),
+    });
+  }
+
   window.posDisplaySync = {
     syncIdle,
     syncCart,
     syncCheckout,
     syncThankYou,
+    syncFromRegister,
+    resetDisplay,
     isThankYouActive,
   };
 })();
