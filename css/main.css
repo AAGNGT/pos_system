@@ -253,7 +253,8 @@ section {
 .reveal {
     opacity: 0;
     transform: translateY(20px);
-    transition: opacity 0.9s var(--ease-out), transform 0.9s var(--ease-out);
+    /* 將顯示速度從 0.9s 延長到 2s，讓漸變過程更慢更柔和 */
+    transition: opacity 2s var(--ease-out), transform 2s var(--ease-out);
 }
 
 .reveal.visible {
@@ -1919,4 +1920,128 @@ section {
     .account-grid { grid-template-columns: 1fr; }
     .reservation-meta { grid-template-columns: 1fr; }
     .header-auth { margin-left: auto; }
+}
+
+/* =========================================
+   高級加載畫面 (Zen Loader)
+========================================= */
+.global-loader {
+    position: fixed;
+    inset: 0;
+    z-index: 99999;
+    background: var(--bg); /* 使用品牌主背景色 */
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: opacity 0.8s var(--ease-out), visibility 0.8s;
+}
+
+.global-loader.hidden {
+    opacity: 0;
+    visibility: hidden;
+}
+
+.loader-content {
+    text-align: center;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+}
+
+.loader-icon {
+    font-family: "Noto Serif TC", serif;
+    font-size: 2rem;
+    color: var(--accent);
+    opacity: 0;
+    animation: fadeUp 1s ease 0.2s forwards;
+}
+
+.loader-text {
+    font-size: 0.8rem;
+    letter-spacing: 0.3em;
+    color: var(--text-tertiary);
+    margin: 16px 0 32px;
+    opacity: 0;
+    animation: fadeUp 1s ease 0.4s forwards;
+}
+
+/* 如線香般極細的進度條 */
+.loader-line-wrap {
+    width: 140px;
+    height: 1px;
+    background: var(--border);
+    position: relative;
+    overflow: hidden;
+    opacity: 0;
+    animation: fadeUp 1s ease 0.6s forwards;
+}
+
+.loader-line {
+    position: absolute;
+    top: 0;
+    left: 0;
+    height: 100%;
+    width: 0%;
+    background: var(--accent);
+    /* 從 1.8s 改為 3s，展現更緩慢寧靜的沉澱感 */
+    animation: incenseLoad 3s cubic-bezier(0.4, 0, 0.2, 1) forwards;
+}
+
+@keyframes fadeUp {
+    0% { opacity: 0; transform: translateY(10px); }
+    100% { opacity: 1; transform: translateY(0); }
+}
+
+@keyframes incenseLoad {
+    0% { width: 0%; }
+    40% { width: 60%; }
+    100% { width: 100%; }
+}
+
+/* =========================================
+   頂部歡迎通知 (Welcome Toast)
+========================================= */
+.welcome-toast {
+    position: fixed;
+    top: 56px; /* 從原本的 24px 下放到 56px，避開手機頂部狀態列 */
+    left: 50%;
+    transform: translate(-50%, -150%);
+    background: rgba(255, 255, 255, 0.85);
+    backdrop-filter: blur(12px);
+    -webkit-backdrop-filter: blur(12px);
+    border: 1px solid var(--border);
+    padding: 12px 28px;
+    border-radius: 999px;
+    box-shadow: var(--shadow-soft);
+    z-index: 100000;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    font-family: "Noto Serif TC", serif;
+    font-size: 0.95rem;
+    font-weight: 500;
+    color: var(--text);
+    transition: transform 0.6s cubic-bezier(0.34, 1.56, 0.64, 1), opacity 0.4s;
+    opacity: 0;
+    pointer-events: none;
+}
+
+.welcome-toast.show {
+    transform: translate(-50%, 0);
+    opacity: 1;
+}
+
+/* =========================================
+   加載畫面加速狀態 (針對二次進入的用戶)
+========================================= */
+.global-loader.fast-load .loader-icon,
+.global-loader.fast-load .loader-text,
+.global-loader.fast-load .loader-line-wrap {
+    animation-duration: 0.5s; /* 讓文字和符號更快速浮現 */
+    animation-delay: 0.1s;
+}
+
+.global-loader.fast-load .loader-line {
+    /* 將原本 3 秒的線香燃燒動畫，壓縮到 0.8 秒內跑完 */
+    animation: incenseLoad 0.8s cubic-bezier(0.4, 0, 0.2, 1) forwards;
 }

@@ -154,7 +154,7 @@
                 ? `<p class="product-tagline">${escapeHtml(p.tagline)}</p>`
                 : '';
             return `
-                <article class="product-card reveal" data-product-id="${p.id}" style="transition-delay:${i * 80}ms">
+                <article class="product-card reveal" data-product-id="${p.id}" style="transition-delay:${i * 120}ms">
                     <div class="product-visual">${visual}</div>
                     <div class="product-body">
                         ${seriesLine}
@@ -490,22 +490,39 @@
         return escapeHtml(s).replace(/'/g, '&#39;');
     }
 
+    // 修復了 setupHeader 內部嵌套的問題
     function setupHeader() {
         const header = document.querySelector('.site-header');
         const toggle = document.querySelector('.nav-toggle');
-        const nav = document.querySelector('.nav-links');
-
+        const navMenu = document.querySelector('nav');
+        const navLinks = document.querySelector('.nav-links');
+    
+        const overlay = document.createElement('div');
+        overlay.className = 'nav-overlay';
+        document.body.appendChild(overlay);
+    
         window.addEventListener('scroll', function () {
             if (header) header.classList.toggle('scrolled', window.scrollY > 20);
         }, { passive: true });
-
-        if (toggle && nav) {
+    
+        function closeMenu() {
+            if (navMenu) navMenu.classList.remove('open');
+            overlay.classList.remove('open');
+            document.body.style.overflow = '';
+        }
+    
+        if (toggle && navMenu && navLinks) {
             toggle.addEventListener('click', function () {
-                nav.classList.toggle('open');
+                const isOpen = navMenu.classList.toggle('open');
+                overlay.classList.toggle('open', isOpen);
+                document.body.style.overflow = isOpen ? 'hidden' : '';
             });
-            nav.querySelectorAll('a').forEach(function (a) {
-                a.addEventListener('click', function () { nav.classList.remove('open'); });
+    
+            navLinks.querySelectorAll('a').forEach(function (a) {
+                a.addEventListener('click', closeMenu);
             });
+            
+            overlay.addEventListener('click', closeMenu);
         }
     }
 
@@ -518,8 +535,13 @@
         const io = new IntersectionObserver(function (entries) {
             entries.forEach(function (entry) {
                 if (entry.isIntersecting) {
-                    entry.target.classList.add('visible');
+                    // 停止觀察該元素
                     io.unobserve(entry.target);
+                    
+                    // ✨ 將延遲時間從 250 毫秒調快到 100 毫秒，更快觸發顯示
+                    setTimeout(function() {
+                        entry.target.classList.add('visible');
+                    }, 200);
                 }
             });
         }, { threshold: 0.12, rootMargin: '0px 0px -40px 0px' });
@@ -544,10 +566,47 @@
         });
     }
 
+    // === 1. 頂部歡迎回來通知邏輯 ===
+    async function checkWelcomeBack() {
+        if (!window.WanwuAuth) return;
+        
+        const session = await WanwuAuth.getSession();
+        
+        if (session && session.user) {
+            if (!sessionStorage.getItem('wanwu_welcomed')) {
+                sessionStorage.setItem('wanwu_welcomed', 'true');
+                
+                let userName = '客人';
+                if (session.user.user_metadata && session.user.user_metadata.display_name) {
+                    userName = session.user.user_metadata.display_name;
+                } else if (session.user.email) {
+                    userName = session.user.email.split('@')[0];
+                }
+                
+                showWelcomeToast(`${userName}，歡迎你回來！ ✨`);
+            }
+        }
+    }
+
+    function showWelcomeToast(message) {
+        const toast = document.getElementById('welcomeToast');
+        if (!toast) return;
+        
+        toast.textContent = message;
+        
+        setTimeout(() => {
+            toast.classList.add('show');
+            setTimeout(() => {
+                toast.classList.remove('show');
+            }, 4000);
+        }, 1200);
+    }
+
+    // 唯一的 DOMContentLoaded
     document.addEventListener('DOMContentLoaded', function () {
         setupHeader();
         setupModal();
-        setupReveals();
+        // 注意這裡不呼叫 setupReveals()，留給載入畫面結束後再呼叫
         renderMarketDates();
         renderStallCalendar();
         loadProducts();
@@ -563,5 +622,43 @@
                 updateReserveFormMode();
             });
         }
+        
+        checkWelcomeBack();
     });
+
+    // === 2. 加載畫面 (Loading Screen) 控制 ===
+
+    window.addEventListener('load', function() {
+    const loader = document.getElementById('globalLoader');
+    if (loader) {
+        // 檢查該標籤頁 (Session) 是否已經載入過
+        const hasLoadedOnce = sessionStorage.getItem('wanwu_loaded_once');
+        let loadTime = 3500; // 第一次進入，維持 3.5 秒的寧靜沉澱
+
+        if (hasLoadedOnce) {
+            // 如果已經進入過，將等待時間大幅縮減至 1 秒
+            loadTime = 1000;
+            // 加入加速 class，讓 CSS 動畫跟著變快
+            loader.classList.add('fast-load');
+        } else {
+            // 標記為已經載入過
+            sessionStorage.setItem('wanwu_loaded_once', 'true');
+        }
+
+        setTimeout(() => {
+            loader.classList.add('hidden');
+            
+            // 載入畫面隱藏的一刻，啟動首頁的文字漸出動畫！
+            setupReveals(); 
+            
+            setTimeout(() => {
+                loader.style.display = 'none';
+            }, 800);
+        }, loadTime); 
+    } else {
+        // 防呆：如果沒有 loader，就直接執行
+        setupReveals();
+    }
+});
+
 })();
