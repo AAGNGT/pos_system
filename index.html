@@ -35,6 +35,7 @@
                     <li><a href="#artists">畫家投稿</a></li>
                 </ul>
             </nav>
+            <div class="header-auth" id="headerAuth"></div>
         </div>
     </header>
 
@@ -197,8 +198,12 @@
 
                     <div class="form-panel reveal">
                         <h3 class="form-title">即場預訂</h3>
-                        <p class="form-subtitle">填寫以下資料，我們將於市集為您留貨。</p>
+                        <p class="form-subtitle" id="reserveFormSubtitle">填寫以下資料，我們將於市集為您留貨。</p>
+                        <div class="account-member-banner account-member-banner--compact hidden" id="reserveLoggedInBanner">
+                            <p>已登入 — 聯絡資料將從帳戶自動帶入，只需選擇產品與取貨日。</p>
+                        </div>
                         <form id="reserveForm" novalidate>
+                            <div id="guestContactFields">
                             <div class="form-row">
                                 <div class="form-group">
                                     <label for="customer_name">姓名 *</label>
@@ -213,14 +218,15 @@
                                 <label for="email">電郵（選填）</label>
                                 <input type="email" id="email" name="email" autocomplete="email">
                             </div>
+                            </div>
                             <div class="form-group">
                                 <label>取貨日期 *</label>
                                 <div class="date-picker" id="marketDatePicker"></div>
                             </div>
                             <div class="form-row">
                                 <div class="form-group">
-                                    <label for="reserveProduct">意向產品</label>
-                                    <select id="reserveProduct" name="product_interest">
+                                    <label for="reserveProduct">意向產品 *</label>
+                                    <select id="reserveProduct" name="product_interest" required>
                                         <option value="">請選擇</option>
                                     </select>
                                 </div>
@@ -234,6 +240,7 @@
                                 <textarea id="notes" name="notes" placeholder="例如：希望取貨時段、特殊要求…"></textarea>
                             </div>
                             <button type="submit" class="btn btn-primary" style="width:100%">提交預訂</button>
+                            <p class="form-legal-note">提交即表示您同意我們依 <a href="privacy.html">《私隱權政策》</a> 處理您的個人資料。</p>
                             <div class="form-feedback" id="reserveFeedback" role="status"></div>
                         </form>
                     </div>
@@ -326,6 +333,7 @@
                                 </select>
                             </div>
                             <button type="submit" class="btn btn-primary" style="width:100%">提交投稿</button>
+                            <p class="form-legal-note">提交即表示您同意我們依 <a href="privacy.html">《私隱權政策》</a> 處理您的個人資料。</p>
                             <div class="form-feedback" id="artistFeedback" role="status"></div>
                         </form>
                     </div>
@@ -335,8 +343,79 @@
     </main>
 
     <footer class="site-footer">
-        <p>卍物所 · 香磚 • 寧磚 · 萬物皆可能</p>
+        <p class="footer-brand">卍物所 · 香磚 • 寧磚 · 萬物皆可能</p>
+        <nav class="footer-legal" aria-label="法律文件">
+            <a href="privacy.html">私隱權政策</a>
+            <span aria-hidden="true">·</span>
+            <a href="data-security.html">數據安全聲明</a>
+            <span aria-hidden="true">·</span>
+            <a href="account.html">我的帳戶</a>
+        </nav>
+        <p class="footer-copy">© 2026 卍物所 · 最後更新：2026-07-12</p>
     </footer>
+
+    <!-- Auth modal -->
+    <div class="modal-overlay auth-modal" id="authModal" role="dialog" aria-modal="true" aria-labelledby="authModalTitle">
+        <div class="modal-sheet auth-sheet">
+            <button type="button" class="modal-close" id="authModalClose" aria-label="關閉">×</button>
+            <h2 id="authModalTitle" class="auth-modal-title">帳戶</h2>
+
+            <div class="auth-tabs" role="tablist">
+                <button type="button" class="auth-tab active" data-tab="login" role="tab" aria-selected="true">登入</button>
+                <button type="button" class="auth-tab" data-tab="register" role="tab" aria-selected="false">註冊</button>
+            </div>
+
+            <button type="button" class="auth-google-btn" data-auth-google>
+                <svg width="18" height="18" viewBox="0 0 24 24" aria-hidden="true"><path fill="#4285F4" d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92a5.06 5.06 0 0 1-2.2 3.32v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.1z"/><path fill="#34A853" d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z"/><path fill="#FBBC05" d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l2.85-2.22.81-.62z"/><path fill="#EA4335" d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z"/></svg>
+                使用 Google 帳戶繼續
+            </button>
+
+            <p class="auth-divider"><span>或使用電郵</span></p>
+
+            <div id="authLoginPanel">
+                <form id="authLoginForm" class="auth-form" novalidate>
+                    <div class="form-group">
+                        <label for="login_email">電郵</label>
+                        <input type="email" id="login_email" name="email" required autocomplete="email">
+                    </div>
+                    <div class="form-group">
+                        <label for="login_password">密碼</label>
+                        <input type="password" id="login_password" name="password" required autocomplete="current-password" minlength="6">
+                    </div>
+                    <p class="auth-forgot"><a href="#" id="authForgotLink">忘記密碼？</a></p>
+                    <button type="submit" class="btn btn-primary" style="width:100%">登入</button>
+                </form>
+            </div>
+
+            <div id="authRegisterPanel" hidden>
+                <form id="authRegisterForm" class="auth-form" novalidate>
+                    <div class="form-group">
+                        <label for="reg_display_name">顯示名稱</label>
+                        <input type="text" id="reg_display_name" name="display_name" autocomplete="name">
+                    </div>
+                    <div class="form-group">
+                        <label for="reg_email">電郵 *</label>
+                        <input type="email" id="reg_email" name="email" required autocomplete="email">
+                    </div>
+                    <div class="form-group">
+                        <label for="reg_password">密碼 *</label>
+                        <input type="password" id="reg_password" name="password" required autocomplete="new-password" minlength="6">
+                    </div>
+                    <div class="form-group">
+                        <label for="reg_password_confirm">確認密碼 *</label>
+                        <input type="password" id="reg_password_confirm" name="password_confirm" required autocomplete="new-password" minlength="6">
+                    </div>
+                    <label class="auth-agree">
+                        <input type="checkbox" name="agree" required>
+                        <span>我已閱讀並同意 <a href="privacy.html" target="_blank">《私隱權政策》</a> 及 <a href="data-security.html" target="_blank">《數據安全聲明》</a></span>
+                    </label>
+                    <button type="submit" class="btn btn-primary" style="width:100%">註冊</button>
+                </form>
+            </div>
+
+            <div class="form-feedback" id="authFeedback" role="status"></div>
+        </div>
+    </div>
 
     <!-- Product modal -->
     <div class="modal-overlay" id="productModal" role="dialog" aria-modal="true" aria-labelledby="modalTitle">
@@ -348,6 +427,7 @@
 
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
     <script src="supabase-config.js"></script>
+    <script src="js/auth.js"></script>
     <script src="js/app.js"></script>
 </body>
 </html>

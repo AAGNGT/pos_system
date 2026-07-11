@@ -1,9 +1,12 @@
--- 卍物所 — Supabase schema
--- Run in Supabase SQL Editor, then enable RLS policies below.
+-- 卍物所 — Supabase 完整初始化（新專案請執行本檔案）
+-- Supabase Dashboard → SQL Editor → 貼上全部 → Run
 --
--- 身份認證：由 Supabase Auth（auth.users）負責，唔在此 SQL 建立登入表。
--- wanwu_profiles 僅為 Auth 用戶的擴充資料（顯示名稱、電話），id = auth.users.id。
--- 1. 產品
+-- 若你已執行過 database.sql 且只有 wanwu_orders 未建：
+--   只需執行下方「§4 會員訂單」至檔案結尾（或改用 database-orders-only.sql）
+
+-- =============================================================================
+-- §1 產品
+-- =============================================================================
 create table if not exists public.wanwu_products (
     id bigint generated always as identity primary key,
     name text not null,
@@ -20,12 +23,9 @@ create table if not exists public.wanwu_products (
     updated_at timestamptz not null default now()
 );
 
--- 若表已存在，追加欄位（可單獨執行）
--- alter table public.wanwu_products add column if not exists series text default '香磚 • 寧磚';
--- alter table public.wanwu_products add column if not exists shape text;
--- alter table public.wanwu_products add column if not exists tagline text;
-
--- 2. 維園市集即場預訂
+-- =============================================================================
+-- §2 訪客預訂（未登入）
+-- =============================================================================
 create table if not exists public.wanwu_market_reservations (
     id bigint generated always as identity primary key,
     customer_name text not null,
@@ -40,7 +40,9 @@ create table if not exists public.wanwu_market_reservations (
     created_at timestamptz not null default now()
 );
 
--- 3. 畫家投稿
+-- =============================================================================
+-- §3 畫家投稿
+-- =============================================================================
 create table if not exists public.wanwu_art_submissions (
     id bigint generated always as identity primary key,
     artist_name text not null,
@@ -56,7 +58,21 @@ create table if not exists public.wanwu_art_submissions (
     created_at timestamptz not null default now()
 );
 
--- 4. 會員訂單（登入用戶快速預訂 — 聯絡資料由 Auth / profile 自動帶入）
+-- =============================================================================
+-- §4 用戶 profile（Supabase Auth 擴充，非登入驗證）
+-- =============================================================================
+create table if not exists public.wanwu_profiles (
+    id uuid primary key references auth.users(id) on delete cascade,
+    display_name text,
+    phone text,
+    avatar_url text,
+    created_at timestamptz not null default now(),
+    updated_at timestamptz not null default now()
+);
+
+-- =============================================================================
+-- §5 會員訂單（登入用戶 — 聯絡資料由 trigger 自動帶入）
+-- =============================================================================
 create table if not exists public.wanwu_orders (
     id bigint generated always as identity primary key,
     user_id uuid not null references auth.users(id) on delete cascade,
@@ -77,34 +93,37 @@ create table if not exists public.wanwu_orders (
 create index if not exists wanwu_orders_user_id_idx on public.wanwu_orders (user_id);
 create index if not exists wanwu_orders_pickup_date_idx on public.wanwu_orders (pickup_date);
 
--- 5. 用戶資料（Supabase Auth 關聯）
-create table if not exists public.wanwu_profiles (
-    id uuid primary key references auth.users(id) on delete cascade,
-    display_name text,
-    phone text,
-    avatar_url text,
-    created_at timestamptz not null default now(),
-    updated_at timestamptz not null default now()
-);
-
+-- =============================================================================
 -- RLS
+-- =============================================================================
 alter table public.wanwu_products enable row level security;
 alter table public.wanwu_market_reservations enable row level security;
-alter table public.wanwu_orders enable row level security;
 alter table public.wanwu_art_submissions enable row level security;
 alter table public.wanwu_profiles enable row level security;
+alter table public.wanwu_orders enable row level security;
 
 drop policy if exists "wanwu_products_public_read" on public.wanwu_products;
 create policy "wanwu_products_public_read"
-    on public.wanwu_products for select to anon, authenticated using (is_available = true);
+    on public.wanwu_products for select to anon, authenticated
+    using (is_available = true);
 
 drop policy if exists "wanwu_market_reservations_insert" on public.wanwu_market_reservations;
 create policy "wanwu_market_reservations_insert"
-    on public.wanwu_market_reservations for insert to anon, authenticated with check (true);
+    on public.wanwu_market_reservations for insert to anon, authenticated
+    with check (true);
+
+drop policy if exists "wanwu_reservations_read_own_email" on public.wanwu_market_reservations;
+create policy "wanwu_reservations_read_own_email"
+    on public.wanwu_market_reservations for select to authenticated
+    using (
+        email is not null
+        and lower(email) = lower(auth.jwt() ->> 'email')
+    );
 
 drop policy if exists "wanwu_art_submissions_insert" on public.wanwu_art_submissions;
 create policy "wanwu_art_submissions_insert"
-    on public.wanwu_art_submissions for insert to anon, authenticated with check (true);
+    on public.wanwu_art_submissions for insert to anon, authenticated
+    with check (true);
 
 drop policy if exists "wanwu_profiles_select_own" on public.wanwu_profiles;
 create policy "wanwu_profiles_select_own"
@@ -132,10 +151,11 @@ create policy "wanwu_orders_select_own"
     on public.wanwu_orders for select to authenticated
     using (user_id = auth.uid());
 
--- 若表已存在，追加欄位（可單獨執行）：
--- alter table public.wanwu_market_reservations add column if not exists user_id uuid references auth.users(id);
+-- =============================================================================
+-- Triggers & Functions
+-- =============================================================================
 
--- 會員訂單：插入前自動寫入 user_id 及 profile 聯絡快照
+-- 會員訂單：插入前自動寫入 user_id + profile 聯絡快照
 create or replace function public.wanwu_orders_before_insert()
 returns trigger
 language plpgsql
@@ -172,7 +192,7 @@ create trigger wanwu_orders_before_insert
     before insert on public.wanwu_orders
     for each row execute function public.wanwu_orders_before_insert();
 
--- 新用戶註冊時自動建立 profile
+-- 新 Auth 用戶自動建立 profile
 create or replace function public.handle_new_wanwu_user()
 returns trigger
 language plpgsql
@@ -182,7 +202,12 @@ begin
     insert into public.wanwu_profiles (id, display_name, avatar_url)
     values (
         new.id,
-        coalesce(new.raw_user_meta_data ->> 'display_name', new.raw_user_meta_data ->> 'full_name', new.raw_user_meta_data ->> 'name', split_part(new.email, '@', 1)),
+        coalesce(
+            new.raw_user_meta_data ->> 'display_name',
+            new.raw_user_meta_data ->> 'full_name',
+            new.raw_user_meta_data ->> 'name',
+            split_part(new.email, '@', 1)
+        ),
         coalesce(new.raw_user_meta_data ->> 'avatar_url', new.raw_user_meta_data ->> 'picture')
     )
     on conflict (id) do nothing;
@@ -195,16 +220,9 @@ create trigger on_auth_user_created_wanwu
     after insert on auth.users
     for each row execute function public.handle_new_wanwu_user();
 
--- 已登入用戶可查閱與自己電郵相符的舊版預訂記錄
-drop policy if exists "wanwu_reservations_read_own_email" on public.wanwu_market_reservations;
-create policy "wanwu_reservations_read_own_email"
-    on public.wanwu_market_reservations for select to authenticated
-    using (
-        email is not null
-        and lower(email) = lower(auth.jwt() ->> 'email')
-    );
-
--- 香磚 • 寧磚系列 seed（可重複執行，已存在則跳過）
+-- =============================================================================
+-- 產品 seed（可重複執行，已存在則跳過）
+-- =============================================================================
 insert into public.wanwu_products (name, description, price, category, series, shape, tagline, sort_order, image_url)
 select '寧磚 · 貓爪', '天然石膏擴香石，貓爪造型。柔軟陪伴，靜置書桌或床頭，滴幾滴精油，寧靜緩緩釋放。', 168, '香磚', '香磚 • 寧磚', '貓爪', '柔軟陪伴，靜置桌角', 1, null
 where not exists (select 1 from public.wanwu_products where name = '寧磚 · 貓爪');

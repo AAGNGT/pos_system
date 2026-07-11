@@ -76,13 +76,13 @@
         '太陽花': '🌻'
     };
 
-    let supabaseClient = null;
     let products = [];
 
     function initSupabase() {
-        if (typeof supabase === 'undefined' || typeof SUPABASE_CONFIG === 'undefined') return null;
-        supabaseClient = supabase.createClient(SUPABASE_CONFIG.url, SUPABASE_CONFIG.anonKey);
-        return supabaseClient;
+        if (typeof getSupabaseClient === 'function') {
+            return getSupabaseClient();
+        }
+        return null;
     }
 
     function formatPrice(n) {
@@ -138,6 +138,7 @@
 
         renderProducts();
         populateProductSelects();
+        updateReserveFormMode();
     }
 
     function renderProducts() {
@@ -178,13 +179,35 @@
 
     function populateProductSelects() {
         const options = products.map(function (p) {
-            return `<option value="${escapeAttr(p.name)}">${escapeHtml(p.name)} — ${formatPrice(p.price)}</option>`;
+            return `<option value="${escapeAttr(p.name)}" data-id="${p.id}" data-price="${p.price}" data-name="${escapeAttr(p.name)}">${escapeHtml(p.name)} — ${formatPrice(p.price)}</option>`;
         }).join('');
 
         const reserveSel = document.getElementById('reserveProduct');
         if (reserveSel) {
             reserveSel.innerHTML = '<option value="">請選擇</option>' + options;
         }
+    }
+
+    async function updateReserveFormMode() {
+        const guest = document.getElementById('guestContactFields');
+        const banner = document.getElementById('reserveLoggedInBanner');
+        const subtitle = document.getElementById('reserveFormSubtitle');
+        const nameInput = document.getElementById('customer_name');
+        const phoneInput = document.getElementById('phone');
+        if (!guest) return;
+
+        const session = window.WanwuAuth ? await WanwuAuth.getSession() : null;
+        const loggedIn = !!(session && session.user);
+
+        guest.classList.toggle('hidden', loggedIn);
+        if (banner) banner.classList.toggle('hidden', !loggedIn);
+        if (subtitle) {
+            subtitle.textContent = loggedIn
+                ? '已登入 — 只需選擇產品與取貨日，聯絡資料從帳戶自動帶入。'
+                : '填寫以下資料，我們將於市集為您留貨。';
+        }
+        if (nameInput) nameInput.required = !loggedIn;
+        if (phoneInput) phoneInput.required = !loggedIn;
     }
 
     function openProductModal(product) {
@@ -312,26 +335,60 @@
         const feedback = document.getElementById('reserveFeedback');
         const btn = form.querySelector('button[type="submit"]');
 
-        const payload = {
-            customer_name: form.customer_name.value.trim(),
-            phone: form.phone.value.trim(),
-            email: form.email.value.trim() || null,
-            pickup_date: form.pickup_date.value,
-            product_interest: form.product_interest.value || null,
-            quantity: parseInt(form.quantity.value, 10) || 1,
-            notes: form.notes.value.trim() || null
-        };
+        const pickupDate = form.pickup_date.value;
+        const productSel = form.product_interest;
+        const productOpt = productSel.options[productSel.selectedIndex];
+        const quantity = parseInt(form.quantity.value, 10) || 1;
+        const notes = form.notes.value.trim() || null;
 
-        if (!payload.customer_name || !payload.phone || !payload.pickup_date) {
-            showFeedback(feedback, '請填寫姓名、電話及取貨日期。', 'error');
+        if (!pickupDate) {
+            showFeedback(feedback, '請選擇取貨日期。', 'error');
             return;
         }
+        if (!productSel.value) {
+            showFeedback(feedback, '請選擇產品。', 'error');
+            return;
+        }
+
+        const session = window.WanwuAuth ? await WanwuAuth.getSession() : null;
+        const loggedIn = !!(session && session.user);
 
         btn.disabled = true;
         showFeedback(feedback, '提交中…', 'success');
 
         try {
             const client = initSupabase();
+
+            if (loggedIn && window.WanwuAuth) {
+                await WanwuAuth.createOrder({
+                    product_id: Number(productOpt.dataset.id) || null,
+                    product_name: productOpt.dataset.name || productSel.value,
+                    unit_price: Number(productOpt.dataset.price) || null,
+                    quantity: quantity,
+                    pickup_date: pickupDate,
+                    notes: notes
+                });
+                form.reset();
+                showFeedback(feedback, '訂單已提交。我們會於市集當日為您備貨。', 'success');
+                return;
+            }
+
+            const payload = {
+                customer_name: form.customer_name.value.trim(),
+                phone: form.phone.value.trim(),
+                email: form.email.value.trim() || null,
+                pickup_date: pickupDate,
+                product_interest: productSel.value || null,
+                quantity: quantity,
+                notes: notes
+            };
+
+            if (!payload.customer_name || !payload.phone) {
+                showFeedback(feedback, '請填寫姓名及電話。', 'error');
+                btn.disabled = false;
+                return;
+            }
+
             if (client) {
                 const { error } = await client.from('wanwu_market_reservations').insert(payload);
                 if (error) throw error;
@@ -342,10 +399,24 @@
             showFeedback(feedback, '預訂已收到。我們會於市集當日為您備貨，請留意電話聯絡。', 'success');
         } catch (err) {
             console.error(err);
-            saveLocal('wanwu_reservations', payload);
-            showFeedback(feedback, '已暫存您的預訂（離線模式）。請稍後再試或於市集現場告知我們。', 'success');
+            if (loggedIn) {
+                showFeedback(feedback, err.message || '提交失敗，請稍後再試。', 'error');
+            } else {
+                const payload = {
+                    customer_name: form.customer_name.value.trim(),
+                    phone: form.phone.value.trim(),
+                    email: form.email.value.trim() || null,
+                    pickup_date: pickupDate,
+                    product_interest: productSel.value || null,
+                    quantity: quantity,
+                    notes: notes
+                };
+                saveLocal('wanwu_reservations', payload);
+                showFeedback(feedback, '已暫存您的預訂（離線模式）。請稍後再試或於市集現場告知我們。', 'success');
+            }
         } finally {
             btn.disabled = false;
+            updateReserveFormMode();
         }
     }
 
@@ -485,5 +556,12 @@
         const artistForm = document.getElementById('artistForm');
         if (reserveForm) reserveForm.addEventListener('submit', submitReservation);
         if (artistForm) artistForm.addEventListener('submit', submitArtistWork);
+
+        updateReserveFormMode();
+        if (window.WanwuAuth) {
+            WanwuAuth.onAuthStateChange(function () {
+                updateReserveFormMode();
+            });
+        }
     });
 })();
