@@ -1,459 +1,567 @@
+/**
+ * 卍物所 — 產品、市集預訂、畫家投稿
+ */
 (function () {
-  const STAFF_KEY = 'pos_staff';
-  let mode = 'sale';
-  let categories = [];
-  let products = [];
-  let activeCategoryId = null;
-  let productSearch = '';
-  let sortBy = 'default';
+    'use strict';
 
-  function getStaff() {
-    try {
-      return JSON.parse(sessionStorage.getItem(STAFF_KEY) || 'null');
-    } catch {
-      return null;
-    }
-  }
+    const MARKET_DATES = [
+        { value: '2026-08-22', label: '8 月 22 日', day: '週六' },
+        { value: '2026-08-23', label: '8 月 23 日', day: '週日' },
+        { value: '2026-09-12', label: '9 月 12 日', day: '週六' },
+        { value: '2026-09-13', label: '9 月 13 日', day: '週日' }
+    ];
 
-  function setStaff(staff) {
-    sessionStorage.setItem(STAFF_KEY, JSON.stringify(staff));
-    updateStaffUI();
-  }
+    /** 擺檔日：key = YYYY-MM-DD */
+    const STALL_DAYS = {
+        '2026-08-22': { type: 'aug', title: '8月22日 · 維園設攤（週六）' },
+        '2026-08-23': { type: 'aug', title: '8月23日 · 維園設攤（週日）' },
+        '2026-09-12': { type: 'sep', title: '9月12日 · 維園設攤（週六）' },
+        '2026-09-13': { type: 'sep', title: '9月13日 · 維園設攤（週日）' }
+    };
 
-  function ctx() {
-    return { getMode: () => mode, getStaff, reloadProducts: loadProducts };
-  }
+    const WEEKDAY_LABELS = ['日', '一', '二', '三', '四', '五', '六'];
 
-  function roleLabel(role) {
-    return role === 'ADMIN' ? '管理員' : '員工';
-  }
+    const SERIES_NAME = '香磚 • 寧磚';
 
-  function updateStaffUI() {
-    const s = getStaff();
-    const el = document.getElementById('sidebarUser');
-    const header = document.getElementById('headerUser');
-    const text = s ? `${s.display_name}（${roleLabel(s.role)}）` : '未登入';
-    if (el) el.textContent = text;
-    if (header) header.textContent = text;
-  }
-
-  const PIN_KEY = 'pos_sidebar_pinned';
-  const RAIL_BREAKPOINT = 1100;
-
-  function isSidebarPinned() {
-    return document.body.classList.contains('sidebar-pinned');
-  }
-
-  function updateSidebarRail() {
-    if (!isSidebarPinned()) {
-      document.body.classList.remove('sidebar-rail');
-      return;
-    }
-    const rail = window.innerWidth < RAIL_BREAKPOINT;
-    document.body.classList.toggle('sidebar-rail', rail);
-  }
-
-  function updatePinButton() {
-    const btn = document.getElementById('btnSidebarPin');
-    if (!btn) return;
-    const pinned = isSidebarPinned();
-    btn.classList.toggle('is-pinned', pinned);
-    btn.setAttribute('aria-pressed', pinned ? 'true' : 'false');
-    btn.title = pinned ? '取消釘選' : '釘選工作列';
-  }
-
-  function setSidebarPinned(pinned) {
-    document.body.classList.toggle('sidebar-pinned', pinned);
-    localStorage.setItem(PIN_KEY, pinned ? '1' : '0');
-    const sidebar = document.getElementById('posSidebar');
-    if (pinned) {
-      sidebar?.classList.add('open');
-      document.body.classList.add('sidebar-open');
-      document.getElementById('btnOpenMenu')?.setAttribute('aria-expanded', 'true');
-    } else {
-      closeSidebar();
-    }
-    updateSidebarRail();
-    updatePinButton();
-  }
-
-  function toggleSidebarPin() {
-    setSidebarPinned(!isSidebarPinned());
-  }
-
-  function openSidebar() {
-    if (isSidebarPinned()) return;
-    document.getElementById('posSidebar')?.classList.add('open');
-    document.getElementById('sidebarBackdrop')?.classList.add('active');
-    document.getElementById('btnOpenMenu')?.setAttribute('aria-expanded', 'true');
-    document.body.classList.add('sidebar-open');
-  }
-
-  function closeSidebar() {
-    if (isSidebarPinned()) return;
-    document.getElementById('posSidebar')?.classList.remove('open');
-    document.getElementById('sidebarBackdrop')?.classList.remove('active');
-    document.getElementById('btnOpenMenu')?.setAttribute('aria-expanded', 'false');
-    document.body.classList.remove('sidebar-open');
-  }
-
-  const MODE_LABELS = {
-    sale: '銷售', restock: '補貨', return: '退貨', damage: '損壞',
-    products: '產品', history: '歷史紀錄', dashboard: '儀表板',
-    settings: '設定', staff: '員工', eod: '日終報告',
-  };
-
-  const MODE_BADGES = {
-    sale: '銷售', restock: '補貨', return: '退貨', damage: '損壞',
-  };
-
-  function placeholderImg(name) {
-    return window.posProductThumb?.svgPlaceholder?.(name) || 'images.png';
-  }
-
-  function renderProducts() {
-    const grid = document.getElementById('productGrid');
-    if (!grid) return;
-    let list = [...products];
-    if (activeCategoryId) list = list.filter((p) => p.category_id === activeCategoryId);
-    if (productSearch) {
-      const q = productSearch.toLowerCase();
-      list = list.filter((p) => p.name.toLowerCase().includes(q) || p.code.toLowerCase().includes(q));
-    }
-    if (sortBy === 'price_asc') list.sort((a, b) => a.price - b.price);
-    if (sortBy === 'price_desc') list.sort((a, b) => b.price - a.price);
-    if (sortBy === 'name') list.sort((a, b) => a.name.localeCompare(b.name, 'zh-TW'));
-
-    if (!list.length) {
-      grid.innerHTML = '<p class="pos-order__empty" style="grid-column:1/-1">沒有商品</p>';
-      return;
-    }
-
-    const invModes = ['restock', 'return', 'damage'];
-    grid.innerHTML = list.map((p) => `
-      <article class="pos-product-card" data-id="${p.id}">
-        <div class="pos-product-card__img">
-          <img src="${p.image_url || placeholderImg(p.name)}" alt="${p.name}" loading="lazy">
-          <span class="pos-product-card__stock">${p.stock_count}</span>
-          <span class="pos-product-card__price">$${Number(p.price).toFixed(2)}</span>
-        </div>
-        <div class="pos-product-card__body">
-          <p class="pos-product-card__name">${p.name}</p>
-          <p class="pos-product-card__code">${p.code}</p>
-        </div>
-      </article>`).join('');
-
-    grid.querySelectorAll('.pos-product-card').forEach((card) => {
-      card.addEventListener('click', () => {
-        const id = Number(card.dataset.id);
-        const product = products.find((x) => x.id === id);
-        if (!product) return;
-        if (mode === 'sale') {
-          window.posCart.add(product, 1);
-        } else if (invModes.includes(mode)) {
-          window.posModes.inventory.selectProduct(product);
+    const FALLBACK_PRODUCTS = [
+        {
+            id: 1,
+            series: SERIES_NAME,
+            name: '寧磚 · 貓爪',
+            shape: '貓爪',
+            tagline: '柔軟陪伴，靜置桌角',
+            description: '天然石膏擴香石，貓爪造型。柔軟陪伴，靜置書桌或床頭，滴幾滴精油，寧靜緩緩釋放。',
+            price: 12,
+            category: '香磚',
+            image_url: null
+        },
+        {
+            id: 2,
+            series: SERIES_NAME,
+            name: '寧磚 · 玫瑰',
+            shape: '玫瑰',
+            tagline: '綻放溫柔，留駐日常',
+            description: '天然石膏擴香石，玫瑰造型。綻放溫柔，適合禮物或梳妝台，承載木質或花香精油。',
+            price: 15,
+            category: '香磚',
+            image_url: null
+        },
+        {
+            id: 3,
+            series: SERIES_NAME,
+            name: '寧磚 · 太陽花',
+            shape: '太陽花',
+            tagline: '明朗希望，向光而生',
+            description: '天然石膏擴香石，太陽花造型。明朗希望，置於玄關或窗台，迎接每一個出發與歸來。',
+            price: 15,
+            category: '香磚',
+            image_url: null
+        },
+        {
+            id: 4,
+            series: SERIES_NAME,
+            name: '限量聯名禮盒',
+            shape: null,
+            tagline: '獨特收藏，限量發行',
+            description: '畫家授權作品印制於寧磚與明信片，每款各一件，附署名卡。呼應萬有可能的創作精神。',
+            price: 328,
+            category: '禮盒',
+            image_url: null
         }
-      });
-    });
-  }
+    ];
 
-  function renderCategoryPills() {
-    const bar = document.getElementById('categoryPills');
-    if (!bar) return;
-    const pills = [{ id: null, name: '全部' }, ...categories];
-    bar.innerHTML = pills.map((c) => `
-      <button type="button" class="pos-pill ${activeCategoryId === c.id ? 'active' : ''}" data-cat="${c.id ?? ''}">${c.name}</button>
-    `).join('');
-    bar.querySelectorAll('.pos-pill').forEach((btn) => {
-      btn.addEventListener('click', () => {
-        const v = btn.dataset.cat;
-        activeCategoryId = v === '' ? null : Number(v);
-        bar.querySelectorAll('.pos-pill').forEach((b) => b.classList.remove('active'));
-        btn.classList.add('active');
+    const SHAPE_EMOJI = {
+        '貓爪': '🐾',
+        '玫瑰': '🌹',
+        '太陽花': '🌻'
+    };
+
+    let products = [];
+
+    function initSupabase() {
+        if (typeof getSupabaseClient === 'function') {
+            return getSupabaseClient();
+        }
+        return null;
+    }
+
+    function formatPrice(n) {
+        return 'HK$' + Number(n).toLocaleString('zh-HK', { minimumFractionDigits: 0, maximumFractionDigits: 0 });
+    }
+
+    function productVisual(product) {
+        if (product.image_url) {
+            return `<img src="${escapeAttr(product.image_url)}" alt="${escapeAttr(product.name)}" loading="lazy">`;
+        }
+        if (product.shape && SHAPE_EMOJI[product.shape]) {
+            return `<div class="product-shape-emoji" aria-hidden="true">${SHAPE_EMOJI[product.shape]}</div>`;
+        }
+        return productSvg(product.category);
+    }
+
+    function productSvg(category) {
+        const isGift = category === '禮盒';
+        return `<svg viewBox="0 0 120 120" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
+            <ellipse cx="60" cy="95" rx="35" ry="8" fill="currentColor" opacity="0.15"/>
+            <path d="M35 55 Q60 25 85 55 L80 85 Q60 95 40 85 Z" fill="currentColor" opacity="0.25"/>
+            ${isGift ? '<rect x="42" y="48" width="36" height="28" rx="3" fill="currentColor" opacity="0.2"/>' : ''}
+            <circle cx="60" cy="48" r="12" fill="currentColor" opacity="0.35"/>
+        </svg>`;
+    }
+
+    async function loadProducts() {
+        const grid = document.getElementById('productsGrid');
+        if (!grid) return;
+
+        grid.innerHTML = '<p class="loading-placeholder">載入中…</p>';
+
+        try {
+            const client = initSupabase();
+            if (client) {
+                const { data, error } = await client
+                    .from('wanwu_products')
+                    .select('*')
+                    .eq('is_available', true)
+                    .order('sort_order', { ascending: true });
+                if (!error && data && data.length) {
+                    products = data;
+                } else {
+                    products = FALLBACK_PRODUCTS;
+                }
+            } else {
+                products = FALLBACK_PRODUCTS;
+            }
+        } catch (e) {
+            console.warn('[卍物所] 產品載入失敗，使用本地資料', e);
+            products = FALLBACK_PRODUCTS;
+        }
+
         renderProducts();
-      });
-    });
-  }
+        populateProductSelects();
+        updateReserveFormMode();
+    }
 
-  function renderCart() {
-    const items = window.posCart.getItems();
-    const list = document.getElementById('cartItems');
-    const discount = Number(document.getElementById('fieldDiscount')?.value || 0);
-    const { subtotal, discount: disc, total } = window.posCart.totals(discount);
-    if (!list) return;
+    function renderProducts() {
+        const grid = document.getElementById('productsGrid');
+        if (!grid) return;
 
-    if (!items.length) {
-      list.innerHTML = '<p class="pos-order__empty">尚無商品</p>';
-    } else {
-      list.innerHTML = items.map((i) => `
-        <div class="pos-cart-line">
-          <div class="pos-cart-line__info">
-            <p class="pos-cart-line__name">${i.name}</p>
-            <p class="pos-cart-line__meta">$${i.unit_price.toFixed(2)} × ${i.qty}</p>
-          </div>
-          <div class="pos-cart-line__qty">
-            <button type="button" data-dec="${i.product_id}">−</button>
-            <span>${i.qty}</span>
-            <button type="button" data-inc="${i.product_id}">+</button>
-          </div>
-          <strong>$${i.line_total.toFixed(2)}</strong>
-        </div>`).join('');
-      list.querySelectorAll('[data-inc]').forEach((b) => {
-        b.addEventListener('click', () => {
-          const item = items.find((x) => x.product_id === Number(b.dataset.inc));
-          if (item) window.posCart.setQty(item.product_id, item.qty + 1);
+        grid.innerHTML = products.map(function (p, i) {
+            const visual = productVisual(p);
+            const seriesLine = p.series
+                ? `<div class="product-series">${escapeHtml(p.series)}</div>`
+                : `<div class="product-category">${escapeHtml(p.category || '')}</div>`;
+            const taglineLine = p.tagline
+                ? `<p class="product-tagline">${escapeHtml(p.tagline)}</p>`
+                : '';
+            return `
+                <article class="product-card reveal" data-product-id="${p.id}" style="transition-delay:${i * 80}ms">
+                    <div class="product-visual">${visual}</div>
+                    <div class="product-body">
+                        ${seriesLine}
+                        <h3 class="product-name">${escapeHtml(p.name)}</h3>
+                        ${taglineLine}
+                        <p class="product-desc">${escapeHtml(p.description || '')}</p>
+                        <div class="product-price">${formatPrice(p.price)}</div>
+                    </div>
+                </article>`;
+        }).join('');
+
+        grid.querySelectorAll('.product-card').forEach(function (card) {
+            card.addEventListener('click', function () {
+                const id = Number(card.dataset.productId);
+                const product = products.find(function (p) { return p.id === id; });
+                if (product) openProductModal(product);
+            });
         });
-      });
-      list.querySelectorAll('[data-dec]').forEach((b) => {
-        b.addEventListener('click', () => {
-          const item = items.find((x) => x.product_id === Number(b.dataset.dec));
-          if (item) window.posCart.setQty(item.product_id, item.qty - 1);
-        });
-      });
+
+        observeReveals(grid.querySelectorAll('.reveal'));
     }
 
-    const subEl = document.getElementById('sumSubtotal');
-    const discEl = document.getElementById('sumDiscount');
-    const totEl = document.getElementById('sumTotal');
-    const chargeBtn = document.getElementById('btnCharge');
-    if (subEl) subEl.textContent = `$${subtotal.toFixed(2)}`;
-    if (discEl) discEl.textContent = `-$${disc.toFixed(2)}`;
-    if (totEl) totEl.textContent = `$${total.toFixed(2)}`;
-    if (chargeBtn) {
-      chargeBtn.textContent = `結帳 $${total.toFixed(2)}`;
-      chargeBtn.disabled = mode !== 'sale' || !items.length;
-    }
-  }
+    function populateProductSelects() {
+        const options = products.map(function (p) {
+            return `<option value="${escapeAttr(p.name)}" data-id="${p.id}" data-price="${p.price}" data-name="${escapeAttr(p.name)}">${escapeHtml(p.name)} — ${formatPrice(p.price)}</option>`;
+        }).join('');
 
-  function updateModeUI() {
-    const badge = document.getElementById('orderModeBadge');
-    if (badge) badge.textContent = MODE_BADGES[mode] || MODE_LABELS[mode] || mode;
-
-    const showProducts = ['sale', 'restock', 'return', 'damage'].includes(mode);
-    document.getElementById('productArea')?.classList.toggle('hidden', !showProducts);
-    document.getElementById('altPanels')?.classList.toggle('hidden', showProducts);
-
-    const checkout = document.getElementById('saleCheckout');
-    const invPanel = document.getElementById('invPanel');
-    if (checkout) checkout.style.display = mode === 'sale' ? 'block' : 'none';
-    if (invPanel) invPanel.style.display = ['restock', 'return', 'damage'].includes(mode) ? 'block' : 'none';
-
-    document.querySelectorAll('.pos-nav__item[data-mode]').forEach((btn) => {
-      btn.classList.toggle('active', btn.dataset.mode === mode);
-    });
-
-    const panels = ['history', 'dashboard', 'settings', 'staff', 'eod', 'products'];
-    panels.forEach((p) => {
-      const el = document.getElementById(`panel${p.charAt(0).toUpperCase() + p.slice(1)}`);
-      if (el) el.classList.toggle('active', mode === p);
-    });
-    if (mode === 'history') window.posModes.management.renderHistory();
-    if (mode === 'dashboard') window.posModes.management.renderDashboard();
-    if (mode === 'settings') window.posModes.management.renderSettings();
-    if (mode === 'staff') window.posModes.management.renderStaff();
-    if (mode === 'eod') window.posModes.management.renderEod();
-    if (mode === 'products') {
-      const el = document.getElementById('panelProducts');
-      if (el && !el.dataset.loaded) {
-        el.dataset.loaded = '1';
-        el.innerHTML = '<p>商品資料管理：</p><iframe src="manager.html" style="width:100%;height:70vh;border:1px solid #e2e8f0;border-radius:12px;margin-top:12px"></iframe>';
-      }
-    }
-  }
-
-  function setMode(m) {
-    if (m === 'logout') {
-      sessionStorage.removeItem(STAFF_KEY);
-      closeSidebar();
-      showLoginModal();
-      return;
-    }
-    if (m === 'dark') return;
-    mode = m;
-    closeSidebar();
-    const headerLabel = document.getElementById('headerModeLabel');
-    if (headerLabel) headerLabel.textContent = MODE_LABELS[m] || m;
-    updateModeUI();
-    if (['sale', 'restock', 'return', 'damage'].includes(mode)) renderProducts();
-  }
-
-  async function loadProducts() {
-    products = await window.posApi.fetchProducts();
-    window.posProductCatalog = products;
-    renderProducts();
-  }
-
-  async function init() {
-    if (!window.posDb.initSupabase()) {
-      window.ui.toast('無法連接 Supabase', 'error');
-      return;
-    }
-    window.ui.setLoading(true);
-    try {
-      categories = await window.posApi.fetchCategories();
-      await loadProducts();
-      renderCategoryPills();
-      activeCategoryId = categories.find((c) => c.slug === 'keychain')?.id ?? null;
-      renderCategoryPills();
-      renderProducts();
-    } catch (e) {
-      window.ui.toast(`載入失敗: ${e.message}（請確認已執行 database_migration.sql）`, 'error');
-    } finally {
-      window.ui.setLoading(false);
-    }
-
-    window.posCart.onCartChange(renderCart);
-    renderCart();
-
-    document.getElementById('btnClear')?.addEventListener('click', () => window.posCart.clear());
-
-    window.posOnDiscountApplied = () => {
-      renderCart();
-      window.posDisplaySync?.syncFromRegister?.();
-    };
-    window.posDiscountModal?.bind?.();
-
-    const resetModal = document.getElementById('resetDisplayModal');
-    const openResetModal = () => {
-      resetModal?.classList.add('active');
-      resetModal?.setAttribute('aria-hidden', 'false');
-    };
-    const closeResetModal = () => {
-      resetModal?.classList.remove('active');
-      resetModal?.setAttribute('aria-hidden', 'true');
-    };
-    document.getElementById('btnResetDisplay')?.addEventListener('click', openResetModal);
-    document.getElementById('btnResetDisplayCancel')?.addEventListener('click', closeResetModal);
-    resetModal?.addEventListener('click', (e) => {
-      if (e.target === resetModal) closeResetModal();
-    });
-    document.getElementById('btnResetDisplayConfirm')?.addEventListener('click', async () => {
-      closeResetModal();
-      await window.posDisplaySync?.resetDisplay?.();
-      window.ui.toast('客戶顯示屏已重設', 'success');
-    });
-
-    const notePopover = document.getElementById('notePopover');
-    const fieldNote = document.getElementById('fieldNote');
-    const btnToggleNote = document.getElementById('btnToggleNote');
-    const syncNoteBtn = () => {
-      if (!btnToggleNote) return;
-      const has = !!(fieldNote?.value?.trim());
-      btnToggleNote.classList.toggle('has-note', has);
-      btnToggleNote.textContent = has ? '✎ 已填寫備註' : '＋ 訂單備註';
-    };
-    const openNote = () => {
-      notePopover?.classList.remove('hidden');
-      notePopover?.setAttribute('aria-hidden', 'false');
-      fieldNote?.focus();
-    };
-    const closeNote = () => {
-      notePopover?.classList.add('hidden');
-      notePopover?.setAttribute('aria-hidden', 'true');
-      syncNoteBtn();
-    };
-    btnToggleNote?.addEventListener('click', openNote);
-    document.getElementById('btnNoteDone')?.addEventListener('click', closeNote);
-    document.getElementById('notePopoverBackdrop')?.addEventListener('click', closeNote);
-    fieldNote?.addEventListener('input', syncNoteBtn);
-    syncNoteBtn();
-    window.posModes.sale?.bindCheckoutModal?.(ctx());
-    window.posModes.sale?.bindChargeButton?.();
-    document.getElementById('btnOpenMenu')?.addEventListener('click', () => {
-      if (isSidebarPinned()) {
-        document.body.classList.toggle('sidebar-rail');
-        if (!document.body.classList.contains('sidebar-rail') && window.innerWidth < RAIL_BREAKPOINT) {
-          document.body.classList.add('sidebar-rail');
-        } else if (window.innerWidth >= RAIL_BREAKPOINT) {
-          document.body.classList.remove('sidebar-rail');
+        const reserveSel = document.getElementById('reserveProduct');
+        if (reserveSel) {
+            reserveSel.innerHTML = '<option value="">請選擇</option>' + options;
         }
-        updateSidebarRail();
-        return;
-      }
-      const open = document.getElementById('posSidebar')?.classList.contains('open');
-      if (open) closeSidebar();
-      else openSidebar();
-    });
-    document.getElementById('btnSidebarPin')?.addEventListener('click', toggleSidebarPin);
-    window.addEventListener('resize', updateSidebarRail);
-    if (localStorage.getItem(PIN_KEY) === '1') {
-      setSidebarPinned(true);
-    } else {
-      updatePinButton();
-    }
-    document.getElementById('sidebarBackdrop')?.addEventListener('click', closeSidebar);
-    document.addEventListener('keydown', (e) => {
-      if (e.key === 'Escape') {
-        closeSidebar();
-        window.posModes.sale.closeCheckoutModal?.();
-        document.getElementById('notePopover')?.classList.add('hidden');
-        document.getElementById('discountModal')?.classList.add('hidden');
-        window.posDiscountModal?.close?.();
-        resetModal?.classList.remove('active');
-        resetModal?.setAttribute('aria-hidden', 'true');
-      }
-    });
-    document.getElementById('orderSearch')?.addEventListener('input', (e) => {
-      productSearch = e.target.value.trim();
-      renderProducts();
-    });
-    document.getElementById('sortSelect')?.addEventListener('change', (e) => {
-      sortBy = e.target.value;
-      renderProducts();
-    });
-
-    document.querySelectorAll('.pos-nav__item[data-mode]').forEach((btn) => {
-      btn.addEventListener('click', () => {
-        setMode(btn.dataset.mode);
-      });
-    });
-
-    document.getElementById('darkToggle')?.addEventListener('click', () => {
-      document.body.classList.toggle('dark');
-      const on = document.body.classList.contains('dark');
-      document.getElementById('darkToggle').classList.toggle('on', on);
-      localStorage.setItem('pos_dark', on ? '1' : '0');
-    });
-    if (localStorage.getItem('pos_dark') === '1') {
-      document.body.classList.add('dark');
-      document.getElementById('darkToggle')?.classList.add('on');
     }
 
-    window.posModes.inventory.bind(ctx());
+    async function updateReserveFormMode() {
+        const guest = document.getElementById('guestContactFields');
+        const banner = document.getElementById('reserveLoggedInBanner');
+        const subtitle = document.getElementById('reserveFormSubtitle');
+        const nameInput = document.getElementById('customer_name');
+        const phoneInput = document.getElementById('phone');
+        if (!guest) return;
 
-    if (!getStaff()) showLoginModal();
-    else updateStaffUI();
-    setMode('sale');
-  }
+        const session = window.WanwuAuth ? await WanwuAuth.getSession() : null;
+        const loggedIn = !!(session && session.user);
 
-  async function showLoginModal() {
-    const modal = document.getElementById('loginModal');
-    const sel = document.getElementById('loginStaff');
-    const staff = await window.posApi.fetchStaff();
-    sel.innerHTML = staff.map((s) => `<option value="${s.id}">${s.display_name}（${roleLabel(s.role)}）</option>`).join('');
-    modal.classList.add('active');
-  }
-
-  async function doLogin() {
-    const id = Number(document.getElementById('loginStaff').value);
-    const pin = document.getElementById('loginPin').value;
-    const row = await window.posApi.verifyStaff(id, pin);
-    if (!row) {
-      window.ui.toast('PIN 錯誤', 'error');
-      return;
+        guest.classList.toggle('hidden', loggedIn);
+        if (banner) banner.classList.toggle('hidden', !loggedIn);
+        if (subtitle) {
+            subtitle.textContent = loggedIn
+                ? '已登入 — 只需選擇產品與取貨日，聯絡資料從帳戶自動帶入。'
+                : '填寫以下資料，我們將於市集為您留貨。';
+        }
+        if (nameInput) nameInput.required = !loggedIn;
+        if (phoneInput) phoneInput.required = !loggedIn;
     }
-    setStaff(row);
-    document.getElementById('loginModal').classList.remove('active');
-    window.ui.toast(`歡迎，${row.display_name}`, 'success');
-  }
 
-  window.addEventListener('DOMContentLoaded', () => {
-    document.getElementById('btnLogin')?.addEventListener('click', doLogin);
-    init();
-  });
+    function openProductModal(product) {
+        const overlay = document.getElementById('productModal');
+        const body = document.getElementById('modalBody');
+        if (!overlay || !body) return;
 
-  window.posApp = {
-    setMode, getStaff, ctx, openSidebar, closeSidebar, roleLabel,
-    toggleSidebarPin, setSidebarPinned, isSidebarPinned,
-  };
+        const visual = productVisual(product);
+        const seriesLabel = product.series || product.category || '';
+        const taglineHtml = product.tagline
+            ? `<p class="product-tagline" style="margin-bottom:12px">${escapeHtml(product.tagline)}</p>`
+            : '';
+        const shapeHtml = product.shape
+            ? `<p style="font-size:0.85rem;color:var(--text-tertiary);margin-bottom:16px">造型：${escapeHtml(product.shape)} · 香磚 1.0</p>`
+            : '';
+
+        body.innerHTML = `
+            <div class="modal-product-visual">${visual}</div>
+            <div class="product-series">${escapeHtml(seriesLabel)}</div>
+            <h3 class="product-name" style="font-size:1.5rem;margin:8px 0">${escapeHtml(product.name)}</h3>
+            ${taglineHtml}
+            <p style="color:var(--text-secondary);line-height:1.75;margin-bottom:12px">${escapeHtml(product.description || '')}</p>
+            ${shapeHtml}
+            <div class="product-price" style="font-size:1.4rem;margin-bottom:16px">${formatPrice(product.price)}</div>
+            <div class="modal-stall-hint">
+                <p style="font-size:0.82rem;color:var(--text-tertiary);margin-bottom:8px">系列故事</p>
+                <p style="font-size:0.88rem;color:var(--text-secondary);line-height:1.6">香磚 • 寧磚 — 選造型，就是選自己的故事。滴幾滴精油，寧靜便進入你的空間。</p>
+            </div>
+            <div class="modal-stall-hint" style="margin-top:12px">
+                <p style="font-size:0.82rem;color:var(--text-tertiary);margin-bottom:8px">擺檔取貨日</p>
+                <p style="font-size:0.88rem;color:var(--text-secondary);line-height:1.6">8/22–23、9/12–13 · 維園 · 可即場預訂留貨</p>
+            </div>
+            <a href="#market" class="btn btn-primary" style="width:100%;margin-top:20px" data-close-modal>即場預訂</a>`;
+
+        body.querySelector('[data-close-modal]')?.addEventListener('click', closeProductModal);
+        overlay.classList.add('open');
+        document.body.style.overflow = 'hidden';
+    }
+
+    function closeProductModal() {
+        const overlay = document.getElementById('productModal');
+        if (overlay) overlay.classList.remove('open');
+        document.body.style.overflow = '';
+    }
+
+    function formatDateKey(y, m, d) {
+        return y + '-' + String(m).padStart(2, '0') + '-' + String(d).padStart(2, '0');
+    }
+
+    function isSameDay(a, b) {
+        return a.getFullYear() === b.getFullYear()
+            && a.getMonth() === b.getMonth()
+            && a.getDate() === b.getDate();
+    }
+
+    function renderMonthCalendar(year, month) {
+        const first = new Date(year, month - 1, 1);
+        const daysInMonth = new Date(year, month, 0).getDate();
+        const startOffset = first.getDay();
+        const today = new Date();
+        const monthTitle = year + ' 年 ' + month + ' 月';
+
+        let cells = '';
+        for (let i = 0; i < startOffset; i++) {
+            cells += '<span class="ecal-day ecal-day--empty"></span>';
+        }
+        for (let d = 1; d <= daysInMonth; d++) {
+            const key = formatDateKey(year, month, d);
+            const stall = STALL_DAYS[key];
+            const classes = ['ecal-day'];
+            const cellDate = new Date(year, month - 1, d);
+            if (isSameDay(cellDate, today)) classes.push('ecal-day--today');
+            if (stall) classes.push('ecal-day--stall-' + stall.type);
+            const title = stall ? stall.title : (isSameDay(cellDate, today) ? '今日' : '');
+            cells += '<span class="' + classes.join(' ') + '"' + (title ? ' title="' + escapeAttr(title) + '"' : '') + '>' + d + '</span>';
+        }
+
+        return `
+            <div class="ecal">
+                <div class="ecal-header">${monthTitle}</div>
+                <div class="ecal-weekdays">${WEEKDAY_LABELS.map(function (w) { return '<span>' + w + '</span>'; }).join('')}</div>
+                <div class="ecal-grid">${cells}</div>
+            </div>`;
+    }
+
+    function renderStallCalendar() {
+        const monthsEl = document.getElementById('stallCalendarMonths');
+        const todayEl = document.getElementById('calendarTodayLabel');
+        if (!monthsEl) return;
+
+        const today = new Date();
+        const todayStr = today.toLocaleDateString('zh-HK', {
+            year: 'numeric',
+            month: 'long',
+            day: 'numeric',
+            weekday: 'short'
+        });
+
+        if (todayEl) {
+            todayEl.innerHTML = '今日：<strong>' + escapeHtml(todayStr) + '</strong>';
+        }
+
+        monthsEl.innerHTML = renderMonthCalendar(2026, 8) + renderMonthCalendar(2026, 9);
+    }
+
+    function renderMarketDates() {
+        const container = document.getElementById('marketDatePicker');
+        if (!container) return;
+
+        container.innerHTML = MARKET_DATES.map(function (d) {
+            return `
+                <div class="date-option">
+                    <input type="radio" name="pickup_date" id="date-${d.value}" value="${d.value}" required>
+                    <label for="date-${d.value}">
+                        <strong>${d.label}</strong>
+                        ${d.day}
+                    </label>
+                </div>`;
+        }).join('');
+    }
+
+    async function submitReservation(e) {
+        e.preventDefault();
+        const form = e.target;
+        const feedback = document.getElementById('reserveFeedback');
+        const btn = form.querySelector('button[type="submit"]');
+
+        const pickupDate = form.pickup_date.value;
+        const productSel = form.product_interest;
+        const productOpt = productSel.options[productSel.selectedIndex];
+        const quantity = parseInt(form.quantity.value, 10) || 1;
+        const notes = form.notes.value.trim() || null;
+
+        if (!pickupDate) {
+            showFeedback(feedback, '請選擇取貨日期。', 'error');
+            return;
+        }
+        if (!productSel.value) {
+            showFeedback(feedback, '請選擇產品。', 'error');
+            return;
+        }
+
+        const session = window.WanwuAuth ? await WanwuAuth.getSession() : null;
+        const loggedIn = !!(session && session.user);
+
+        btn.disabled = true;
+        showFeedback(feedback, '提交中…', 'success');
+
+        try {
+            const client = initSupabase();
+
+            if (loggedIn && window.WanwuAuth) {
+                await WanwuAuth.createOrder({
+                    product_id: Number(productOpt.dataset.id) || null,
+                    product_name: productOpt.dataset.name || productSel.value,
+                    unit_price: Number(productOpt.dataset.price) || null,
+                    quantity: quantity,
+                    pickup_date: pickupDate,
+                    notes: notes
+                });
+                form.reset();
+                showFeedback(feedback, '訂單已提交。我們會於市集當日為您備貨。', 'success');
+                return;
+            }
+
+            const payload = {
+                customer_name: form.customer_name.value.trim(),
+                phone: form.phone.value.trim(),
+                email: form.email.value.trim() || null,
+                pickup_date: pickupDate,
+                product_interest: productSel.value || null,
+                quantity: quantity,
+                notes: notes
+            };
+
+            if (!payload.customer_name || !payload.phone) {
+                showFeedback(feedback, '請填寫姓名及電話。', 'error');
+                btn.disabled = false;
+                return;
+            }
+
+            if (client) {
+                const { error } = await client.from('wanwu_market_reservations').insert(payload);
+                if (error) throw error;
+            } else {
+                saveLocal('wanwu_reservations', payload);
+            }
+            form.reset();
+            showFeedback(feedback, '預訂已收到。我們會於市集當日為您備貨，請留意電話聯絡。', 'success');
+        } catch (err) {
+            console.error(err);
+            if (loggedIn) {
+                showFeedback(feedback, err.message || '提交失敗，請稍後再試。', 'error');
+            } else {
+                const payload = {
+                    customer_name: form.customer_name.value.trim(),
+                    phone: form.phone.value.trim(),
+                    email: form.email.value.trim() || null,
+                    pickup_date: pickupDate,
+                    product_interest: productSel.value || null,
+                    quantity: quantity,
+                    notes: notes
+                };
+                saveLocal('wanwu_reservations', payload);
+                showFeedback(feedback, '已暫存您的預訂（離線模式）。請稍後再試或於市集現場告知我們。', 'success');
+            }
+        } finally {
+            btn.disabled = false;
+            updateReserveFormMode();
+        }
+    }
+
+    async function submitArtistWork(e) {
+        e.preventDefault();
+        const form = e.target;
+        const feedback = document.getElementById('artistFeedback');
+        const btn = form.querySelector('button[type="submit"]');
+
+        const payload = {
+            artist_name: form.artist_name.value.trim(),
+            email: form.email.value.trim(),
+            phone: form.phone.value.trim() || null,
+            work_title: form.work_title.value.trim(),
+            work_description: form.work_description.value.trim() || null,
+            medium: form.medium.value.trim() || null,
+            portfolio_url: form.portfolio_url.value.trim() || null,
+            image_url: form.image_url.value.trim() || null,
+            preferred_products: form.preferred_products.value || null
+        };
+
+        if (!payload.artist_name || !payload.email || !payload.work_title) {
+            showFeedback(feedback, '請填寫姓名、電郵及作品名稱。', 'error');
+            return;
+        }
+
+        btn.disabled = true;
+
+        try {
+            const client = initSupabase();
+            if (client) {
+                const { error } = await client.from('wanwu_art_submissions').insert(payload);
+                if (error) throw error;
+            } else {
+                saveLocal('wanwu_submissions', payload);
+            }
+            form.reset();
+            showFeedback(feedback, '投稿已收到。我們將審閱作品並聯絡您商討印制與合作細節。', 'success');
+        } catch (err) {
+            console.error(err);
+            saveLocal('wanwu_submissions', payload);
+            showFeedback(feedback, '已暫存投稿。若持續失敗，請電郵聯絡我們。', 'success');
+        } finally {
+            btn.disabled = false;
+        }
+    }
+
+    function saveLocal(key, item) {
+        try {
+            const list = JSON.parse(localStorage.getItem(key) || '[]');
+            list.push({ ...item, savedAt: new Date().toISOString() });
+            localStorage.setItem(key, JSON.stringify(list));
+        } catch (e) { /* ignore */ }
+    }
+
+    function showFeedback(el, msg, type) {
+        if (!el) return;
+        el.textContent = msg;
+        el.className = 'form-feedback show ' + type;
+    }
+
+    function escapeHtml(s) {
+        return String(s || '')
+            .replace(/&/g, '&amp;')
+            .replace(/</g, '&lt;')
+            .replace(/>/g, '&gt;')
+            .replace(/"/g, '&quot;');
+    }
+
+    function escapeAttr(s) {
+        return escapeHtml(s).replace(/'/g, '&#39;');
+    }
+
+    function setupHeader() {
+        const header = document.querySelector('.site-header');
+        const toggle = document.querySelector('.nav-toggle');
+        const nav = document.querySelector('.nav-links');
+
+        window.addEventListener('scroll', function () {
+            if (header) header.classList.toggle('scrolled', window.scrollY > 20);
+        }, { passive: true });
+
+        if (toggle && nav) {
+            toggle.addEventListener('click', function () {
+                nav.classList.toggle('open');
+            });
+            nav.querySelectorAll('a').forEach(function (a) {
+                a.addEventListener('click', function () { nav.classList.remove('open'); });
+            });
+        }
+    }
+
+    function observeReveals(nodes) {
+        if (!nodes || !nodes.length) return;
+        if (window.matchMedia('(prefers-reduced-motion: reduce)').matches) {
+            nodes.forEach(function (n) { n.classList.add('visible'); });
+            return;
+        }
+        const io = new IntersectionObserver(function (entries) {
+            entries.forEach(function (entry) {
+                if (entry.isIntersecting) {
+                    entry.target.classList.add('visible');
+                    io.unobserve(entry.target);
+                }
+            });
+        }, { threshold: 0.12, rootMargin: '0px 0px -40px 0px' });
+        nodes.forEach(function (n) { io.observe(n); });
+    }
+
+    function setupReveals() {
+        observeReveals(document.querySelectorAll('.reveal'));
+    }
+
+    function setupModal() {
+        const overlay = document.getElementById('productModal');
+        const closeBtn = document.getElementById('modalClose');
+        if (closeBtn) closeBtn.addEventListener('click', closeProductModal);
+        if (overlay) {
+            overlay.addEventListener('click', function (e) {
+                if (e.target === overlay) closeProductModal();
+            });
+        }
+        document.addEventListener('keydown', function (e) {
+            if (e.key === 'Escape') closeProductModal();
+        });
+    }
+
+    document.addEventListener('DOMContentLoaded', function () {
+        setupHeader();
+        setupModal();
+        setupReveals();
+        renderMarketDates();
+        renderStallCalendar();
+        loadProducts();
+
+        const reserveForm = document.getElementById('reserveForm');
+        const artistForm = document.getElementById('artistForm');
+        if (reserveForm) reserveForm.addEventListener('submit', submitReservation);
+        if (artistForm) artistForm.addEventListener('submit', submitArtistWork);
+
+        updateReserveFormMode();
+        if (window.WanwuAuth) {
+            WanwuAuth.onAuthStateChange(function () {
+                updateReserveFormMode();
+            });
+        }
+    });
 })();

@@ -1,411 +1,433 @@
 <!DOCTYPE html>
-
-<html lang="zh-TW">
-
+<html lang="zh-HK">
 <head>
-
-  <meta charset="UTF-8">
-
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-
-  <title>POS 收銀系統 - ASSTUDIOHK</title>
-
-  <link rel="icon" href="images.png" type="image/png">
-
-  <link rel="apple-touch-icon" href="images.png">
-
-  <link rel="stylesheet" href="css/pos-layout.css">
-
-  <link rel="stylesheet" href="css/pos-theme.css">
-
-  <link rel="stylesheet" href="css/pos-animations.css">
-
-  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-
-  <script src="config.js"></script>
-
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>卍物所 — 香磚 • 寧磚 · 手作禮品 · 畫家聯名</title>
+    <meta name="description" content="卍物所：萬物皆可能。香磚 • 寧磚系列擴香石，貓爪、玫瑰、太陽花等造型。維園市集即場預訂，歡迎畫家投稿。">
+    <link rel="icon" href="Logo.jpg" type="image/jpeg">
+    <link rel="apple-touch-icon" href="Logo.jpg">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&family=Noto+Serif+TC:wght@400;500;600&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="css/main.css">
 </head>
-
 <body>
-
-  <div class="pos-sidebar-backdrop" id="sidebarBackdrop" aria-hidden="true"></div>
-
-  <div class="pos-app">
-
-    <aside class="pos-sidebar" id="posSidebar" aria-hidden="true">
-
-      <div class="pos-sidebar__brand">
-
-        <img class="pos-sidebar__logo" src="images.png" alt="POS" width="40" height="40">
-
-        <div class="pos-sidebar__meta">
-
-          <p class="pos-sidebar__name">POS 商店</p>
-
-          <span class="pos-sidebar__badge">專業會員</span>
-
+    <header class="site-header">
+        <div class="header-inner">
+            <a href="#" class="brand">
+                <span class="logo-ring logo-ring--sm" aria-hidden="true">
+                    <img src="Logo.jpg" alt="">
+                </span>
+                <span class="brand-name">卍物所</span>
+            </a>
+            <button class="nav-toggle" type="button" aria-label="開啟選單">
+                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" aria-hidden="true">
+                    <path d="M4 7h16M4 12h16M4 17h16"/>
+                </svg>
+            </button>
+            <nav>
+                <ul class="nav-links">
+                    <li><a href="#philosophy">理念</a></li>
+                    <li><a href="#series">寧磚系列</a></li>
+                    <li><a href="#products">款式</a></li>
+                    <li><a href="#market">維園市集</a></li>
+                    <li><a href="#artists">畫家投稿</a></li>
+                </ul>
+            </nav>
+            <div class="header-auth" id="headerAuth"></div>
         </div>
-
-        <button type="button" class="pos-sidebar__pin" id="btnSidebarPin" title="釘選工作列" aria-label="釘選工作列" aria-pressed="false">📌</button>
-
-      </div>
-
-
-
-      <p class="pos-nav__label">模式</p>
-
-      <button type="button" class="pos-nav__item active" data-mode="sale"><span class="pos-nav__icon">🛒</span><span>銷售</span></button>
-
-      <button type="button" class="pos-nav__item" data-mode="restock"><span class="pos-nav__icon">📦</span><span>補貨</span></button>
-
-      <button type="button" class="pos-nav__item" data-mode="return"><span class="pos-nav__icon">↩</span><span>退貨</span></button>
-
-      <button type="button" class="pos-nav__item" data-mode="damage"><span class="pos-nav__icon">⚡</span><span>損壞</span></button>
-
-
-
-      <p class="pos-nav__label">管理</p>
-
-      <button type="button" class="pos-nav__item" data-mode="products"><span class="pos-nav__icon">📋</span><span>產品</span></button>
-
-      <button type="button" class="pos-nav__item" data-mode="history"><span class="pos-nav__icon">📁</span><span>歷史紀錄</span></button>
-
-      <button type="button" class="pos-nav__item" data-mode="dashboard"><span class="pos-nav__icon">📊</span><span>儀表板</span></button>
-
-      <button type="button" class="pos-nav__item" data-mode="settings"><span class="pos-nav__icon">⚙</span><span>設定</span></button>
-
-      <button type="button" class="pos-nav__item" data-mode="staff"><span class="pos-nav__icon">👥</span><span>員工</span></button>
-
-
-
-      <p class="pos-nav__label">系統</p>
-
-      <div class="pos-toggle-row">
-
-        <span>🌙 深色模式</span>
-
-        <button type="button" class="pos-switch" id="darkToggle" aria-label="深色模式"></button>
-
-      </div>
-
-      <button type="button" class="pos-nav__item" data-mode="eod"><span class="pos-nav__icon">📄</span><span>日終報告</span></button>
-
-      <a class="pos-nav__item pos-nav__link" href="display.html" target="_blank" rel="noopener noreferrer">
-        <span class="pos-nav__icon">🖥</span><span>客戶顯示屏</span>
-      </a>
-
-      <div class="pos-sidebar__footer">
-
-        <p class="pos-sidebar__user" id="sidebarUser">管理員</p>
-
-        <button type="button" class="pos-sidebar__logout" data-mode="logout">登出</button>
-
-        <p class="pos-sidebar__powered">技術支持：ASSTUDIOHK</p>
-
-      </div>
-
-    </aside>
-
-
-
-    <main class="pos-main">
-
-      <header class="pos-main-header">
-
-        <button type="button" class="pos-menu-btn" id="btnOpenMenu" aria-label="更多功能" aria-expanded="false" aria-controls="posSidebar" title="更多功能">
-
-          <span class="pos-menu-btn__bar"></span>
-
-          <span class="pos-menu-btn__bar"></span>
-
-          <span class="pos-menu-btn__bar"></span>
-
-        </button>
-
-        <span class="pos-main-header__mode" id="headerModeLabel">銷售</span>
-
-        <div class="pos-main-header__search">
-          <input type="search" id="orderSearch" placeholder="搜尋商品…" aria-label="搜尋商品">
-          <button type="button" class="pos-btn-reset-display" id="btnResetDisplay" title="重設顯示屏">重設顯示屏</button>
-        </div>
-
-        <span class="pos-main-header__user" id="headerUser"></span>
-
-      </header>
-
-      <div id="productArea">
-
-        <div class="pos-toolbar">
-
-          <div id="categoryPills" style="display:flex;gap:8px;flex-wrap:wrap;flex:1"></div>
-
-          <select class="pos-toolbar__sort" id="sortSelect" aria-label="排序">
-
-            <option value="default">預設</option>
-
-            <option value="name">名稱</option>
-
-            <option value="price_asc">價格 ↑</option>
-
-            <option value="price_desc">價格 ↓</option>
-
-          </select>
-
-        </div>
-
-        <div class="pos-products" id="productGrid"></div>
-
-      </div>
-
-
-
-      <div id="altPanels" class="hidden" style="flex:1;overflow:auto">
-
-        <div id="panelHistory" class="pos-panel-view"></div>
-
-        <div id="panelDashboard" class="pos-panel-view"></div>
-
-        <div id="panelSettings" class="pos-panel-view"></div>
-
-        <div id="panelStaff" class="pos-panel-view"></div>
-
-        <div id="panelEod" class="pos-panel-view"></div>
-
-        <div id="panelProducts" class="pos-panel-view"></div>
-
-      </div>
-
+    </header>
+
+    <main>
+        <!-- Hero -->
+        <section class="hero" id="top">
+            <div class="hero-logo reveal">
+                <div class="logo-ring logo-ring--hero">
+                    <img src="Logo.jpg" alt="卍物所">
+                </div>
+            </div>
+            <h1 class="reveal">卍物所</h1>
+            <p class="hero-sub reveal">萬物皆可能。<br>你買下的，不只是一塊香磚，而是一種寧靜。</p>
+            <div class="hero-cta reveal">
+                <a href="#philosophy" class="btn btn-primary">認識卍物所</a>
+                <a href="#products" class="btn btn-secondary">選擇寧磚</a>
+            </div>
+            <p class="scroll-hint" aria-hidden="true">向下探索</p>
+        </section>
+
+        <!-- Philosophy -->
+        <section id="philosophy">
+            <div class="section-inner">
+                <p class="section-label reveal">Philosophy</p>
+                <h2 class="section-title reveal">品牌理念</h2>
+                <p class="section-lead reveal">卍物所 — 萬物所聚之所。你買的不只是產品，是一套故事與生活態度。</p>
+
+                <div class="name-breakdown reveal">
+                    <div class="name-char"><span>卍</span><strong>萬</strong><p>萬物、所有<br>Everything is possible</p></div>
+                    <div class="name-char"><span>物</span><strong>物</strong><p>可觸可嗅可留<br>實體的記憶</p></div>
+                    <div class="name-char"><span>所</span><strong>所</strong><p>寧靜所在<br>停下来的空間</p></div>
+                </div>
+
+                <div class="philosophy-grid">
+                    <article class="pillar-card reveal">
+                        <div class="pillar-num">01</div>
+                        <h3>萬有可能</h3>
+                        <p>開放、不設限、接納萬物。從貓爪到玫瑰，從畫家投稿到聯名禮盒 — 下一款寧磚，可以是任何形狀。</p>
+                    </article>
+                    <article class="pillar-card reveal">
+                        <div class="pillar-num">02</div>
+                        <h3>萬人可及</h3>
+                        <p>產品服務所有階層。質感與寧靜不專屬於某一種生活；價格與體驗兼顧，讓更多人擁有一塊屬於自己的香磚。</p>
+                    </article>
+                    <article class="pillar-card reveal">
+                        <div class="pillar-num">03</div>
+                        <h3>萬物可留</h3>
+                        <p>香氣會散，但造型與觸感會留下。我們把寧靜變成可以帶走的「物」 — 這是你選擇的生活。</p>
+                    </article>
+                </div>
+
+                <blockquote class="brand-story reveal">
+                    <p>我們相信，每一個人都需要一個可以停下來的角落。不一定是很大的空間 — 也許只是書桌一角、床頭一側。在那裡，一塊香磚緩緩釋放氣味，一個造型訴說你選擇的故事。</p>
+                    <p>萬物皆有可能。而你，選擇了哪一種可能？</p>
+                </blockquote>
+            </div>
+        </section>
+
+        <!-- Series -->
+        <section id="series">
+            <div class="section-inner">
+                <p class="section-label reveal">Collection</p>
+                <h2 class="section-title reveal">香磚 • 寧磚</h2>
+                <p class="section-lead reveal"><strong>香</strong>承載氣味，<strong>寧</strong>承載寧靜。天然石膏擴香石工藝，1.0 為現行製作世代。同系列、不同造型 — 選你的故事。</p>
+
+                <div class="series-hero reveal">
+                    <div class="series-badge">香磚 1.0</div>
+                    <p class="series-tagline">擴香石 · 緩釋精油 · 可觸可留</p>
+                </div>
+
+                <div class="shape-grid" id="shapeGrid">
+                    <article class="shape-card reveal">
+                        <div class="shape-icon" aria-hidden="true">🐾</div>
+                        <h3>寧磚 · 貓爪</h3>
+                        <p class="shape-keyword">柔軟 · 陪伴</p>
+                        <p class="shape-scene">書桌、床頭</p>
+                        <a href="#products" class="shape-link">選擇此款 →</a>
+                    </article>
+                    <article class="shape-card reveal">
+                        <div class="shape-icon" aria-hidden="true">🌹</div>
+                        <h3>寧磚 · 玫瑰</h3>
+                        <p class="shape-keyword">綻放 · 溫柔</p>
+                        <p class="shape-scene">禮物、梳妝台</p>
+                        <a href="#products" class="shape-link">選擇此款 →</a>
+                    </article>
+                    <article class="shape-card reveal">
+                        <div class="shape-icon" aria-hidden="true">🌻</div>
+                        <h3>寧磚 · 太陽花</h3>
+                        <p class="shape-keyword">明朗 · 希望</p>
+                        <p class="shape-scene">玄關、窗台</p>
+                        <a href="#products" class="shape-link">選擇此款 →</a>
+                    </article>
+                </div>
+            </div>
+        </section>
+
+        <!-- Products -->
+        <section id="products">
+            <div class="section-inner">
+                <p class="section-label reveal">Products</p>
+                <h2 class="section-title reveal">選擇你的寧磚</h2>
+                <p class="section-lead reveal">選造型，就是選自己的故事。每款均屬香磚 • 寧磚系列，滴幾滴精油，寧靜便進入你的空間。</p>
+                <div class="products-grid" id="productsGrid">
+                    <p class="loading-placeholder">載入中…</p>
+                </div>
+            </div>
+        </section>
+
+        <!-- Market -->
+        <section id="market">
+            <div class="section-inner">
+                <p class="section-label reveal">Victoria Park</p>
+                <h2 class="section-title reveal">維園市集 · 即場預訂</h2>
+                <p class="section-lead reveal">我們將於 <strong>2026 年 8 月 22–23 日</strong> 及 <strong>9 月 12–13 日</strong> 在維多利亞公園設攤。您可提前預訂，市集當日為您備貨。</p>
+
+                <div class="market-block">
+                    <div class="market-info reveal">
+                        <h3 style="font-family:'Noto Serif TC',serif;font-size:1.25rem;margin-bottom:8px">市集詳情</h3>
+                        <div class="market-dates">
+                            <div class="date-chip">
+                                <strong>8 / 22</strong>
+                                <span>週六 · 維園</span>
+                            </div>
+                            <div class="date-chip">
+                                <strong>8 / 23</strong>
+                                <span>週日 · 維園</span>
+                            </div>
+                            <div class="date-chip">
+                                <strong>9 / 12</strong>
+                                <span>週六 · 維園</span>
+                            </div>
+                            <div class="date-chip">
+                                <strong>9 / 13</strong>
+                                <span>週日 · 維園</span>
+                            </div>
+                        </div>
+                        <ul class="market-detail">
+                            <li>地點：維多利亞公園（銅鑼灣）</li>
+                            <li>預訂產品可於攤位即場取貨</li>
+                            <li>現場亦備有未預訂款式，數量有限</li>
+                            <li>預訂確認後，我們會以電話聯絡您</li>
+                        </ul>
+
+                        <div class="stall-calendar reveal" id="stallCalendar" aria-label="2026年8月及9月擺檔日曆">
+                            <div class="stall-calendar-top">
+                                <div>
+                                    <h4 class="stall-calendar-title">擺檔日程</h4>
+                                    <p class="stall-calendar-sub">電子日曆 · 標示維園設攤日子</p>
+                                </div>
+                                <p class="stall-calendar-today" id="calendarTodayLabel"></p>
+                            </div>
+                            <div class="stall-calendar-months" id="stallCalendarMonths"></div>
+                            <div class="stall-calendar-legend">
+                                <span class="legend-item"><i class="legend-dot legend-today"></i>今日</span>
+                                <span class="legend-item"><i class="legend-dot legend-aug"></i>8 月市集</span>
+                                <span class="legend-item"><i class="legend-dot legend-sep"></i>9 月市集</span>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="form-panel reveal">
+                        <h3 class="form-title">即場預訂</h3>
+                        <p class="form-subtitle" id="reserveFormSubtitle">填寫以下資料，我們將於市集為您留貨。</p>
+                        <div class="account-member-banner account-member-banner--compact hidden" id="reserveLoggedInBanner">
+                            <p>已登入 — 聯絡資料將從帳戶自動帶入，只需選擇產品與取貨日。</p>
+                        </div>
+                        <form id="reserveForm" novalidate>
+                            <div id="guestContactFields">
+                            <div class="form-row">
+                                <div class="form-group">
+                                    <label for="customer_name">姓名 *</label>
+                                    <input type="text" id="customer_name" name="customer_name" required autocomplete="name">
+                                </div>
+                                <div class="form-group">
+                                    <label for="phone">電話 *</label>
+                                    <input type="tel" id="phone" name="phone" required autocomplete="tel">
+                                </div>
+                            </div>
+                            <div class="form-group">
+                                <label for="email">電郵（選填）</label>
+                                <input type="email" id="email" name="email" autocomplete="email">
+                            </div>
+                            </div>
+                            <div class="form-group">
+                                <label>取貨日期 *</label>
+                                <div class="date-picker" id="marketDatePicker"></div>
+                            </div>
+                            <div class="form-row">
+                                <div class="form-group">
+                                    <label for="reserveProduct">意向產品 *</label>
+                                    <select id="reserveProduct" name="product_interest" required>
+                                        <option value="">請選擇</option>
+                                    </select>
+                                </div>
+                                <div class="form-group">
+                                    <label for="quantity">數量</label>
+                                    <input type="number" id="quantity" name="quantity" min="1" max="20" value="1">
+                                </div>
+                            </div>
+                            <div class="form-group">
+                                <label for="notes">備註</label>
+                                <textarea id="notes" name="notes" placeholder="例如：希望取貨時段、特殊要求…"></textarea>
+                            </div>
+                            <button type="submit" class="btn btn-primary" style="width:100%">提交預訂</button>
+                            <p class="form-legal-note">提交即表示您同意我們依 <a href="privacy.html">《私隱權政策》</a> 處理您的個人資料。</p>
+                            <div class="form-feedback" id="reserveFeedback" role="status"></div>
+                        </form>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- Artists -->
+        <section id="artists">
+            <div class="section-inner">
+                <p class="section-label reveal">For Artists</p>
+                <h2 class="section-title reveal">畫家投稿</h2>
+                <p class="section-lead reveal">歡迎畫家提交作品。你的創作，可能是下一款寧磚造型 — 我們協助落實為可觸摸的精美禮品，並以透明方式回饋創作者。</p>
+
+                <div class="benefits-grid">
+                    <article class="benefit-card reveal">
+                        <div class="benefit-num">01</div>
+                        <h3>實體產品</h3>
+                        <p>每款聯名產品，您可獲得各一件實體成品，親手感受印制與材質的完成度。</p>
+                    </article>
+                    <article class="benefit-card reveal">
+                        <div class="benefit-num">02</div>
+                        <h3>授權署名</h3>
+                        <p>產品包裝與展示均標註您的名字（Credit），讓收藏者知道背後的創作者。</p>
+                    </article>
+                    <article class="benefit-card reveal">
+                        <div class="benefit-num">03</div>
+                        <h3>銷售分紅</h3>
+                        <p>聯名產品售出後，您享有約定比例的分紅，合作條款於入選後書面確認。</p>
+                    </article>
+                </div>
+
+                <div class="artist-layout">
+                    <div class="reveal">
+                        <h3 style="font-family:'Noto Serif TC',serif;font-size:1.2rem;margin-bottom:16px">投稿須知</h3>
+                        <ul class="market-detail">
+                            <li>接受繪畫、插畫、混合媒介等平面作品</li>
+                            <li>請提供清晰作品圖或作品集連結</li>
+                            <li>入選後我們會聯絡商討印制款式（寧磚造型、明信片、禮盒等）</li>
+                            <li>審閱約 7–14 個工作天</li>
+                        </ul>
+                    </div>
+
+                    <div class="form-panel reveal">
+                        <h3 class="form-title">提交作品</h3>
+                        <p class="form-subtitle">留下資料與作品資訊，我們會盡快回覆。</p>
+                        <form id="artistForm" novalidate>
+                            <div class="form-row">
+                                <div class="form-group">
+                                    <label for="artist_name">姓名 / 創作名 *</label>
+                                    <input type="text" id="artist_name" name="artist_name" required>
+                                </div>
+                                <div class="form-group">
+                                    <label for="artist_email">電郵 *</label>
+                                    <input type="email" id="artist_email" name="email" required>
+                                </div>
+                            </div>
+                            <div class="form-group">
+                                <label for="artist_phone">電話（選填）</label>
+                                <input type="tel" id="artist_phone" name="phone">
+                            </div>
+                            <div class="form-group">
+                                <label for="work_title">作品名稱 *</label>
+                                <input type="text" id="work_title" name="work_title" required>
+                            </div>
+                            <div class="form-group">
+                                <label for="medium">媒介</label>
+                                <input type="text" id="medium" name="medium" placeholder="例：水彩、數位繪畫、版畫…">
+                            </div>
+                            <div class="form-group">
+                                <label for="work_description">作品簡介</label>
+                                <textarea id="work_description" name="work_description" placeholder="創作理念、尺寸、年份等"></textarea>
+                            </div>
+                            <div class="form-group">
+                                <label for="portfolio_url">作品集 / 社交媒體連結</label>
+                                <input type="url" id="portfolio_url" name="portfolio_url" placeholder="https://">
+                            </div>
+                            <div class="form-group">
+                                <label for="image_url">作品圖片連結</label>
+                                <input type="url" id="image_url" name="image_url" placeholder="Google Drive、IG 貼文等公開連結">
+                            </div>
+                            <div class="form-group">
+                                <label for="artistProducts">希望印製的產品類型</label>
+                                <select id="artistProducts" name="preferred_products">
+                                    <option value="">請選擇</option>
+                                    <option value="香磚 • 寧磚">香磚 • 寧磚</option>
+                                    <option value="明信片">明信片</option>
+                                    <option value="禮盒套裝">禮盒套裝</option>
+                                    <option value="未定，待商討">未定，待商討</option>
+                                </select>
+                            </div>
+                            <button type="submit" class="btn btn-primary" style="width:100%">提交投稿</button>
+                            <p class="form-legal-note">提交即表示您同意我們依 <a href="privacy.html">《私隱權政策》</a> 處理您的個人資料。</p>
+                            <div class="form-feedback" id="artistFeedback" role="status"></div>
+                        </form>
+                    </div>
+                </div>
+            </div>
+        </section>
     </main>
 
+    <footer class="site-footer">
+        <p class="footer-brand">卍物所 · 香磚 • 寧磚 · 萬物皆可能</p>
+        <nav class="footer-legal" aria-label="法律文件">
+            <a href="privacy.html">私隱權政策</a>
+            <span aria-hidden="true">·</span>
+            <a href="data-security.html">數據安全聲明</a>
+            <span aria-hidden="true">·</span>
+            <a href="account.html">我的帳戶</a>
+        </nav>
+        <p class="footer-copy">© 2026 卍物所 · 最後更新：2026-07-12</p>
+    </footer>
 
+    <!-- Auth modal -->
+    <div class="modal-overlay auth-modal" id="authModal" role="dialog" aria-modal="true" aria-labelledby="authModalTitle">
+        <div class="modal-sheet auth-sheet">
+            <button type="button" class="modal-close" id="authModalClose" aria-label="關閉">×</button>
+            <h2 id="authModalTitle" class="auth-modal-title">帳戶</h2>
 
-    <aside class="pos-order">
+            <div class="auth-tabs" role="tablist">
+                <button type="button" class="auth-tab active" data-tab="login" role="tab" aria-selected="true">登入</button>
+                <button type="button" class="auth-tab" data-tab="register" role="tab" aria-selected="false">註冊</button>
+            </div>
 
-      <div class="pos-order__head">
+            <button type="button" class="auth-google-btn" data-auth-google>
+                <svg width="18" height="18" viewBox="0 0 24 24" aria-hidden="true"><path fill="#4285F4" d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92a5.06 5.06 0 0 1-2.2 3.32v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.1z"/><path fill="#34A853" d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z"/><path fill="#FBBC05" d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l2.85-2.22.81-.62z"/><path fill="#EA4335" d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z"/></svg>
+                使用 Google 帳戶繼續
+            </button>
 
-        <h2 class="pos-order__title">訂單 <span class="pos-badge-sale" id="orderModeBadge">銷售</span></h2>
+            <p class="auth-divider"><span>或使用電郵</span></p>
 
-        <button type="button" class="pos-order__clear" id="btnClear">清空</button>
+            <div id="authLoginPanel">
+                <form id="authLoginForm" class="auth-form" novalidate>
+                    <div class="form-group">
+                        <label for="login_email">電郵</label>
+                        <input type="email" id="login_email" name="email" required autocomplete="email">
+                    </div>
+                    <div class="form-group">
+                        <label for="login_password">密碼</label>
+                        <input type="password" id="login_password" name="password" required autocomplete="current-password" minlength="6">
+                    </div>
+                    <p class="auth-forgot"><a href="#" id="authForgotLink">忘記密碼？</a></p>
+                    <button type="submit" class="btn btn-primary" style="width:100%">登入</button>
+                </form>
+            </div>
 
-      </div>
+            <div id="authRegisterPanel" hidden>
+                <form id="authRegisterForm" class="auth-form" novalidate>
+                    <div class="form-group">
+                        <label for="reg_display_name">顯示名稱</label>
+                        <input type="text" id="reg_display_name" name="display_name" autocomplete="name">
+                    </div>
+                    <div class="form-group">
+                        <label for="reg_email">電郵 *</label>
+                        <input type="email" id="reg_email" name="email" required autocomplete="email">
+                    </div>
+                    <div class="form-group">
+                        <label for="reg_password">密碼 *</label>
+                        <input type="password" id="reg_password" name="password" required autocomplete="new-password" minlength="6">
+                    </div>
+                    <div class="form-group">
+                        <label for="reg_password_confirm">確認密碼 *</label>
+                        <input type="password" id="reg_password_confirm" name="password_confirm" required autocomplete="new-password" minlength="6">
+                    </div>
+                    <label class="auth-agree">
+                        <input type="checkbox" name="agree" required>
+                        <span>我已閱讀並同意 <a href="privacy.html" target="_blank">《私隱權政策》</a> 及 <a href="data-security.html" target="_blank">《數據安全聲明》</a></span>
+                    </label>
+                    <button type="submit" class="btn btn-primary" style="width:100%">註冊</button>
+                </form>
+            </div>
 
-      <div class="pos-order__scroll">
-        <div class="pos-order__items" id="cartItems">
-          <p class="pos-order__empty">尚無商品</p>
+            <div class="form-feedback" id="authFeedback" role="status"></div>
         </div>
-        <div class="pos-inv-panel" id="invPanel" style="display:none">
-          <p id="invSelectedName" style="margin:0 0 8px;font-size:13px;color:#64748b">請點選商品</p>
-          <input type="number" id="fieldInvQty" min="1" value="1" placeholder="數量">
-          <input type="text" id="fieldInvReason" placeholder="原因（選填）">
-          <button type="button" class="pos-btn-charge" id="btnInvConfirm">確認異動</button>
-        </div>
-      </div>
-
-      <div class="pos-order__footer pos-order__checkout" id="saleCheckout">
-        <div class="pos-checkout-fields">
-          <label class="pos-field-row">
-            <span class="pos-field-label">支付方式</span>
-            <select id="fieldPayment" aria-label="支付方式">
-              <option value="現金">現金</option>
-              <option value="AlipayHK">AlipayHK</option>
-              <option value="WeChat Pay">WeChat Pay</option>
-            </select>
-          </label>
-          <div class="pos-field-row pos-field-row--discount">
-            <span class="pos-field-label pos-field-label--sm">折扣金額</span>
-            <button type="button" class="pos-btn-discount" id="btnOpenDiscount" aria-haspopup="dialog">點擊輸入</button>
-            <input type="hidden" id="fieldDiscount" value="0">
-          </div>
-        </div>
-        <button type="button" class="pos-btn-note" id="btnToggleNote">＋ 訂單備註</button>
-        <div class="pos-order__summary pos-order__summary--compact">
-          <div><span>小計</span><span id="sumSubtotal">$0.00</span></div>
-          <div><span>折扣</span><span id="sumDiscount">-$0.00</span></div>
-          <div class="total"><span>合計</span><span id="sumTotal">$0.00</span></div>
-        </div>
-        <button type="button" class="pos-btn-charge" id="btnCharge" disabled>結帳 $0.00</button>
-      </div>
-
-    </aside>
-
-  </div>
-
-
-
-  <div class="pos-modal" id="checkoutModal" aria-labelledby="checkoutTitle" aria-hidden="true">
-
-    <div class="pos-checkout">
-
-      <h2 class="pos-checkout__title" id="checkoutTitle">結帳</h2>
-
-      <div class="pos-checkout__body">
-
-        <div class="pos-checkout__summary">
-
-          <div class="pos-checkout__row">
-
-            <span class="pos-checkout__label">應收</span>
-
-            <span class="pos-checkout__amount" id="checkoutDue">$0</span>
-
-          </div>
-
-          <div class="pos-checkout__row">
-
-            <span class="pos-checkout__label">實收</span>
-
-            <span class="pos-checkout__amount" id="checkoutReceived">$0</span>
-
-          </div>
-
-          <button type="button" class="pos-checkout__exact" id="btnExactAmount">收足額</button>
-
-          <div class="pos-checkout__row pos-checkout__row--change">
-
-            <span class="pos-checkout__label">找續</span>
-
-            <span class="pos-checkout__change" id="checkoutChange">$0</span>
-
-          </div>
-
-        </div>
-
-        <div class="pos-checkout__keypad">
-
-          <div class="pos-keypad" id="checkoutKeypad">
-
-            <button type="button" data-key="1">1</button>
-
-            <button type="button" data-key="2">2</button>
-
-            <button type="button" data-key="3">3</button>
-
-            <button type="button" data-key="4">4</button>
-
-            <button type="button" data-key="5">5</button>
-
-            <button type="button" data-key="6">6</button>
-
-            <button type="button" data-key="7">7</button>
-
-            <button type="button" data-key="8">8</button>
-
-            <button type="button" data-key="9">9</button>
-
-            <button type="button" data-key="00">00</button>
-
-            <button type="button" data-key="0">0</button>
-
-            <button type="button" class="pos-keypad__back" data-key="back" aria-label="刪除">⌫</button>
-
-          </div>
-
-          <div class="pos-checkout__actions">
-
-            <button type="button" class="pos-checkout__cancel" id="btnCheckoutCancel">取消</button>
-
-            <button type="button" class="pos-checkout__confirm" id="btnCheckoutConfirm" disabled>確認收款</button>
-
-          </div>
-
-        </div>
-
-      </div>
-
     </div>
 
-  </div>
-
-
-
-  <div class="pos-modal" id="resetDisplayModal" aria-hidden="true">
-    <div class="pos-modal__box pos-modal__box--confirm">
-      <h2>重設顯示屏</h2>
-      <p class="pos-modal__hint">確定將客戶顯示屏重設為歡迎畫面？收銀台購物車不會被清空。</p>
-      <div class="pos-modal__actions">
-        <button type="button" class="pos-modal__btn-secondary" id="btnResetDisplayCancel">取消</button>
-        <button type="button" class="pos-btn-reset-display pos-modal__btn-confirm" id="btnResetDisplayConfirm">確認重設</button>
-      </div>
-    </div>
-  </div>
-
-  <div class="pos-note-popover hidden" id="discountModal" aria-hidden="true">
-    <div class="pos-note-popover__backdrop" id="discountModalBackdrop"></div>
-    <div class="pos-note-popover__panel pos-discount-panel">
-      <h3 class="pos-note-popover__title">折扣金額</h3>
-      <p class="pos-discount-panel__hint">點擊輸入折扣金額</p>
-      <label class="pos-discount-input-wrap">
-        <input type="text" inputmode="decimal" id="discountInput" placeholder="0" autocomplete="off" aria-label="折扣金額">
-        <span class="pos-discount-input-suffix">$</span>
-      </label>
-      <div class="pos-discount-modal__actions">
-        <button type="button" class="pos-modal__btn-secondary" id="btnDiscountCancel">取消</button>
-        <button type="button" class="pos-btn-discount-clear" id="btnDiscountClear">清空</button>
-        <button type="button" class="pos-btn-primary" id="btnDiscountConfirm">確定</button>
-      </div>
-    </div>
-  </div>
-
-  <div class="pos-note-popover hidden" id="notePopover" aria-hidden="true">
-    <div class="pos-note-popover__backdrop" id="notePopoverBackdrop"></div>
-    <div class="pos-note-popover__panel">
-      <h3 class="pos-note-popover__title">訂單備註</h3>
-      <textarea id="fieldNote" rows="3" placeholder="例如：5 號枱、禮品包裝"></textarea>
-      <button type="button" class="pos-btn-primary pos-note-popover__done" id="btnNoteDone">確定</button>
-    </div>
-  </div>
-
-  <div class="pos-modal" id="loginModal" aria-hidden="true">
-
-    <div class="pos-modal__box">
-
-      <h2>員工登入</h2>
-
-      <label>員工</label>
-
-      <select id="loginStaff"></select>
-
-      <label>密碼 PIN</label>
-
-      <input type="password" id="loginPin" placeholder="請輸入 PIN" maxlength="8">
-
-      <div class="pos-modal__actions">
-
-        <button type="button" class="pos-btn-primary" id="btnLogin">登入</button>
-
-      </div>
-
-      <p style="font-size:12px;color:#64748b;margin-top:12px">預設管理員 PIN：1234</p>
-
+    <!-- Product modal -->
+    <div class="modal-overlay" id="productModal" role="dialog" aria-modal="true" aria-labelledby="modalTitle">
+        <div class="modal-sheet" style="position:relative">
+            <button type="button" class="modal-close" id="modalClose" aria-label="關閉">×</button>
+            <div id="modalBody"></div>
+        </div>
     </div>
 
-  </div>
-
-
-
-  <script src="js/ui.js"></script>
-
-  <script src="js/product-thumb.js"></script>
-
-  <script src="js/supabase-client.js"></script>
-
-  <script src="js/display-sync.js"></script>
-
-  <script src="js/cart.js"></script>
-
-  <script src="js/api.js"></script>
-
-  <script src="js/modes/sale.js"></script>
-
-  <script src="js/modes/inventory.js"></script>
-
-  <script src="js/modes/management.js"></script>
-
-  <script src="js/discount-modal.js"></script>
-
-  <script src="js/app.js"></script>
-
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <script src="supabase-config.js"></script>
+    <script src="js/auth.js"></script>
+    <script src="js/app.js"></script>
 </body>
-
 </html>
-

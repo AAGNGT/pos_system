@@ -1,0 +1,337 @@
+<!DOCTYPE html>
+<html lang="zh-HK">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>私隱權政策 — 卍物所</title>
+    <meta name="description" content="卍物所私隱權政策：具體說明我們收集哪些資料、存於何處、誰可存取，以及您可如何行使權利。">
+    <link rel="icon" href="Logo.jpg" type="image/jpeg">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&family=Noto+Serif+TC:wght@400;500;600&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="css/main.css">
+</head>
+<body>
+    <header class="site-header scrolled">
+        <div class="header-inner">
+            <a href="index.html" class="brand">
+                <span class="logo-ring logo-ring--sm" aria-hidden="true"><img src="Logo.jpg" alt=""></span>
+                <span class="brand-name">卍物所</span>
+            </a>
+            <button class="nav-toggle" type="button" aria-label="開啟選單">
+                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" aria-hidden="true"><path d="M4 7h16M4 12h16M4 17h16"/></svg>
+            </button>
+            <nav>
+                <ul class="nav-links">
+                    <li><a href="index.html">首頁</a></li>
+                    <li><a href="data-security.html">數據安全</a></li>
+                    <li><a href="account.html">我的帳戶</a></li>
+                </ul>
+            </nav>
+            <div class="header-auth" id="headerAuth"></div>
+        </div>
+    </header>
+
+    <main class="legal-page">
+        <div class="legal-inner">
+            <div class="legal-hero">
+                <p class="section-label">Legal</p>
+                <h1 class="legal-title">私隱權政策</h1>
+                <p class="legal-updated">最後更新：2026 年 7 月 12 日 · 版本 1.1</p>
+                <div class="legal-meta-row">
+                    <span>資料控制者：卍物所</span>
+                    <span>適用：香港《個人資料（私隱）條例》Cap. 486</span>
+                    <span>語言：繁體中文（香港）</span>
+                </div>
+            </div>
+
+            <div class="legal-summary">
+                <p class="legal-summary-title">重點摘要（30 秒讀完）</p>
+                <ul>
+                    <li>我們只收集營運所需資料：帳戶登入、市集預訂、畫家投稿 — 不售賣、不出租您的個人資料。</li>
+                    <li>資料儲存於 Supabase（PostgreSQL），傳輸全程 HTTPS；密碼由 Supabase Auth 雜湊，我們無法看見明文。</li>
+                    <li>預訂表單<strong>無需登入</strong>即可提交；若填寫電郵且與帳戶相同，登入後可在「我的帳戶」查閱該筆預訂。</li>
+                    <li>您可要求查閱、更正或刪除資料 — 電郵 <a href="mailto:privacy@wanwusuo.hk">privacy@wanwusuo.hk</a>，我們目標 40 日內回覆。</li>
+                </ul>
+            </div>
+
+            <div class="legal-layout">
+                <aside class="legal-sidebar">
+                    <nav class="legal-toc" aria-label="目錄">
+                        <p class="legal-toc-label">目錄</p>
+                        <a href="#intro">1. 簡介</a>
+                        <a href="#data-map">2. 資料一覽表</a>
+                        <a href="#flows">3. 實際處理流程</a>
+                        <a href="#required">4. 必填與選填</a>
+                        <a href="#purpose">5. 使用目的</a>
+                        <a href="#not-do">6. 我們不做的事</a>
+                        <a href="#third-party">7. 第三方服務</a>
+                        <a href="#retention">8. 保存期限</a>
+                        <a href="#rights">9. 您的權利</a>
+                        <a href="#cookies">10. Cookie 與本機</a>
+                        <a href="#children">11. 兒童</a>
+                        <a href="#contact">12. 聯絡</a>
+                    </nav>
+                </aside>
+
+                <div class="legal-body">
+                    <section class="legal-section" id="intro">
+                        <h2>1. 簡介與資料控制者</h2>
+                        <p>「卍物所」營運本網站（產品展示、維園市集預訂、畫家投稿、用戶帳戶）。本政策逐項說明：我們從哪裡取得資料、存入哪張資料表、誰有權讀取，以及您可如何控制。</p>
+                        <div class="legal-detail-grid">
+                            <dl class="legal-detail-item"><dt>資料控制者</dt><dd>卍物所（品牌營運方）</dd></dl>
+                            <dl class="legal-detail-item"><dt>資料使用者</dt><dd>卍物所授權人員（處理預訂／投稿／帳戶查詢）</dd></dl>
+                            <dl class="legal-detail-item"><dt>技術託管</dt><dd>Supabase Inc.（資料庫及認證）</dd></dl>
+                            <dl class="legal-detail-item"><dt>適用範圍</dt><dd>本網站及相關表單；不包括第三方社交平台私訊</dd></dl>
+                        </div>
+                    </section>
+
+                    <section class="legal-section" id="data-map">
+                        <h2>2. 我們收集哪些資料（對照表）</h2>
+                        <p>以下為目前網站實際運作所涉及的資料欄位，對應 Supabase 資料表名稱，方便您查核。</p>
+                        <div class="legal-table-wrap">
+                            <table class="legal-table">
+                                <thead>
+                                    <tr><th>場景</th><th>收集欄位</th><th>儲存位置</th><th>誰可讀取</th></tr>
+                                </thead>
+                                <tbody>
+                                    <tr>
+                                        <td>Email 註冊帳戶</td>
+                                        <td>電郵、密碼（雜湊）、顯示名稱</td>
+                                        <td><code>auth.users</code>、<code>wanwu_profiles</code></td>
+                                        <td>您本人；卍物所後台（帳戶支援）</td>
+                                    </tr>
+                                    <tr>
+                                        <td>Google 登入</td>
+                                        <td>電郵、名稱、頭像 URL（Google 授權範圍內）</td>
+                                        <td><code>auth.users</code>、<code>wanwu_profiles</code></td>
+                                        <td>同上；我們不接收 Google 密碼</td>
+                                    </tr>
+                                    <tr>
+                                        <td>維園市集預訂</td>
+                                        <td>姓名、電話、電郵（選填）、取貨日、產品、數量、備註</td>
+                                        <td><code>wanwu_market_reservations</code></td>
+                                        <td>卍物所備貨人員；您（登入且電郵相符時）</td>
+                                    </tr>
+                                    <tr>
+                                        <td>畫家投稿</td>
+                                        <td>姓名、電郵、電話、作品名、簡介、媒介、連結</td>
+                                        <td><code>wanwu_art_submissions</code></td>
+                                        <td>卍物所審閱人員；投稿者本人（目前無自助查閱，可電郵查詢）</td>
+                                    </tr>
+                                    <tr>
+                                        <td>離線暫存</td>
+                                        <td>上述表單內容（連線失敗時）</td>
+                                        <td>您瀏覽器 <code>localStorage</code></td>
+                                        <td>僅您的裝置；清除瀏覽資料即刪除</td>
+                                    </tr>
+                                </tbody>
+                            </table>
+                        </div>
+                        <div class="legal-callout">
+                            <strong>我們目前不收集：</strong>信用卡號、銀行帳戶、香港身份證號碼、精確 GPS 定位。市集現場以現金／轉數快等方式交易，不經本網站處理付款卡資料。
+                        </div>
+                    </section>
+
+                    <section class="legal-section" id="flows">
+                        <h2>3. 實際處理流程（逐步說明）</h2>
+                        <p><strong>市集預訂 — 您按下「提交預訂」之後：</strong></p>
+                        <ol class="legal-steps">
+                            <li>瀏覽器以 HTTPS 將表單資料送至 Supabase API。</li>
+                            <li>資料寫入 <code>wanwu_market_reservations</code>，狀態預設為 <code>pending</code>（待確認）。</li>
+                            <li>卍物所人員於後台或匯出清單查看，按取貨日備貨。</li>
+                            <li>我們以<strong>電話</strong>為主要聯絡方式確認（電郵為輔，若您有填寫）。</li>
+                            <li>若連線失敗，資料可能暫存於 <code>localStorage</code> 鍵名 <code>wanwu_reservations</code>，待恢復後再試。</li>
+                        </ol>
+                        <p style="margin-top:14px"><strong>帳戶註冊 — Email 方式：</strong></p>
+                        <ol class="legal-steps">
+                            <li>您提交電郵與密碼；若 Supabase 開啟電郵確認，需點擊確認連結後方可登入。</li>
+                            <li>系統於 <code>auth.users</code> 建立帳戶，trigger 自動建立 <code>wanwu_profiles</code> 一筆紀錄。</li>
+                            <li>登入後 Session 存於瀏覽器（Supabase 標準 token 機制），直至登出或過期。</li>
+                        </ol>
+                    </section>
+
+                    <section class="legal-section" id="required">
+                        <h2>4. 哪些資料必須提供？不提供會怎樣？</h2>
+                        <div class="legal-table-wrap">
+                            <table class="legal-table">
+                                <thead>
+                                    <tr><th>功能</th><th>必填</th><th>選填</th><th>不提供的後果</th></tr>
+                                </thead>
+                                <tbody>
+                                    <tr>
+                                        <td>帳戶註冊</td>
+                                        <td>電郵、密碼</td>
+                                        <td>顯示名稱、電話</td>
+                                        <td>無法建立帳戶</td>
+                                    </tr>
+                                    <tr>
+                                        <td>市集預訂</td>
+                                        <td>姓名、電話、取貨日期</td>
+                                        <td>電郵、產品、數量、備註</td>
+                                        <td>無法為您留貨；無電郵則無法在帳戶頁對照預訂</td>
+                                    </tr>
+                                    <tr>
+                                        <td>畫家投稿</td>
+                                        <td>姓名、電郵、作品名稱</td>
+                                        <td>電話、簡介、連結等</td>
+                                        <td>無法受理投稿</td>
+                                    </tr>
+                                </tbody>
+                            </table>
+                        </div>
+                        <div class="legal-callout">
+                            <strong>實用建議：</strong>預訂時請填寫與帳戶<strong>相同電郵</strong>，日後登入「我的帳戶」即可查閱該筆記錄，無需另尋確認信。
+                        </div>
+                    </section>
+
+                    <section class="legal-section" id="purpose">
+                        <h2>5. 我們為何使用您的資料</h2>
+                        <ul>
+                            <li><strong>履行預訂／投稿：</strong>備貨、聯絡取貨、審閱作品、商討聯名 — 這是提交表單的直接目的。</li>
+                            <li><strong>帳戶管理：</strong>讓您登入、更新顯示名稱與電話、查閱與電郵相符的預訂。</li>
+                            <li><strong>客戶支援：</strong>回覆您就訂單、投稿或私隱提出的查詢（請保留查詢電郵以便對照）。</li>
+                            <li><strong>安全與合規：</strong>偵測異常提交、保留必要紀錄以符合香港法律。</li>
+                            <li><strong>改善服務：</strong>僅以匿名或匯總方式了解產品瀏覽偏好，不作個人 profiling 或定向廣告。</li>
+                        </ul>
+                    </section>
+
+                    <section class="legal-section" id="not-do">
+                        <h2>6. 我們明確不做的事</h2>
+                        <ul>
+                            <li>不出售、不出租、不以您的個人資料換取第三方利益。</li>
+                            <li>不向您發送與卍物所無關的推廣短訊或電郵列表（除非日後另徵求同意且提供取消訂閱）。</li>
+                            <li>不要求您提供超出服務所需的敏感資料（如身份證、健康紀錄）。</li>
+                            <li>不允許匿名訪客查閱他人的預訂或投稿內容 — 資料庫層級已設定存取規則（詳見《數據安全聲明》）。</li>
+                        </ul>
+                    </section>
+
+                    <section class="legal-section" id="third-party">
+                        <h2>7. 第三方服務與跨境傳輸</h2>
+                        <div class="legal-table-wrap">
+                            <table class="legal-table">
+                                <thead>
+                                    <tr><th>服務</th><th>用途</th><th>可能傳出的資料</th><th>伺服器位置</th></tr>
+                                </thead>
+                                <tbody>
+                                    <tr>
+                                        <td>Supabase</td>
+                                        <td>資料庫、Auth、API</td>
+                                        <td>帳戶、預訂、投稿全部欄位</td>
+                                        <td>可能位於美國／新加坡等（依專案設定）</td>
+                                    </tr>
+                                    <tr>
+                                        <td>Google OAuth</td>
+                                        <td>Google 一鍵登入（您選擇時）</td>
+                                        <td>電郵、名稱、頭像</td>
+                                        <td>Google 全球基礎設施</td>
+                                    </tr>
+                                    <tr>
+                                        <td>jsDelivr / Google Fonts</td>
+                                        <td>載入 JS 程式庫、字體</td>
+                                        <td>IP、瀏覽器技術資訊（標準 HTTP 請求）</td>
+                                        <td>CDN 節點</td>
+                                    </tr>
+                                </tbody>
+                            </table>
+                        </div>
+                        <p>跨境傳輸為使用上述雲端服務所必需。我們選用具公開安全與私隱政策的服務商，並只傳送履行功能所需的最少資料。</p>
+                    </section>
+
+                    <section class="legal-section" id="retention">
+                        <h2>8. 資料保存多久？之後怎樣處理？</h2>
+                        <div class="legal-table-wrap">
+                            <table class="legal-table">
+                                <thead>
+                                    <tr><th>資料類型</th><th>保存期</th><th>到期後</th></tr>
+                                </thead>
+                                <tbody>
+                                    <tr><td>帳戶（<code>auth.users</code> + profile）</td><td>至您要求刪除或長期閒置</td><td>刪除帳戶後 30 日內清除關聯資料</td></tr>
+                                    <tr><td>市集預訂</td><td>最後一場相關市集後 12 個月</td><td>刪除或匿名化（移除姓名電話，保留統計）</td></tr>
+                                    <tr><td>畫家投稿</td><td>審閱完成後 24 個月，或合作結束</td><td>刪除或匿名化</td></tr>
+                                    <tr><td>本機 <code>localStorage</code></td><td>直至您清除或成功提交</td><td>由您裝置自行刪除</td></tr>
+                                    <tr><td>Supabase 存取日誌</td><td>最長約 90 日（平台預設）</td><td>自動輪替</td></tr>
+                                </tbody>
+                            </table>
+                        </div>
+                    </section>
+
+                    <section class="legal-section" id="rights">
+                        <h2>9. 您的權利 — 如何實際行使</h2>
+                        <p>依香港《個人資料（私隱）條例》，您享有以下權利。我們建議以電郵提出，以便留底：</p>
+                        <ul>
+                            <li><strong>查閱：</strong>索取我們持有的您的資料副本 — 請電郵 <a href="mailto:privacy@wanwusuo.hk">privacy@wanwusuo.hk</a>，注明「查閱資料要求」及註冊／預訂電郵。</li>
+                            <li><strong>更正：</strong>帳戶的顯示名稱、電話可於 <a href="account.html">我的帳戶</a> 自行修改；預訂資料如有誤，請電郵我們並提供預訂日期與電話以便核對。</li>
+                            <li><strong>刪除帳戶：</strong>電郵要求刪除 — 我們會刪除 Auth 帳戶及 profile；已提交的預訂／投稿可能因備貨或法律需要保留一段時間後再刪。</li>
+                            <li><strong>投訴：</strong>可先聯絡我們；您亦有權向<a href="https://www.pcpd.org.hk" target="_blank" rel="noopener noreferrer">個人資料私隱專員公署</a>投訴。</li>
+                        </ul>
+                        <div class="legal-callout">
+                            <strong>回覆時限：</strong>我們目標於收到完整請求後 <strong>40 日內</strong>回覆。若需延長（例如請求涉及大量紀錄），我們會事先說明原因及預計日期。
+                        </div>
+                    </section>
+
+                    <section class="legal-section" id="cookies">
+                        <h2>10. Cookie 與本機儲存（具體項目）</h2>
+                        <div class="legal-table-wrap">
+                            <table class="legal-table">
+                                <thead>
+                                    <tr><th>項目</th><th>類型</th><th>用途</th><th>如何清除</th></tr>
+                                </thead>
+                                <tbody>
+                                    <tr>
+                                        <td>Supabase Auth token</td>
+                                        <td>localStorage / Cookie（依瀏覽器）</td>
+                                        <td>維持登入狀態</td>
+                                        <td>登出，或清除網站資料</td>
+                                    </tr>
+                                    <tr>
+                                        <td><code>wanwu_reservations</code></td>
+                                        <td>localStorage</td>
+                                        <td>離線時暫存預訂表單</td>
+                                        <td>成功提交後可手動清除；或瀏覽器設定</td>
+                                    </tr>
+                                    <tr>
+                                        <td><code>wanwu_submissions</code></td>
+                                        <td>localStorage</td>
+                                        <td>離線時暫存投稿表單</td>
+                                        <td>同上</td>
+                                    </tr>
+                                </tbody>
+                            </table>
+                        </div>
+                        <p>我們<strong>不使用</strong> Facebook Pixel、Google Ads 轉換追蹤等第三方廣告 Cookie。</p>
+                    </section>
+
+                    <section class="legal-section" id="children">
+                        <h2>11. 兒童私隱</h2>
+                        <p>本網站面向一般大眾，不針對 18 歲以下設計。若家長或監護人發現未成年人未經同意提交個人資料，請電郵 <a href="mailto:privacy@wanwusuo.hk">privacy@wanwusuo.hk</a>，我們會於核實後刪除相關紀錄。</p>
+                    </section>
+
+                    <section class="legal-section" id="contact">
+                        <h2>12. 政策更新與聯絡</h2>
+                        <p>當我們新增功能（例如線上付款、會員積分）而需收集新類型資料時，會更新本頁並修訂「最後更新」日期。重大變更會於首頁或帳戶頁提示。</p>
+                        <p><strong>私隱查詢：</strong> <a href="mailto:privacy@wanwusuo.hk">privacy@wanwusuo.hk</a></p>
+                        <p class="legal-crosslink">相關文件：<a href="data-security.html">數據安全聲明</a> · <a href="account.html">我的帳戶</a></p>
+                    </section>
+                </div>
+            </div>
+        </div>
+    </main>
+
+    <footer class="site-footer">
+        <p class="footer-brand">卍物所 · 香磚 • 寧磚 · 萬物皆可能</p>
+        <nav class="footer-legal" aria-label="法律文件">
+            <a href="privacy.html">私隱權政策</a>
+            <span aria-hidden="true">·</span>
+            <a href="data-security.html">數據安全聲明</a>
+            <span aria-hidden="true">·</span>
+            <a href="account.html">我的帳戶</a>
+        </nav>
+        <p class="footer-copy">© 2026 卍物所 · 最後更新：2026-07-12</p>
+    </footer>
+
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <script src="supabase-config.js"></script>
+    <script src="js/auth.js"></script>
+</body>
+</html>
