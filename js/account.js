@@ -1,5 +1,5 @@
 /**
- * 卍物所 — 我的帳戶頁（個人資料 + 會員快速訂單）
+ * 卍物所 — 我的帳戶頁（個人資料 + 會員快速訂單 + 登入驗證狀態與密碼修改）
  */
 (function () {
     'use strict';
@@ -97,6 +97,11 @@
         const phone = (profile && profile.phone) || '';
         const products = await WanwuAuth.fetchOrderProducts();
 
+        // 讀取當前用戶的所有登入身份類型
+        const identities = user.identities || [];
+        const hasEmail = identities.some(id => id.provider === 'email');
+        const hasGoogle = identities.some(id => id.provider === 'google');
+
         container.innerHTML = `
             <div class="account-member-banner">
                 <p>已登入為 <strong>${escapeHtml(displayName)}</strong>（${escapeHtml(user.email)}）</p>
@@ -122,6 +127,54 @@
                         <button type="submit" class="btn btn-primary">儲存變更</button>
                         <div class="form-feedback" id="profileFeedback" role="status"></div>
                     </form>
+
+                    <div class="auth-status-card">
+                        <div class="auth-status-header">
+                            <div class="auth-status-title">
+                                <div class="auth-status-dot ${hasEmail ? 'active-email' : ''}"></div>
+                                <span style="color: ${hasEmail ? 'var(--text)' : 'var(--text-tertiary)'}">本機電子郵件</span>
+                            </div>
+                            <span class="auth-status-badge ${hasEmail ? 'active-email' : ''}">
+                                ${hasEmail ? '已驗證' : '未啟用'}
+                            </span>
+                        </div>
+                        
+                        ${hasEmail ? `
+                        <div class="auth-status-action-row">
+                            <button type="button" id="btnTogglePasswordEdit" class="auth-status-edit-btn">編輯密碼</button>
+                        </div>
+                        <div id="passwordEditSection" class="password-edit-form hidden">
+                            <form id="passwordChangeForm" novalidate>
+                                <div class="form-group">
+                                    <label for="old_password">原有密碼</label>
+                                    <input type="password" id="old_password" required autocomplete="current-password">
+                                </div>
+                                <div class="form-group">
+                                    <label for="new_password">新密碼（最少 6 位字元）</label>
+                                    <input type="password" id="new_password" required autocomplete="new-password">
+                                </div>
+                                <div class="form-group">
+                                    <label for="confirm_new_password">確認新密碼</label>
+                                    <input type="password" id="confirm_new_password" required autocomplete="new-password">
+                                </div>
+                                <button type="submit" class="btn btn-primary" style="width:100%; padding: 10px; font-size: 0.85rem;">確認變更密碼</button>
+                                <div class="form-feedback" id="passwordFeedback" role="status"></div>
+                            </form>
+                        </div>
+                        ` : ''}
+                    </div>
+
+                    <div class="auth-status-card">
+                        <div class="auth-status-header">
+                            <div class="auth-status-title">
+                                <div class="auth-status-dot ${hasGoogle ? 'active-google' : ''}"></div>
+                                <span style="color: ${hasGoogle ? 'var(--text)' : 'var(--text-tertiary)'}">Google 帳戶連結</span>
+                            </div>
+                            <span class="auth-status-badge ${hasGoogle ? 'active-google' : ''}">
+                                ${hasGoogle ? '已連結' : '未啟用'}
+                            </span>
+                        </div>
+                    </div>
                 </section>
 
                 <section class="account-panel account-panel--order">
@@ -166,6 +219,7 @@
 
         renderMarketDatePicker('accountDatePicker', 'pickup_date');
 
+        // --- 綁定：個人資料更新 ---
         const profileForm = document.getElementById('profileForm');
         if (profileForm) {
             profileForm.addEventListener('submit', async function (e) {
@@ -187,6 +241,80 @@
             });
         }
 
+        // --- 綁定：密碼編輯展開與收合 ---
+        const btnTogglePasswordEdit = document.getElementById('btnTogglePasswordEdit');
+        const passwordEditSection = document.getElementById('passwordEditSection');
+        if (btnTogglePasswordEdit && passwordEditSection) {
+            btnTogglePasswordEdit.addEventListener('click', function () {
+                const isHidden = passwordEditSection.classList.toggle('hidden');
+                btnTogglePasswordEdit.textContent = isHidden ? '編輯密碼' : '取消編輯';
+            });
+        }
+
+        // --- 綁定：變更密碼表單提交 ---
+        const passwordChangeForm = document.getElementById('passwordChangeForm');
+        if (passwordChangeForm) {
+            passwordChangeForm.addEventListener('submit', async function (e) {
+                e.preventDefault();
+                const fb = document.getElementById('passwordFeedback');
+                const btnSubmit = passwordChangeForm.querySelector('button[type="submit"]');
+                
+                const oldPassword = document.getElementById('old_password').value;
+                const newPassword = document.getElementById('new_password').value;
+                const confirmNewPassword = document.getElementById('confirm_new_password').value;
+
+                if (!oldPassword || !newPassword || !confirmNewPassword) {
+                    showFeedback(fb, '請填寫所有密碼欄位', 'error');
+                    return;
+                }
+                if (newPassword.length < 6) {
+                    showFeedback(fb, '新密碼長度至少需要 6 位字元', 'error');
+                    return;
+                }
+                if (newPassword !== confirmNewPassword) {
+                    showFeedback(fb, '兩次輸入的新密碼不一致', 'error');
+                    return;
+                }
+
+                btnSubmit.disabled = true;
+                showFeedback(fb, '正在安全驗證並變更密碼…', 'success');
+
+                try {
+                    const client = WanwuAuth.getClient();
+                    if (!client) throw new Error('無法連線至認證服務');
+
+                    // 1. 安全步驟：利用當前 Email 及使用者輸入的舊密碼嘗試進行驗證
+                    const { error: signInError } = await client.auth.signInWithPassword({
+                        email: user.email,
+                        password: oldPassword
+                    });
+                    if (signInError) throw new Error('原有密碼不正確，請重新輸入');
+
+                    // 2. 驗證通過後，執行密碼更新
+                    const { error: updateError } = await client.auth.updateUser({
+                        password: newPassword
+                    });
+                    if (updateError) throw updateError;
+
+                    showFeedback(fb, '密碼已成功更新！', 'success');
+                    passwordChangeForm.reset();
+                    
+                    setTimeout(() => {
+                        passwordEditSection.classList.add('hidden');
+                        if (btnTogglePasswordEdit) btnTogglePasswordEdit.textContent = '編輯密碼';
+                        fb.className = 'form-feedback';
+                        fb.textContent = '';
+                    }, 2500);
+
+                } catch (err) {
+                    showFeedback(fb, err.message || '變更失敗，請稍後再試', 'error');
+                } finally {
+                    btnSubmit.disabled = false;
+                }
+            });
+        }
+
+        // --- 綁定：提交快速預訂訂單 ---
         const orderForm = document.getElementById('orderForm');
         if (orderForm) {
             orderForm.addEventListener('submit', async function (e) {
@@ -232,6 +360,7 @@
             });
         }
 
+        // --- 綁定：登出 ---
         const logoutBtn = document.getElementById('logoutBtn');
         if (logoutBtn) {
             logoutBtn.addEventListener('click', async function () {
@@ -273,6 +402,9 @@
                             <div><dt>提交時間</dt><dd>${escapeHtml(formatDateTime(o.created_at))}</dd></div>
                         </dl>
                         ${o.notes ? `<p class="reservation-notes">${escapeHtml(o.notes)}</p>` : ''}
+                             <div style="margin-top: 16px; text-align: right; padding-top: 12px;">
+                             <a href="order-detail.html?id=${o.id}" class="btn btn-secondary" style="padding: 6px 16px; font-size: 0.82rem;">查看更多</a>
+                             </div>
                     </article>`;
             }).join('');
         }

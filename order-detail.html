@@ -1,0 +1,134 @@
+<!DOCTYPE html>
+<html lang="zh-HK">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>網上商店訂單 — 卍物所</title>
+    <link rel="icon" href="Logo.jpg" type="image/jpeg">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&family=Noto+Serif+TC:wght@400;500;600&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="css/main.css">
+    <link rel="stylesheet" href="css/order-detail.css">
+</head>
+<body>
+    <header class="site-header scrolled">
+        <div class="header-inner">
+            <a href="index.html" class="brand">
+                <span class="logo-ring logo-ring--sm" aria-hidden="true">
+                    <img src="Logo.jpg" alt="">
+                </span>
+                <span class="brand-name">卍物所</span>
+            </a>
+            <nav>
+                <ul class="nav-links">
+                    <li><a href="index.html">首頁</a></li>
+                    <li><a href="account.html">我的帳戶</a></li>
+                </ul>
+            </nav>
+            <div class="header-auth" id="headerAuth"></div>
+        </div>
+    </header>
+
+    <main class="order-detail-page">
+        <div class="section-inner" style="max-width: 960px;">
+            <a href="account.html" class="back-link">← 返回我的帳單</a>
+            
+            <div class="order-detail-header">
+                <div>
+                    <h1 class="order-detail-title"><span class="icon-monitor">💻</span> 網上商店訂單 <span id="displayOrderId">#加載中...</span></h1>
+                    <p class="order-detail-date" id="displayOrderDate">訂單日期：加載中...</p>
+                </div>
+                
+                <div class="order-header-actions">
+                    <button type="button" class="btn-action-outline">💬 聯絡我們</button>
+                    <button type="button" class="btn-action-solid" id="btnPrintReceipt">🖨️ 列印電子收據</button>
+                    <button type="button" class="btn-action-solid">⭐ 我的評價</button>
+                </div>
+
+            </div>
+
+            <div class="order-progress-container">
+                <div class="order-progress" id="orderProgress">
+                    <div class="progress-step step-1" data-step="1">
+                        <div class="progress-dot"></div>
+                        <span class="progress-label">已收到</span>
+                    </div>
+                    <div class="progress-step step-2" data-step="2">
+                        <div class="progress-dot"></div>
+                        <span class="progress-label">處理中</span>
+                    </div>
+                    <div class="progress-step step-3" data-step="3">
+                        <div class="progress-dot"></div>
+                        <span class="progress-label">已完成備貨</span>
+                    </div>
+                    <div class="progress-step step-4" data-step="4">
+                        <div class="progress-dot"></div>
+                        <span class="progress-label">已完成交易</span>
+                    </div>
+                </div>
+                <div class="progress-hint">
+                    <p>如你有任何問題，請聯絡我們。<br>有關產品檢查和維修的詳細資訊，請瀏覽 "產品退換及維修"</p>
+                </div>
+            </div>
+
+            <div class="order-details-grid">
+                <div class="order-info-column">
+                    <h3>訂單詳情</h3>
+                    <dl class="info-list">
+                        <dt>付款方法</dt>
+                        <dd id="displayPaymentMethod">到付（即場現金）</dd>
+                        
+                        <dt>收貨方式</dt>
+                        <dd>到店取貨</dd>
+                        
+                        <dt>預計取貨日期</dt>
+                        <dd id="displayPickupDate">加載中...</dd>
+                        
+                        <dt>收貨資訊</dt>
+                        <dd id="displayCustomerInfo">加載中...</dd>
+                        
+                        <dt>取貨地址</dt>
+                        <dd>香港維多利亞公園市集<br>卍物所專屬攤位</dd>
+                    </dl>
+                </div>
+                
+                <div class="order-summary-column">
+                    <h3>訂單總覽</h3>
+                    <div class="summary-row">
+                        <span>訂單總額</span>
+                        <span id="displaySubtotal">HK$0</span>
+                    </div>
+                    <div class="summary-row">
+                        <span><span class="icon">📦</span> 運費</span>
+                        <span>免費</span>
+                    </div>
+                    <div class="summary-row summary-total">
+                        <span>付款金額</span>
+                        <span class="total-price" id="displayTotal">HK$0</span>
+                    </div>
+                </div>
+            </div>
+
+            <div class="order-product-section">
+                <div class="product-section-header">
+                    <h3>產品列表</h3>
+                    <button class="btn-action-outline btn-sm">🛍️ 產品退換及維修</button>
+                </div>
+                <div class="product-list-container" id="orderProductList">
+                    <p class="loading-placeholder">載入產品中...</p>
+                </div>
+            </div>
+        </div>
+    </main>
+
+    <footer class="site-footer">
+        <p class="footer-copy">© 2026 卍物所</p>
+    </footer>
+
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <script src="supabase-config.js"></script>
+    <script src="js/auth.js"></script>
+    <script src="js/order-detail.js"></script>
+</body>
+</html>
