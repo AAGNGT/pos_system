@@ -508,3 +508,36 @@
 
     document.addEventListener('DOMContentLoaded', initAuth);
 })();
+
+async function handleSecureAuth(actionType, email, password) {
+    // 1. 執行 reCAPTCHA 驗證
+    const token = await new Promise((resolve) => {
+        grecaptcha.ready(function() {
+            grecaptcha.execute('6LfioU8tAAAAAK4aGAkpu2RDA9nSQO-xVCDUsqJI', {action: 'submit'})
+                .then(function(token) { resolve(token); });
+        });
+    });
+
+    // 2. 呼叫後端 Edge Function 進行 Server-side 驗證
+    // 避免將 Secret Key 暴露在前端
+    const response = await fetch('https://ysohdkbkhnsyowvzdlvn.supabase.co/functions/v1/verify-captcha', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ token })
+    });
+    
+    const verification = await response.json();
+
+    if (!verification.success) {
+        throw new Error('機器人驗證失敗，請重新嘗試。');
+    }
+
+    // 3. 驗證成功，執行 Supabase Auth
+    const client = window.WanwuAuth.getClient();
+    if (actionType === 'signup') {
+        return await client.auth.signUp({ email, password });
+    } else {
+        return await client.auth.signInWithPassword({ email, password });
+    }
+}
+

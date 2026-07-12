@@ -12,13 +12,34 @@
         });
     }
 
+    // 新增：顯示自訂通知框的函數
+    function showCustomAlert(message, callback) {
+        const overlay = document.getElementById('customAlertModal');
+        const msgEl = document.getElementById('customAlertMessage');
+        const btn = document.getElementById('customAlertBtn');
+
+        if (msgEl) msgEl.textContent = message;
+        if (overlay) {
+            overlay.classList.add('open');
+            document.body.style.overflow = 'hidden';
+        }
+
+        btn.onclick = function() {
+            if (overlay) overlay.classList.remove('open');
+            document.body.style.overflow = '';
+            if (callback) callback();
+        };
+    }
+
     async function loadOrderDetail() {
         const urlParams = new URLSearchParams(window.location.search);
         const orderId = urlParams.get('id');
 
         if (!orderId) {
-            alert('找不到訂單編號');
-            window.location.href = 'account.html';
+            // 使用新版通知框取代 alert()
+            showCustomAlert('找不到訂單編號', () => {
+                window.location.href = 'account.html';
+            });
             return;
         }
 
@@ -34,8 +55,10 @@
             .single();
 
         if (error || !order) {
-            alert('無法讀取該訂單或您沒有權限');
-            window.location.href = 'account.html';
+            // 使用新版通知框取代 alert()
+            showCustomAlert('無法讀取該訂單或您沒有權限', () => {
+                window.location.href = 'account.html';
+            });
             return;
         }
 

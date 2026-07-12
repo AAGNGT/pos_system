@@ -1,0 +1,133 @@
+/* =========================================
+   首頁專屬模組 (home.css)
+========================================= */
+
+/* ── Hero ── */
+.hero { min-height: 100vh; display: flex; flex-direction: column; justify-content: center; align-items: center; text-align: center; padding-top: var(--header-h); position: relative; }
+.hero::before { content: ""; position: absolute; inset: 0; background: radial-gradient(ellipse 80% 50% at 50% 0%, rgba(122, 107, 88, 0.06), transparent 70%); pointer-events: none; }
+.logo-ring--hero { width: clamp(88px, 18vw, 120px); height: clamp(88px, 18vw, 120px); padding: 4px; }
+.hero-logo { margin-bottom: 28px; }
+.hero-logo .logo-ring--hero:hover { transform: scale(1.03); }
+.hero-eyebrow { font-size: 0.78rem; letter-spacing: 0.28em; color: var(--text-tertiary); margin-bottom: 24px; }
+.hero h1 { font-family: "Noto Serif TC", serif; font-size: clamp(3rem, 10vw, 5.5rem); font-weight: 500; letter-spacing: 0.12em; line-height: 1.1; margin-bottom: 28px; }
+.hero-sub { font-size: clamp(1rem, 2.5vw, 1.2rem); color: var(--text-secondary); max-width: 420px; margin-bottom: 48px; line-height: 1.8; }
+.hero-cta { display: flex; gap: 16px; flex-wrap: wrap; justify-content: center; }
+.scroll-hint { position: absolute; bottom: 40px; left: 50%; transform: translateX(-50%); font-size: 0.72rem; color: var(--text-tertiary); letter-spacing: 0.15em; animation: float 3s ease-in-out infinite; }
+@keyframes float { 0%, 100% { transform: translateX(-50%) translateY(0); opacity: 0.5; } 50% { transform: translateX(-50%) translateY(6px); opacity: 1; } }
+
+/* ── Philosophy ── */
+.name-breakdown { display: grid; grid-template-columns: repeat(3, 1fr); gap: 20px; margin: 48px 0; }
+.name-char { text-align: center; padding: 28px 16px; background: var(--bg-elevated); border-radius: var(--radius); border: 1px solid var(--border); }
+.name-char > span { display: block; font-family: "Noto Serif TC", serif; font-size: 2rem; color: var(--accent); margin-bottom: 8px; opacity: 0.5; }
+.name-char strong { display: block; font-family: "Noto Serif TC", serif; font-size: 1.2rem; margin-bottom: 10px; }
+.name-char p { font-size: 0.82rem; color: var(--text-secondary); line-height: 1.65; }
+.philosophy-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 20px; margin-bottom: 40px; }
+.pillar-card { padding: 28px; background: var(--bg-elevated); border-radius: var(--radius-lg); border: 1px solid var(--border); transition: transform 0.4s var(--ease-out); }
+.pillar-card:hover { transform: translateY(-3px); }
+.pillar-num { font-size: 0.72rem; letter-spacing: 0.15em; color: var(--accent); margin-bottom: 12px; }
+.pillar-card h3 { font-family: "Noto Serif TC", serif; font-size: 1.1rem; font-weight: 500; margin-bottom: 10px; }
+.pillar-card p { font-size: 0.88rem; color: var(--text-secondary); line-height: 1.75; }
+.brand-story { padding: 32px 36px; border-left: 3px solid var(--accent); background: var(--bg-elevated); border-radius: 0 var(--radius) var(--radius) 0; margin-top: 8px; }
+.brand-story p { font-family: "Noto Serif TC", serif; font-size: 1.02rem; color: var(--text-secondary); line-height: 1.85; margin-bottom: 16px; }
+.brand-story p:last-child { margin-bottom: 0; color: var(--text); font-weight: 500; }
+
+/* ── Series & Shapes ── */
+#series { background: var(--bg-elevated); }
+.series-hero { text-align: center; margin: 40px 0 36px; padding: 32px; border-radius: var(--radius-lg); background: linear-gradient(145deg, rgba(122, 107, 88, 0.06), rgba(122, 107, 88, 0.02)); border: 1px solid var(--border); }
+.series-badge { display: inline-block; font-size: 0.75rem; letter-spacing: 0.2em; color: var(--accent); padding: 6px 16px; border: 1px solid rgba(122, 107, 88, 0.3); border-radius: 999px; margin-bottom: 12px; }
+.series-tagline { font-size: 0.95rem; color: var(--text-secondary); letter-spacing: 0.08em; }
+.shape-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 20px; }
+.shape-card { padding: 32px 24px; background: var(--bg); border-radius: var(--radius-lg); border: 1px solid var(--border); text-align: center; transition: transform 0.4s var(--ease-out), box-shadow 0.4s var(--ease-out); }
+.shape-card:hover { transform: translateY(-4px); box-shadow: var(--shadow-soft); }
+.shape-icon { font-size: 2.2rem; margin-bottom: 16px; line-height: 1; }
+.shape-card h3 { font-family: "Noto Serif TC", serif; font-size: 1.1rem; font-weight: 500; margin-bottom: 8px; }
+.shape-keyword { font-size: 0.82rem; color: var(--accent); letter-spacing: 0.06em; margin-bottom: 6px; }
+.shape-scene { font-size: 0.8rem; color: var(--text-tertiary); margin-bottom: 16px; }
+.shape-link { font-size: 0.82rem; color: var(--text-secondary); text-decoration: none; transition: color 0.2s; cursor: pointer; }
+.shape-link:hover { color: var(--text); }
+
+/* ── Products Grid ── */
+.products-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(240px, 1fr)); gap: 24px; margin-top: 56px; }
+.product-card { background: var(--bg-elevated); border-radius: var(--radius-lg); overflow: hidden; border: 1px solid var(--border); transition: transform 0.45s var(--ease-out), box-shadow 0.45s var(--ease-out); cursor: pointer; }
+.product-card:hover { transform: translateY(-4px); box-shadow: var(--shadow); }
+.product-visual { aspect-ratio: 1; background: linear-gradient(145deg, #ebe8e3 0%, #d8d2c8 100%); display: flex; align-items: center; justify-content: center; position: relative; overflow: hidden; }
+.product-visual img { width: 100%; height: 100%; object-fit: cover; }
+.product-visual svg { width: 55%; height: 55%; opacity: 0.35; }
+.product-shape-emoji { font-size: 3.5rem; line-height: 1; opacity: 0.85; }
+.product-body { padding: 24px; }
+.product-category, .product-series { font-size: 0.72rem; letter-spacing: 0.12em; color: var(--accent); margin-bottom: 8px; }
+.product-series { margin-bottom: 4px; }
+.product-name { font-family: "Noto Serif TC", serif; font-size: 1.15rem; font-weight: 500; margin-bottom: 8px; }
+.product-tagline { font-size: 0.82rem; color: var(--text-tertiary); font-style: italic; margin-bottom: 12px; }
+.product-desc { font-size: 0.85rem; color: var(--text-secondary); line-height: 1.65; margin-bottom: 16px; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; }
+.product-price { font-size: 1.1rem; font-weight: 600; letter-spacing: -0.02em; }
+.product-price span { font-size: 0.8rem; font-weight: 400; color: var(--text-tertiary); margin-left: 4px; }
+
+/* ── Market ── */
+.market-block { margin-top: 56px; display: grid; grid-template-columns: 1fr 1fr; gap: 40px; align-items: start; }
+.market-info { background: var(--bg-elevated); border-radius: var(--radius-lg); padding: 40px; border: 1px solid var(--border); }
+.market-dates { display: flex; gap: 16px; margin: 28px 0; flex-wrap: wrap; }
+.date-chip { padding: 16px 24px; border-radius: var(--radius); background: var(--accent-soft); border: 1px solid rgba(122, 107, 88, 0.2); }
+.date-chip strong { display: block; font-size: 1.4rem; font-family: "Noto Serif TC", serif; color: var(--accent); }
+.date-chip span { font-size: 0.82rem; color: var(--text-secondary); }
+.market-detail { list-style: none; margin-top: 24px; }
+.market-detail li { padding: 12px 0; border-bottom: 1px solid var(--border); font-size: 0.92rem; color: var(--text-secondary); display: flex; gap: 12px; }
+.market-detail li:last-child { border-bottom: none; }
+.market-detail li::before { content: ""; width: 4px; height: 4px; border-radius: 50%; background: var(--accent); margin-top: 10px; flex-shrink: 0; }
+
+.stall-calendar { margin-top: 32px; padding-top: 28px; border-top: 1px solid var(--border); }
+.stall-calendar-top { display: flex; justify-content: space-between; align-items: flex-start; gap: 16px; margin-bottom: 20px; flex-wrap: wrap; }
+.stall-calendar-title { font-family: "Noto Serif TC", serif; font-size: 1.05rem; font-weight: 500; margin-bottom: 4px; }
+.stall-calendar-sub { font-size: 0.78rem; color: var(--text-tertiary); }
+.stall-calendar-today { font-size: 0.82rem; color: var(--text-secondary); padding: 8px 14px; background: var(--bg); border-radius: 999px; border: 1px solid var(--border); }
+.stall-calendar-today strong { color: var(--text); font-weight: 600; }
+.stall-calendar-months { display: grid; grid-template-columns: 1fr 1fr; gap: 20px; }
+.ecal { background: var(--bg); border-radius: var(--radius); border: 1px solid var(--border); padding: 16px; box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.6); }
+.ecal-header { text-align: center; font-family: "Noto Serif TC", serif; font-size: 0.95rem; font-weight: 500; margin-bottom: 14px; color: var(--text); }
+.ecal-weekdays { display: grid; grid-template-columns: repeat(7, 1fr); gap: 4px; margin-bottom: 8px; }
+.ecal-weekdays span { text-align: center; font-size: 0.68rem; color: var(--text-tertiary); font-weight: 500; }
+.ecal-weekdays span:first-child, .ecal-weekdays span:last-child { color: var(--accent); }
+.ecal-grid { display: grid; grid-template-columns: repeat(7, 1fr); gap: 4px; }
+.ecal-day { aspect-ratio: 1; display: flex; align-items: center; justify-content: center; font-size: 0.78rem; color: var(--text-secondary); border-radius: 10px; position: relative; }
+.ecal-day--empty { visibility: hidden; }
+.ecal-day--today { font-weight: 700; color: var(--text); box-shadow: 0 0 0 2px var(--text); background: var(--bg-elevated); }
+.ecal-day--stall-aug { background: linear-gradient(145deg, #e8d5b5, #c9a96e); color: #3d3228; font-weight: 600; box-shadow: 0 2px 8px rgba(201, 169, 110, 0.35); }
+.ecal-day--stall-sep { background: linear-gradient(145deg, #c8d4c0, #8fa383); color: #2a3328; font-weight: 600; box-shadow: 0 2px 8px rgba(143, 163, 131, 0.35); }
+.stall-calendar-legend { display: flex; flex-wrap: wrap; gap: 16px 24px; margin-top: 18px; padding-top: 16px; border-top: 1px dashed var(--border); }
+.legend-item { display: inline-flex; align-items: center; gap: 8px; font-size: 0.78rem; color: var(--text-secondary); }
+.legend-dot { width: 12px; height: 12px; border-radius: 4px; flex-shrink: 0; }
+.legend-today { background: var(--bg-elevated); box-shadow: 0 0 0 2px var(--text); }
+.legend-aug { background: linear-gradient(145deg, #e8d5b5, #c9a96e); }
+.legend-sep { background: linear-gradient(145deg, #c8d4c0, #8fa383); }
+
+/* ── Form Panels (Market & Artists) ── */
+.form-panel { background: var(--bg-elevated); border-radius: var(--radius-lg); padding: 40px; border: 1px solid var(--border); box-shadow: var(--shadow-soft); }
+.form-title { font-family: "Noto Serif TC", serif; font-size: 1.35rem; margin-bottom: 8px; }
+.form-subtitle { font-size: 0.88rem; color: var(--text-secondary); margin-bottom: 28px; }
+
+/* ── Artists ── */
+.benefits-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 20px; margin: 48px 0; }
+.benefit-card { padding: 28px; border-radius: var(--radius); background: var(--bg-elevated); border: 1px solid var(--border); transition: transform 0.4s var(--ease-out); }
+.benefit-card:hover { transform: translateY(-2px); }
+.benefit-num { font-size: 0.72rem; letter-spacing: 0.15em; color: var(--accent); margin-bottom: 12px; }
+.benefit-card h3 { font-family: "Noto Serif TC", serif; font-size: 1.05rem; margin-bottom: 10px; font-weight: 500; }
+.benefit-card p { font-size: 0.88rem; color: var(--text-secondary); line-height: 1.7; }
+.artist-layout { display: grid; grid-template-columns: 1fr 1.1fr; gap: 40px; margin-top: 48px; align-items: start; }
+
+/* ── Product Modal Extras ── */
+.modal-product-visual { aspect-ratio: 1; border-radius: var(--radius); background: linear-gradient(145deg, #ebe8e3, #d8d2c8); margin-bottom: 24px; display: flex; align-items: center; justify-content: center; }
+.modal-product-visual img { width: 100%; height: 100%; object-fit: cover; border-radius: var(--radius); }
+.modal-stall-hint { padding: 14px 16px; border-radius: 12px; background: var(--bg); border: 1px solid var(--border); }
+
+@media (max-width: 900px) {
+    .market-block, .artist-layout { grid-template-columns: 1fr; }
+    .benefits-grid { grid-template-columns: 1fr; }
+}
+@media (max-width: 768px) {
+    .name-breakdown, .philosophy-grid, .shape-grid { grid-template-columns: 1fr; }
+    .brand-story { padding: 24px 20px; }
+    section { padding: 80px 20px; }
+}
+@media (max-width: 600px) {
+    .stall-calendar-months { grid-template-columns: 1fr; }
+}
