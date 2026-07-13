@@ -398,10 +398,17 @@ function calculateDashboard() {
 document.body.classList.add('readonly-mode');
 
 // 監聽 Supabase 登入狀態
-_supabase.auth.onAuthStateChange((event, session) => {
+_supabase.auth.onAuthStateChange(async (event, session) => {
     const lockBtn = document.getElementById('auth-status-btn');
     
     if (session) {
+        // 🛑 安全攔截：檢查 Email 是否為唯一的管理員帳號
+        if (session.user.email !== 'admin@market.local') {
+            showToast("⚠️ 權限不足：此帳戶無編輯財務報表的權限！", true);
+            await _supabase.auth.signOut(); // 強制登出非法帳戶
+            return;
+        }
+
         document.body.classList.remove('readonly-mode');
         lockBtn.innerHTML = '🔓 已解鎖編輯 (點擊鎖定)';
         lockBtn.onclick = logoutAdmin;
@@ -436,11 +443,11 @@ function showToast(message, isError = false) {
 
 // --- 登入與登出邏輯 ---
 async function loginAdmin() {
-    const emailInput = document.getElementById('admin-email').value.trim();
+    const emailInput = 'admin@market.local'; // 絕對寫死，無視任何前端竄改
     const pwdInput = document.getElementById('admin-pwd').value;
     
-    if(!emailInput || !pwdInput) {
-        showToast("⚠️ 請完整輸入電子郵件與密碼！", true);
+    if(!pwdInput) {
+        showToast("⚠️ 請輸入密碼！", true);
         return;
     }
     
@@ -450,9 +457,8 @@ async function loginAdmin() {
     });
 
     if (error) {
-        showToast("⚠️ 登入失敗：電子郵件或密碼錯誤", true);
+        showToast("⚠️ 登入失敗：密碼錯誤", true);
     } else {
-        document.getElementById('admin-email').value = '';
         document.getElementById('admin-pwd').value = '';
         toggleAuthModal();
         showToast("🔓 登入成功！已切換至編輯模式。");
