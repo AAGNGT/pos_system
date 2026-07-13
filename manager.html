@@ -198,11 +198,28 @@
         const div = document.getElementById(`table_${tableName}`);
         if (!data?.length) { div.innerHTML = '<div class="empty-state">無資料</div>'; return; }
         const cols = Object.keys(data[0]);
-        let html = '<div class="table-wrapper"><table class="data-table"><thead><tr>';
+        
+        // 加上批量刪除按鈕
+        let html = `
+          <div style="margin-bottom: 12px; display: flex; justify-content: flex-end;">
+            <button class="btn btn-danger btn-small" onclick="batchDeleteRecords('${tableName}')">🗑️ 批量刪除選取項目</button>
+          </div>
+          <div class="table-wrapper">
+            <table class="data-table">
+              <thead>
+                <tr>
+                  <th style="width: 40px; text-align: center;">
+                    <input type="checkbox" id="selectAll_${tableName}" onchange="toggleSelectAll('${tableName}')" style="cursor:pointer;">
+                  </th>`;
+        
         cols.forEach((c) => html += `<th>${c}</th>`);
         html += '<th>操作</th></tr></thead><tbody>';
+        
         data.forEach((row) => {
           html += '<tr>';
+          // 加上每列的 Checkbox
+          html += `<td style="text-align: center;"><input type="checkbox" class="row-checkbox_${tableName}" value="${row.id}" style="cursor:pointer;"></td>`;
+          
           cols.forEach((c) => {
             let v = row[c];
             if (v === null) v = '—';
@@ -267,6 +284,44 @@
       return false;
     }
 
+// 控制全選/取消全選
+function toggleSelectAll(tableName) {
+      const selectAll = document.getElementById(`selectAll_${tableName}`);
+      const checkboxes = document.querySelectorAll(`.row-checkbox_${tableName}`);
+      checkboxes.forEach((cb) => cb.checked = selectAll.checked);
+    }
+
+    // 執行批量刪除
+    async function batchDeleteRecords(tableName) {
+      const checkboxes = document.querySelectorAll(`.row-checkbox_${tableName}:checked`);
+      const ids = Array.from(checkboxes).map(cb => parseInt(cb.value));
+
+      if (ids.length === 0) {
+        showMessage('請先選擇要刪除的資料', 'error');
+        return;
+      }
+
+      if (!confirm(`確定要刪除選取的 ${ids.length} 筆資料嗎？此動作無法復原。`)) {
+        return;
+      }
+
+      try {
+        // 使用 Supabase 的 .in() 語法進行批量刪除
+        const { error } = await supabaseClient
+          .from(tableName)
+          .delete()
+          .in('id', ids);
+
+        if (error) throw error;
+        
+        showMessage(`已成功刪除 ${ids.length} 筆資料`, 'success');
+        await loadTable(tableName);
+        await loadStats();
+      } catch (e) {
+        showMessage(`批量刪除失敗: ${e.message}`, 'error');
+      }
+    }
+
     window.onload = async () => {
       if (!requireAdminGate()) return;
       if (!initSupabase()) { showMessage('無法初始化 Supabase', 'error'); return; }
@@ -275,6 +330,8 @@
       await loadTable(currentTab);
       document.querySelector('.tab').addEventListener('click', function () {});
     };
+
+
   </script>
 </body>
 </html>

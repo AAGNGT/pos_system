@@ -1,0 +1,215 @@
+<!DOCTYPE html>
+<html lang="zh-HK">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>市集店主財務系統 - 高級儲存版</title>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&family=Noto+Sans+TC:wght@400;500;700&family=Noto+Serif+TC:wght@500;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="style.css">
+</head>
+<body>
+
+    <header class="site-header">
+        <div class="header-inner">
+            <div class="auth-tabs">
+                <button class="auth-tab active" onclick="navTo('dashboard')">主報表 (損益)</button>
+                <button class="auth-tab" onclick="navTo('products')">產品與費用設定</button>
+                <button class="auth-tab" onclick="navTo('purchases')">購貨紀錄 (Part 4)</button>
+                <button class="auth-tab" onclick="navTo('sales')">銷貨紀錄 (Part 3)</button>
+                <button class="auth-tab" onclick="navTo('inventory')">期末存貨 (Part 5)</button>
+            </div>
+            <button id="auth-status-btn" class="lock-btn" onclick="toggleAuthModal()">
+                🔒 唯讀模式 (點擊解鎖)
+            </button>
+        </div>
+    </header>
+
+    <section id="dashboard" class="active">
+        <div class="section-inner dashboard-grid">
+            <div class="form-panel">
+                <h2 class="form-title">第一部分：損益表</h2>
+                <p class="form-subtitle">系統根據你的各項表單動態計算，即使重新整理，數據依然存在。</p>
+                
+                <div class="summary-row"><span>銷貨淨額</span><span id="rep-sales">0.0</span></div>
+                <div class="summary-row"><strong>減：銷貨成本</strong><span></span></div>
+                <div class="summary-row indent"><span>期初存貨</span><span>0.0</span></div>
+                <div class="summary-row indent"><span>加：本期購貨</span><span id="rep-purchases">0.0</span></div>
+                <div class="summary-row indent"><span>減：期末存貨</span><span id="rep-end-inv">0.0</span></div>
+                <div class="summary-row total"><span>銷貨成本總計</span><span id="rep-cogs">0.0</span></div>
+                <div class="summary-row total text-accent"><span>毛利</span><span id="rep-gross">0.0</span></div>
+                
+                <div class="summary-row" style="margin-top:24px;"><strong>減：營業費用</strong><span></span></div>
+                <div class="summary-row indent"><span>攤位租金</span><span id="rep-exp-rent">0.0</span></div>
+                <div class="summary-row indent"><span>包材與日常雜項</span><span id="rep-exp-sup">0.0</span></div>
+                <div class="summary-row indent"><span>交通與運費</span><span id="rep-exp-trans">0.0</span></div>
+                <div class="summary-row indent"><span>行銷與推廣費</span><span id="rep-exp-mark">0.0</span></div>
+                <div class="summary-row total"><span>營業費用總計</span><span id="rep-total-exp">0.0</span></div>
+                
+                <div class="summary-row total" style="font-size:1.3rem;"><span>本期淨利</span><span id="rep-net">0.0</span></div>
+            </div>
+
+            <div class="form-panel" style="height: fit-content;">
+                <h2 class="form-title">第二部分：關鍵財務比率</h2>
+                <p class="form-subtitle">評估你的市集擺攤資金運用效率。</p>
+                
+                <div class="summary-row"><span>業主投入總資本</span><span id="rep-capital">0.0</span></div>
+                <div class="summary-row"><span>毛利率 (Gross Margin)</span><span id="rep-margin-gross">0.0%</span></div>
+                <div class="summary-row"><span>淨利率 (Net Margin)</span><span id="rep-margin-net">0.0%</span></div>
+                <div class="summary-row total text-accent"><span>資本回報率 (ROI)</span><span id="rep-roi">0.0%</span></div>
+            </div>
+        </div>
+    </section>
+
+    <section id="products">
+        <div class="section-inner">
+            <div class="form-panel">
+                <h2 class="form-title">基本費用與資本</h2>
+                <p class="form-subtitle">請輸入本次市集的固定開銷與準備金。</p>
+                <div class="form-row">
+                    <div class="form-group"><label>投入資本 ($)</label><input type="number" id="inp-cap" placeholder="0" oninput="updateState('cap', this.value)"></div>
+                    <div class="form-group"><label>攤位租金 ($)</label><input type="number" id="inp-rent" placeholder="0" oninput="updateState('rent', this.value)"></div>
+                    <div class="form-group"><label>包材雜項 ($)</label><input type="number" id="inp-sup" placeholder="0" oninput="updateState('sup', this.value)"></div>
+                    <div class="form-group"><label>交通運費 ($)</label><input type="number" id="inp-trans" placeholder="0" oninput="updateState('trans', this.value)"></div>
+                    <div class="form-group"><label>行銷推廣 ($)</label><input type="number" id="inp-mark" placeholder="0" oninput="updateState('mark', this.value)"></div>
+                </div>
+            </div>
+
+            <div class="form-panel">
+                <h2 class="form-title">產品增加表</h2>
+                <p class="form-subtitle">新增你販售的商品。請在此手動設定「製成總量」，系統會根據購貨紀錄中的總金額自動算出單件成本。</p>
+                <div style="margin-bottom: 24px;">
+                    <button class="btn btn-primary" onclick="addProduct()">＋ 新增一款產品</button>
+                </div>
+                <div class="table-wrapper">
+                    <table>
+                        <thead>
+                            <tr>
+                                <th>產品名稱</th>
+                                <th>製成總量 (手動設定)</th>
+                                <th>總購貨成本 ($)</th>
+                                <th>平均單件成本 ($)</th>
+                                <th width="80">操作</th>
+                            </tr>
+                        </thead>
+                        <tbody id="tb-products"></tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <section id="purchases">
+        <div class="section-inner form-panel">
+            <h2 class="form-title">第四部分：購貨原始分錄明細表</h2>
+            <p class="form-subtitle">記錄你購買原材料或商品的成本。數量欄位可留空，成本計算將以你填寫的「總購貨金額」為準。</p>
+            <div style="margin-bottom: 24px;">
+                <button class="btn btn-primary" onclick="addRow('purchases')">＋ 新增購貨紀錄</button>
+            </div>
+            <div class="table-wrapper">
+                <table>
+                    <thead>
+                        <tr>
+                            <th width="150">交易日期</th>
+                            <th width="150">對應產品</th>
+                            <th width="120">數量(選填)</th>
+                            <th width="150">總購貨金額($)</th>
+                            <th>單據/備註</th>
+                            <th width="80">操作</th>
+                        </tr>
+                    </thead>
+                    <tbody id="tb-purchases"></tbody>
+                    <tfoot>
+                        <tr>
+                            <th colspan="3" class="text-right">購貨總額：</th>
+                            <th colspan="3" id="total-purchases-ui" class="text-accent" style="font-size: 1.1rem;">0.0</th>
+                        </tr>
+                    </tfoot>
+                </table>
+            </div>
+        </div>
+    </section>
+
+    <section id="sales">
+        <div class="section-inner form-panel">
+            <h2 class="form-title">第三部分：銷貨原始分錄明細表</h2>
+            <p class="form-subtitle">記錄你的賣出紀錄。銷售會自動扣除庫存並增加營業額。</p>
+            <div style="margin-bottom: 24px;">
+                <button class="btn btn-primary" onclick="addRow('sales')">＋ 新增銷貨紀錄</button>
+            </div>
+            <div class="table-wrapper">
+                <table>
+                    <thead>
+                        <tr>
+                            <th width="150">交易日期</th>
+                            <th width="150">產品名稱</th>
+                            <th width="120">數量</th>
+                            <th width="150">總銷貨金額($)</th>
+                            <th>交易/備註</th>
+                            <th width="80">操作</th>
+                        </tr>
+                    </thead>
+                    <tbody id="tb-sales"></tbody>
+                    <tfoot>
+                        <tr>
+                            <th colspan="3" class="text-right">銷貨總額：</th>
+                            <th colspan="3" id="total-sales-ui" class="text-accent" style="font-size: 1.1rem;">0.0</th>
+                        </tr>
+                    </tfoot>
+                </table>
+            </div>
+        </div>
+    </section>
+
+    <section id="inventory">
+        <div class="section-inner form-panel">
+            <h2 class="form-title">第五部分：期末存貨盤點明細表</h2>
+            <p class="form-subtitle">系統根據進銷自動結算剩餘數量。你可以在「自訂期末定價」直接填寫數字，進行存貨加價或減值。</p>
+            <div class="table-wrapper">
+                <table>
+                    <thead>
+                        <tr>
+                            <th>產品名稱</th>
+                            <th>剩餘數量</th>
+                            <th>系統平均成本 ($)</th>
+                            <th width="200">自訂期末定價 ($/件)</th>
+                            <th class="text-right">期末存貨總價值 ($)</th>
+                        </tr>
+                    </thead>
+                    <tbody id="tb-inventory"></tbody>
+                    <tfoot>
+                        <tr>
+                            <th colspan="4" class="text-right">存貨總計：</th>
+                            <th id="total-inv-ui" class="text-accent text-right" style="font-size: 1.1rem;">0.0</th>
+                        </tr>
+                    </tfoot>
+                </table>
+            </div>
+        </div>
+    </section>
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <script src="script.js"></script>
+
+<div id="auth-modal" class="auth-modal">
+        <div class="auth-box">
+            <h2 class="form-title" style="margin-bottom: 8px; text-align: center;">店主與授權人員登入</h2>
+            <p style="font-size: 0.85rem; color: var(--text-secondary); margin-bottom: 28px; text-align: center;">請輸入已在後台授權的電子郵件與密碼，以解鎖編輯權限。</p>
+            
+            <div style="text-align: left; margin-bottom: 16px;">
+                <label style="display: block; font-size: 0.82rem; font-weight: 600; color: var(--text-secondary); margin-bottom: 8px;">電子郵件</label>
+                <input type="email" id="admin-email" class="cell-input" style="border: 1px solid var(--border); width: 100%; box-sizing: border-box; background: var(--bg);" placeholder="your@email.com">
+            </div>
+
+            <div style="text-align: left; margin-bottom: 32px;">
+                <label style="display: block; font-size: 0.82rem; font-weight: 600; color: var(--text-secondary); margin-bottom: 8px;">密碼</label>
+                <input type="password" id="admin-pwd" class="cell-input" style="border: 1px solid var(--border); width: 100%; box-sizing: border-box; background: var(--bg);" placeholder="請輸入密碼">
+            </div>
+
+            <div style="display: flex; gap: 12px; justify-content: center;">
+                <button class="btn btn-secondary" style="flex: 1;" onclick="toggleAuthModal()">取消</button>
+                <button class="btn btn-primary" style="flex: 1;" onclick="loginAdmin()">登入解鎖</button>
+            </div>
+        </div>
+    </div>
+    <div id="custom-toast" class="welcome-toast"></div>
+</body>
+</html>
