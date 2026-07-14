@@ -30,6 +30,22 @@
         </div>
     </header>
 
+    <script>
+        (function() {
+            var cachedName = localStorage.getItem('session_username');
+            var authContainer = document.getElementById('headerAuth');
+            if (authContainer) {
+                if (cachedName) {
+                    // 防止 XSS 攻擊的字元過濾
+                    var safeName = cachedName.replace(/</g, "&lt;").replace(/>/g, "&gt;");
+                    authContainer.innerHTML = '<a href="account.html" class="header-auth-link">' + safeName + '</a>';
+                } else {
+                    authContainer.innerHTML = '<button type="button" class="header-auth-btn" id="openAuthBtn">登入</button>';
+                }
+            }
+        })();
+    </script>
+    
     <main class="order-detail-page">
         <div class="section-inner" style="max-width: 960px;">
             <a href="account.html" class="back-link">← 返回我的帳單</a>
@@ -40,11 +56,13 @@
                     <p class="order-detail-date" id="displayOrderDate">訂單日期：加載中...</p>
                 </div>
                 
-                <div class="order-header-actions">
-                    <button type="button" class="btn-action-outline">💬 聯絡我們</button>
-                    <button type="button" class="btn-action-solid" id="btnPrintReceipt">🖨️ 列印電子收據</button>
-                    <button type="button" class="btn-action-solid">⭐ 我的評價</button>
-                </div>
+            <div class="order-header-actions">
+                <a href="contact.html" class="btn-action-outline">💬 聯絡我們</a>
+                <button type="button" class="btn-action-solid" id="btnPrintReceipt">🖨️ 列印電子收據</button>
+                <a href="https://www.instagram.com/infinitymarket_hkrss/" target="_blank" rel="noopener noreferrer" class="btn-action-solid">📸 追蹤卍物所 IG</a>
+                
+            </div>
+
 
             </div>
 

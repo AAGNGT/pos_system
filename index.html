@@ -31,31 +31,50 @@
     <div id="welcomeToast" class="welcome-toast"></div>
     
 
-    <header class="site-header">
+<header class="site-header scrolled">
         <div class="header-inner">
-            <a href="#" class="brand">
+            <a href="index.html" class="brand">
                 <span class="logo-ring logo-ring--sm" aria-hidden="true">
-                    <img src="Logo.jpg" alt="">
+                    <img src="Logo.jpg" alt="卍物所">
                 </span>
                 <span class="brand-name">卍物所</span>
             </a>
+            
             <button class="nav-toggle" type="button" aria-label="開啟選單">
                 <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" aria-hidden="true">
                     <path d="M4 7h16M4 12h16M4 17h16"/>
                 </svg>
             </button>
+            
             <nav>
                 <ul class="nav-links">
-                    <li><a href="#philosophy">理念</a></li>
-                    <li><a href="#series">寧磚系列</a></li>
-                    <li><a href="#products">款式</a></li>
-                    <li><a href="#market">維園市集</a></li>
-                    <li><a href="#artists">畫家投稿</a></li>
+                    <li><a href="index.html#philosophy">理念</a></li>
+                    <li><a href="index.html#series">寧磚系列</a></li>
+                    <li><a href="index.html#products">款式</a></li>
+                    <li><a href="index.html#market">維園市集</a></li>
+                    <li><a href="index.html#artists">畫家投稿</a></li>
                 </ul>
             </nav>
+            
             <div class="header-auth" id="headerAuth"></div>
         </div>
     </header>
+
+    <script>
+        (function() {
+            var cachedName = localStorage.getItem('session_username');
+            var authContainer = document.getElementById('headerAuth');
+            if (authContainer) {
+                if (cachedName) {
+                    // 防止 XSS 攻擊的字元過濾
+                    var safeName = cachedName.replace(/</g, "&lt;").replace(/>/g, "&gt;");
+                    authContainer.innerHTML = '<a href="account.html" class="header-auth-link">' + safeName + '</a>';
+                } else {
+                    authContainer.innerHTML = '<button type="button" class="header-auth-btn" id="openAuthBtn">登入</button>';
+                }
+            }
+        })();
+    </script>
 
     <main>
         <!-- Hero -->
@@ -166,7 +185,7 @@
         <section id="market">
             <div class="section-inner">
                 <p class="section-label reveal">Victoria Park</p>
-                <h2 class="section-title reveal">維園市集 · 即場預訂</h2>
+                <h2 class="section-title reveal">維園市集 · 即場售賣</h2>
                 <p class="section-lead reveal">我們將於 <strong>2026 年 8 月 22–23 日</strong> 及 <strong>9 月 12–13 日</strong> 在維多利亞公園設攤。您可提前預訂，市集當日為您備貨。</p>
 
                 <div class="market-block">
@@ -215,7 +234,7 @@
                     </div>
 
                     <div class="form-panel reveal">
-                        <h3 class="form-title">即場預訂</h3>
+                        <h3 class="form-title">即場售賣</h3>
                         <p class="form-subtitle" id="reserveFormSubtitle">填寫以下資料，我們將於市集為您留貨。</p>
                         <div class="account-member-banner account-member-banner--compact hidden" id="reserveLoggedInBanner">
                             <p>已登入 — 聯絡資料將從帳戶自動帶入，只需選擇產品與取貨日。</p>
@@ -271,7 +290,7 @@
             <div class="section-inner">
                 <p class="section-label reveal">For Artists</p>
                 <h2 class="section-title reveal">畫家投稿</h2>
-                <p class="section-lead reveal">歡迎畫家提交作品。你的創作，可能是下一款寧磚造型 — 我們協助落實為可觸摸的精美禮品，並以透明方式回饋創作者。</p>
+                <p class="section-lead reveal">歡迎萬慈中學同學提交作品。你的創作，可能是下一款寧磚造型 — 我們協助落實為可觸摸的精美禮品，並以透明方式回饋創作者。</p>
 
                 <div class="benefits-grid">
                     <article class="benefit-card reveal">

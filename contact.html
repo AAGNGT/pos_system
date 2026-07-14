@@ -1,0 +1,83 @@
+<!DOCTYPE html>
+<html lang="zh-HK">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>聯絡我們 — 卍物所</title>
+    <link rel="icon" href="Logo.jpg" type="image/jpeg">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&family=Noto+Serif+TC:wght@400;500;600&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="css/main.css">
+    <link rel="stylesheet" href="css/contact.css">
+</head>
+<body>
+    <header class="site-header scrolled">
+        <div class="header-inner">
+            <a href="index.html" class="brand">
+                <span class="logo-ring logo-ring--sm" aria-hidden="true">
+                    <img src="Logo.jpg" alt="">
+                </span>
+                <span class="brand-name">卍物所</span>
+            </a>
+            <nav>
+                <ul class="nav-links">
+                    <li><a href="index.html">首頁</a></li>
+                    <li><a href="account.html">我的帳戶</a></li>
+                </ul>
+            </nav>
+            <div class="header-auth" id="headerAuth"></div>
+        </div>
+    </header>
+
+    <script>
+        (function() {
+            var cachedName = localStorage.getItem('session_username');
+            var authContainer = document.getElementById('headerAuth');
+            if (authContainer) {
+                if (cachedName) {
+                    // 防止 XSS 攻擊的字元過濾
+                    var safeName = cachedName.replace(/</g, "&lt;").replace(/>/g, "&gt;");
+                    authContainer.innerHTML = '<a href="account.html" class="header-auth-link">' + safeName + '</a>';
+                } else {
+                    authContainer.innerHTML = '<button type="button" class="header-auth-btn" id="openAuthBtn">登入</button>';
+                }
+            }
+        })();
+    </script>
+
+    <main class="contact-page">
+        <div class="section-inner" style="max-width: 960px;">
+            <a href="javascript:history.back()" class="back-link">← 返回上一頁</a>
+
+            <div class="chat-container">
+                <div class="chat-header">
+                    <div class="chat-title">
+                        <h2>卍物所 客服專員</h2>
+                        <span class="status online">目前在線 (服務時間: 10:00 - 22:00)</span>
+                    </div>
+                </div>
+
+                <div class="chat-history" id="chatHistory">
+                    <div class="message system">
+                        <div class="bubble">您好！請問有咩訂單問題需要協助？你可以隨時喺度留言，我們會盡快回覆您。</div>
+                        <span class="time">10:00 AM</span>
+                    </div>
+                </div>
+
+                <div class="chat-input-area">
+                    <form id="chatForm">
+                        <input type="text" id="messageInput" placeholder="輸入您的訊息..." required autocomplete="off">
+                        <button type="submit" class="btn-send">發送</button>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </main>
+
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <script src="supabase-config.js"></script>
+    <script src="js/auth.js"></script>
+    <script src="js/contact.js"></script>
+</body>
+</html>

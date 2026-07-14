@@ -37,6 +37,22 @@
         </div>
     </header>
 
+    <script>
+        (function() {
+            var cachedName = localStorage.getItem('session_username');
+            var authContainer = document.getElementById('headerAuth');
+            if (authContainer) {
+                if (cachedName) {
+                    // 防止 XSS 攻擊的字元過濾
+                    var safeName = cachedName.replace(/</g, "&lt;").replace(/>/g, "&gt;");
+                    authContainer.innerHTML = '<a href="account.html" class="header-auth-link">' + safeName + '</a>';
+                } else {
+                    authContainer.innerHTML = '<button type="button" class="header-auth-btn" id="openAuthBtn">登入</button>';
+                }
+            }
+        })();
+    </script>
+
     <main class="legal-page">
         <div class="legal-inner">
             <div class="legal-hero">

@@ -1,0 +1,180 @@
+/* =========================================
+   聯絡我們客服專屬模組 (contact.css)
+========================================= */
+.contact-page { 
+    padding-top: calc(var(--header-h) + 32px); 
+    padding-bottom: 80px; 
+    background: var(--bg); /* 使用網站統一的米白背景色 */
+    min-height: 100vh;
+}
+.contact-page .section-inner { 
+    max-width: 920px; 
+    padding: 0 20px; 
+    margin: 0 auto; 
+}
+
+.back-link { 
+    display: inline-flex; 
+    align-items: center; 
+    gap: 6px; 
+    margin-bottom: 24px; 
+    font-size: 0.82rem; 
+    color: var(--text-tertiary); 
+    text-decoration: none; 
+    transition: color 0.3s var(--ease); 
+}
+.back-link:hover { 
+    color: var(--text); 
+}
+
+/* 聊天視窗主體 (套用 Order Detail 的卡片風格) */
+.chat-container {
+    background: var(--bg-elevated); /* 白色卡片背景 */
+    border: 1px solid var(--border);
+    border-radius: var(--radius-lg);
+    box-shadow: var(--shadow-soft);
+    display: flex;
+    flex-direction: column;
+    height: 65vh; /* 固定高度，營造 App 體驗 */
+    overflow: hidden;
+}
+
+/* 頂部狀態欄 */
+.chat-header {
+    background: var(--accent-soft); /* 溫和的品牌輔助色 */
+    border-bottom: 1px solid var(--border);
+    padding: 20px 24px;
+    display: flex;
+    align-items: center;
+}
+
+.chat-title h2 {
+    font-family: "Noto Serif TC", serif;
+    font-size: 1.15rem;
+    color: var(--text);
+    margin: 0 0 6px 0;
+}
+
+.status.online {
+    font-size: 0.8rem;
+    color: #16a34a; /* 與帳戶頁面一致的綠色狀態 */
+    display: flex;
+    align-items: center;
+    gap: 6px;
+}
+.status.online::before {
+    content: '';
+    width: 8px;
+    height: 8px;
+    background: #16a34a;
+    border-radius: 50%;
+    display: inline-block;
+    box-shadow: 0 0 6px rgba(22, 163, 74, 0.4);
+}
+
+/* 對話區域 */
+.chat-history {
+    flex: 1;
+    padding: 24px;
+    overflow-y: auto;
+    background: var(--bg-elevated);
+    display: flex;
+    flex-direction: column;
+    gap: 16px;
+}
+
+.message {
+    display: flex;
+    flex-direction: column;
+    max-width: 80%;
+}
+
+.message.system { align-self: flex-start; }
+.message.user { align-self: flex-end; }
+
+.message .bubble {
+    padding: 12px 18px;
+    border-radius: 16px;
+    font-size: 0.95rem;
+    line-height: 1.6;
+}
+
+/* 系統(客服)訊息泡泡 */
+.message.system .bubble {
+    background: var(--bg);
+    border: 1px solid var(--border);
+    color: var(--text);
+    border-bottom-left-radius: 4px;
+}
+
+/* 用戶訊息泡泡 (使用品牌主色調) */
+.message.user .bubble {
+    background: var(--text);
+    color: #ffffff;
+    border-bottom-right-radius: 4px;
+}
+
+.message .time {
+    font-size: 0.75rem;
+    color: var(--text-tertiary);
+    margin-top: 6px;
+}
+.message.system .time { align-self: flex-start; }
+.message.user .time { align-self: flex-end; }
+
+/* 底部輸入區域 */
+.chat-input-area {
+    padding: 16px 24px;
+    background: var(--bg-elevated);
+    border-top: 1px solid var(--border);
+}
+
+#chatForm { 
+    display: flex; 
+    gap: 12px; 
+}
+
+#messageInput {
+    flex: 1;
+    padding: 14px 16px;
+    font-size: 0.95rem;
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    background: var(--bg);
+    color: var(--text);
+    font-family: inherit;
+    transition: border-color 0.2s, box-shadow 0.2s;
+}
+
+#messageInput:focus {
+    outline: none;
+    border-color: var(--accent);
+    box-shadow: 0 0 0 4px var(--accent-soft);
+}
+
+.btn-send {
+    background: var(--text);
+    color: #fff;
+    border: none;
+    padding: 0 24px;
+    border-radius: 12px;
+    font-weight: 500;
+    cursor: pointer;
+    font-family: inherit;
+    font-size: 0.9rem;
+    transition: all 0.25s var(--ease);
+}
+
+.btn-send:hover {
+    background: #333;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+}
+
+@media (max-width: 768px) {
+    .contact-page { padding-top: calc(var(--header-h) + 20px); padding-bottom: 60px; }
+    .chat-container { height: calc(100vh - 160px); border-radius: 16px; margin-top: 10px; }
+    .chat-header { padding: 16px 20px; }
+    .chat-history { padding: 20px; }
+    .chat-input-area { padding: 12px 16px; }
+    .message { max-width: 90%; }
+}

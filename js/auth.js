@@ -1,5 +1,6 @@
 /**
  * 卍物所 — Supabase Auth（Google OAuth + Email）
+ * 包含：LocalStorage 零延遲加載 (Optimistic UI) 解決方案
  */
 (function () {
     'use strict';
@@ -27,17 +28,20 @@
         return meta.display_name || meta.full_name || meta.name || (user.email ? user.email.split('@')[0] : '用戶');
     }
 
+    // ✨ 核心修改：更新 Header 時，同步管理 LocalStorage
     function updateHeader(session) {
         const el = document.getElementById('headerAuth');
         if (!el) return;
 
         if (session && session.user) {
             const name = displayLabel(session.user);
-            el.innerHTML = `
-                <a href="account.html" class="header-auth-link">${escapeHtml(name)}</a>`;
+            // 寫入快取，供下次秒速載入
+            localStorage.setItem('session_username', name); 
+            el.innerHTML = `<a href="account.html" class="header-auth-link">${escapeHtml(name)}</a>`;
         } else {
-            el.innerHTML = `
-                <button type="button" class="header-auth-btn" id="openAuthBtn">登入</button>`;
+            // 如果驗證失敗或未登入，強制清除假數據，確保安全
+            localStorage.removeItem('session_username'); 
+            el.innerHTML = `<button type="button" class="header-auth-btn" id="openAuthBtn">登入</button>`;
             const btn = document.getElementById('openAuthBtn');
             if (btn) btn.addEventListener('click', function () { openAuthModal('login'); });
         }
@@ -51,6 +55,11 @@
         const client = getClient();
         if (!client) return null;
         const { data } = await client.auth.getSession();
+        
+        // ✨ 安全核實：如果 Supabase 話無登入，但本地有假資料，即刻清走佢
+        if (!data.session) {
+            localStorage.removeItem('session_username');
+        }
         return data.session || null;
     }
 
@@ -67,6 +76,7 @@
             session = await getSession();
         }
         if (!session) {
+            localStorage.removeItem('session_username'); // 保險清除
             const dest = redirectUrl || 'index.html?auth=login';
             window.location.href = dest;
             return null;
@@ -137,10 +147,19 @@
         if (error) throw error;
     }
 
+    // ✨ 核心修改：確保登出時資料乾淨，並跳轉回首頁
     async function signOut() {
         const client = getClient();
         if (!client) return;
+        
+        // 1. 即刻剷走本地名稱緩存
+        localStorage.removeItem('session_username'); 
+        
+        // 2. 請求後端徹底登出
         await client.auth.signOut();
+        
+        // 3. 強制刷新並跳轉到首頁，確保帳戶頁面無法被 Back 鍵惡意回看
+        window.location.replace('index.html');
     }
 
     async function ensureProfile(user) {
@@ -196,6 +215,13 @@
             .single();
 
         if (error) throw error;
+        
+        // 若用戶改名，同步更新 LocalStorage
+        if (data && data.display_name) {
+            localStorage.setItem('session_username', data.display_name);
+            updateHeader(await getSession()); 
+        }
+        
         return data;
     }
 
@@ -303,11 +329,18 @@
 
     function openAuthModal(tab) {
         const overlay = document.getElementById('authModal');
-        if (!overlay) return;
+        
+        // 【修復 1】：如果該頁面（例如私隱權頁）沒有登入視窗的 HTML，自動跳轉去主頁並呼叫視窗
+        if (!overlay) {
+            window.location.href = 'index.html?auth=login';
+            return;
+        }
+
         setAuthTab(tab || 'login');
         overlay.classList.add('open');
         document.body.style.overflow = 'hidden';
     }
+
 
     function closeAuthModal() {
         const overlay = document.getElementById('authModal');
@@ -439,21 +472,23 @@
         });
     }
 
-    function initAuth() {
+        function initAuth() {
         setupMobileNav();
         setupHeaderScroll();
         setupAuthModal();
 
         const client = getClient();
         if (!client) {
-            console.warn('[卍物所] 請在 supabase-config.js 填寫 Supabase Project URL 與 anon key。詳見 SUPABASE_AUTH_SETUP.md');
+            console.warn('[卍物所] 請填寫 Supabase 參數');
             updateHeader(null);
-            const params = new URLSearchParams(window.location.search);
-            if (params.get('auth') === 'login') openAuthModal('login');
             return;
         }
 
+        // 監聽後端 Auth 狀態改變
         client.auth.onAuthStateChange(async function (event, session) {
+            if (event === 'SIGNED_OUT') {
+                localStorage.removeItem('session_username');
+            }
             if (session && session.user) {
                 await ensureProfile(session.user);
             }
@@ -461,19 +496,28 @@
             notifyListeners(session);
         });
 
+        // 啟動時向後端拿 Session 覆核
         getSession().then(function (session) {
             updateHeader(session);
         });
 
+        // 【修復 2】：檢查網址是否有 ?auth=login，打開視窗後 1 秒清除網址尾巴
         const params = new URLSearchParams(window.location.search);
         if (params.get('auth') === 'login') {
             openAuthModal('login');
+            
+            setTimeout(function() {
+                // 利用 History API 清除參數，畫面不會閃爍或重新載入
+                const cleanUrl = window.location.protocol + "//" + window.location.host + window.location.pathname;
+                window.history.replaceState({ path: cleanUrl }, '', cleanUrl);
+            }, 1000);
         }
 
         document.addEventListener('keydown', function (e) {
             if (e.key === 'Escape') closeAuthModal();
         });
     }
+
 
     function setupHeaderScroll() {
         const header = document.querySelector('.site-header');
@@ -492,7 +536,7 @@
         signInWithEmail: signInWithEmail,
         signInWithGoogle: signInWithGoogle,
         resetPassword: resetPassword,
-        signOut: signOut,
+        signOut: signOut, // ✨ 已經升級
         ensureProfile: ensureProfile,
         getProfile: getProfile,
         updateProfile: updateProfile,
@@ -510,7 +554,6 @@
 })();
 
 async function handleSecureAuth(actionType, email, password) {
-    // 1. 執行 reCAPTCHA 驗證
     const token = await new Promise((resolve) => {
         grecaptcha.ready(function() {
             grecaptcha.execute('6LfioU8tAAAAAK4aGAkpu2RDA9nSQO-xVCDUsqJI', {action: 'submit'})
@@ -518,8 +561,6 @@ async function handleSecureAuth(actionType, email, password) {
         });
     });
 
-    // 2. 呼叫後端 Edge Function 進行 Server-side 驗證
-    // 避免將 Secret Key 暴露在前端
     const response = await fetch('https://ysohdkbkhnsyowvzdlvn.supabase.co/functions/v1/verify-captcha', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -532,7 +573,6 @@ async function handleSecureAuth(actionType, email, password) {
         throw new Error('機器人驗證失敗，請重新嘗試。');
     }
 
-    // 3. 驗證成功，執行 Supabase Auth
     const client = window.WanwuAuth.getClient();
     if (actionType === 'signup') {
         return await client.auth.signUp({ email, password });
@@ -540,4 +580,3 @@ async function handleSecureAuth(actionType, email, password) {
         return await client.auth.signInWithPassword({ email, password });
     }
 }
-
