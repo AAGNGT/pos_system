@@ -1,0 +1,85 @@
+/* =========================================================
+   卍物所 — 訂單專屬狀態顏色系統 (Quiet Luxury 礦石色系)
+   共用於 account.html 與 order-detail.html
+   ========================================================= */
+
+/* ---------------------------------------------------------
+   1. 帳戶頁：卡片極細邊框與延伸漸變背景 (光暈效果)
+--------------------------------------------------------- */
+.reservation-card {
+    border-left: 5px solid transparent; 
+    transition: border-color 0.4s ease, box-shadow 0.4s ease, background 0.4s ease;
+    background-repeat: no-repeat;
+}
+
+/* 待確認：深灰褐 Deep Muted Taupe */
+.reservation-card.status-pending { 
+    border-left-color: #8c8279; 
+    background-image: linear-gradient(135deg, rgba(140, 130, 121, 0.16) 0%, rgba(140, 130, 121, 0.06) 45%, rgba(140, 130, 121, 0) 85%);
+}
+/* 處理中：深原礦赭黃 Rich Earthy Ochre */
+.reservation-card.status-processing { 
+    border-left-color: #b89325; 
+    background-image: linear-gradient(135deg, rgba(184, 147, 37, 0.16) 0%, rgba(184, 147, 37, 0.06) 45%, rgba(184, 147, 37, 0) 85%);
+}
+/* 已完成備貨：濃古銅金 Deep Antique Bronze */
+.reservation-card.status-ready { 
+    border-left-color: #b3711b; 
+    background-image: linear-gradient(135deg, rgba(179, 113, 27, 0.16) 0%, rgba(179, 113, 27, 0.06) 45%, rgba(179, 113, 27, 0) 85%);
+}
+/* 已完成：沉木墨綠 Rich Deep Forest */
+.reservation-card.status-completed { 
+    border-left-color: #254530; 
+    background-image: linear-gradient(135deg, rgba(37, 69, 48, 0.16) 0%, rgba(37, 69, 48, 0.06) 45%, rgba(37, 69, 48, 0) 85%);
+}
+/* 已取消：灰燼石色 Deep Ash Slate */
+.reservation-card.status-cancelled { 
+    border-left-color: #94949e; 
+    background-image: linear-gradient(135deg, rgba(148, 148, 158, 0.12) 0%, rgba(148, 148, 158, 0.04) 45%, rgba(148, 148, 158, 0) 85%);
+}
+
+/* ---------------------------------------------------------
+   2. 共用：藥丸狀態標籤 (Pill Badge)
+--------------------------------------------------------- */
+.reservation-status {
+    padding: 5px 12px;
+    border-radius: 999px;
+    font-size: 0.75rem;
+    font-weight: 600;
+    letter-spacing: 0.05em;
+    display: inline-block;
+}
+
+.reservation-status.status-pending { color: #8c8279; background-color: rgba(140, 130, 121, 0.15); }
+.reservation-status.status-processing { color: #a8831a; background-color: rgba(184, 147, 37, 0.15); }
+.reservation-status.status-ready { color: #b3711b; background-color: rgba(179, 113, 27, 0.15); }
+.reservation-status.status-completed { color: #254530; background-color: rgba(37, 69, 48, 0.15); }
+.reservation-status.status-cancelled { 
+    color: #94949e; 
+    background-color: rgba(148, 148, 158, 0.15); 
+    text-decoration: line-through; 
+}
+
+/* ---------------------------------------------------------
+   3. 訂單詳情頁：進度條顏色連動 (Order Progress Integration)
+--------------------------------------------------------- */
+
+/* 當處理中時，光暈點變為赭黃 */
+.order-progress-container[data-status="processing"] .progress-step.active .progress-dot { border-color: #b89325; box-shadow: 0 0 0 4px rgba(184, 147, 37, 0.15); }
+.order-progress-container[data-status="processing"] .progress-step.active .progress-dot::after { background: #b89325; }
+
+/* 當已備貨時，光暈點變為古銅金 */
+.order-progress-container[data-status="ready"] .progress-step.active .progress-dot { border-color: #b3711b; box-shadow: 0 0 0 4px rgba(179, 113, 27, 0.15); }
+.order-progress-container[data-status="ready"] .progress-step.active .progress-dot::after { background: #b3711b; }
+
+/* 當全單已完成時，光暈點及所有打勾符號沉澱為墨綠色 */
+.order-progress-container[data-status="completed"] .progress-step.active .progress-dot { border-color: #254530; box-shadow: 0 0 0 4px rgba(37, 69, 48, 0.15); }
+.order-progress-container[data-status="completed"] .progress-step.active .progress-dot::after { background: #254530; }
+.order-progress-container[data-status="completed"] .progress-step.completed .progress-dot { background: rgba(37, 69, 48, 0.08); border-color: rgba(37, 69, 48, 0.35); }
+.order-progress-container[data-status="completed"] .progress-step.completed .progress-dot::after { color: #254530; }
+
+/* 【已取消】狀態：全線劃除與灰燼化 */
+.order-progress-container[data-status="cancelled"] .order-progress::before { background: #e4e4e7; }
+.order-progress-container[data-status="cancelled"] .progress-step .progress-dot { border-color: #e4e4e7; background: #fafafa; }
+.order-progress-container[data-status="cancelled"] .progress-step .progress-dot::after { display: none; }
+.order-progress-container[data-status="cancelled"] .progress-step .progress-label { text-decoration: line-through; color: #a1a1aa; opacity: 0.6; }

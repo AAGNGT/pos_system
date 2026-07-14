@@ -1,5 +1,5 @@
 /**
- * 卍物所 — 我的帳戶頁（個人資料 + 會員快速訂單 + 登入驗證狀態與密碼修改）
+ * 卍物所 — 我的帳戶頁（個人資料 + 會員快速訂單 + 登入驗證狀態與密碼修改 + 管理員橫幅）
  */
 (function () {
     'use strict';
@@ -36,7 +36,9 @@
             pending: '待確認',
             confirmed: '已確認',
             completed: '已完成',
-            cancelled: '已取消'
+            cancelled: '已取消',
+            processing: '處理中',
+            ready: '已完成備貨'
         };
         return map[status] || status || '待確認';
     }
@@ -102,11 +104,33 @@
         const hasEmail = identities.some(id => id.provider === 'email');
         const hasGoogle = identities.some(id => id.provider === 'google');
 
-        container.innerHTML = `
+        // ✨ 判斷並生成對應的橫幅 HTML
+        let bannerHtml = '';
+        if (user.email === 'admin@market.local') {
+            bannerHtml = `
+            <div class="account-member-banner admin-banner" style="background: #353232; border: 1px solid rgb(93, 93, 99); display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 16px; padding: 20px 24px; border-radius: 16px; box-shadow: 0 16px 40px rgba(131, 131, 131, 0.15);">
+                <div>
+                    <p style="color: #ffffff; font-family: 'Noto Serif TC', serif; font-size: 0.95rem; font-weight: 500; letter-spacing: 0.15em; margin-bottom: 8px; display: flex; align-items: center; gap: 10px;">
+                        <span style="color: var(--accent); font-size: 1.1rem; line-height: 1;">❖</span> 管理員模式
+                    </p>
+                    <p style="margin: 0; color: #86868b; font-size: 0.82rem; letter-spacing: 0.05em;">
+                        已登入為 <strong style="color: #e5e5ea; font-weight: 500;">${escapeHtml(displayName)}</strong> 
+                        <span style="opacity: 0.6;">（${escapeHtml(user.email)}）</span>
+                    </p>
+                </div>
+                <a href="admin.html" class="btn" style="background: #ffffff; color: #000000; border: none; padding: 12px 28px; font-size: 0.78rem; font-weight: 600; letter-spacing: 0.1em; border-radius: 999px; transition: transform 0.2s ease;">進入控制台</a>
+            </div>`;
+        } else {
+            bannerHtml = `
             <div class="account-member-banner">
                 <p>已登入為 <strong>${escapeHtml(displayName)}</strong>（${escapeHtml(user.email)}）</p>
                 <p class="account-member-hint">快速訂單會自動使用帳戶資料，無需重複填寫聯絡欄位。</p>
-            </div>
+            </div>`;
+        }
+
+        // 寫入畫面內容（注意開頭加入了 ${bannerHtml}）
+        container.innerHTML = `
+            ${bannerHtml}
 
             <div class="account-grid">
                 <section class="account-panel">
@@ -386,14 +410,25 @@
 
         let html = '';
 
+        // 狀態對應的 CSS Class 字典
+        const statusClassMap = {
+            'pending': 'status-pending',
+            'processing': 'status-processing',
+            'ready': 'status-ready',
+            'completed': 'status-completed',
+            'cancelled': 'status-cancelled'
+        };
+
         if (orders.length) {
             html += orders.map(function (o) {
                 const total = o.unit_price ? formatPrice(Number(o.unit_price) * Number(o.quantity || 1)) : '—';
+                const statusClass = statusClassMap[o.status] || 'status-pending'; // 抓取專屬顏色 class
+
                 return `
-                    <article class="reservation-card">
+                    <article class="reservation-card ${statusClass}">
                         <div class="reservation-card-head">
                             <strong>${escapeHtml(o.product_name)}</strong>
-                            <span class="reservation-status">${escapeHtml(statusLabel(o.status))}</span>
+                            <span class="reservation-status ${statusClass}">${escapeHtml(statusLabel(o.status))}</span>
                         </div>
                         <dl class="reservation-meta">
                             <div><dt>取貨日</dt><dd>${escapeHtml(formatDate(o.pickup_date))}</dd></div>
@@ -402,9 +437,9 @@
                             <div><dt>提交時間</dt><dd>${escapeHtml(formatDateTime(o.created_at))}</dd></div>
                         </dl>
                         ${o.notes ? `<p class="reservation-notes">${escapeHtml(o.notes)}</p>` : ''}
-                             <div style="margin-top: 16px; text-align: right; padding-top: 12px;">
-                             <a href="order-detail.html?id=${o.id}" class="btn btn-secondary" style="padding: 6px 16px; font-size: 0.82rem;">查看更多</a>
-                             </div>
+                        <div style="margin-top: 16px; text-align: right; padding-top: 12px;">
+                            <a href="order-detail.html?id=${o.id}" class="btn btn-secondary" style="padding: 6px 16px; font-size: 0.82rem;">查看更多</a>
+                        </div>
                     </article>`;
             }).join('');
         }
@@ -412,11 +447,13 @@
         if (legacy.length) {
             html += '<p class="account-legacy-label">舊版預訂記錄</p>';
             html += legacy.map(function (r) {
+                const statusClass = statusClassMap[r.status] || 'status-pending';
+
                 return `
-                    <article class="reservation-card reservation-card--legacy">
+                    <article class="reservation-card reservation-card--legacy ${statusClass}">
                         <div class="reservation-card-head">
                             <strong>${escapeHtml(r.product_interest || '未指定產品')}</strong>
-                            <span class="reservation-status">${escapeHtml(statusLabel(r.status))}</span>
+                            <span class="reservation-status ${statusClass}">${escapeHtml(statusLabel(r.status))}</span>
                         </div>
                         <dl class="reservation-meta">
                             <div><dt>取貨日</dt><dd>${escapeHtml(formatDate(r.pickup_date))}</dd></div>
@@ -429,6 +466,7 @@
 
         list.innerHTML = html;
     }
+
 
     document.addEventListener('DOMContentLoaded', function () {
         renderAccount();

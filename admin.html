@@ -1,0 +1,207 @@
+<!DOCTYPE html>
+<html lang="zh-HK">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>管理控制台 — 卍物所</title>
+    <link rel="icon" href="Logo.jpg" type="image/jpeg">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&family=Noto+Serif+TC:wght@400;500;600&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="css/main.css">
+    <style>
+        /* 管理員專屬樣式 */
+        .admin-page { padding-top: calc(var(--header-h) + 40px); padding-bottom: 80px; min-height: 80vh; background: var(--bg); }
+        .admin-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 32px; flex-wrap: wrap; gap: 16px; }
+        .admin-title { font-family: "Noto Serif TC", serif; font-size: 1.5rem; color: #991b1b; display: flex; align-items: center; gap: 10px; }
+        
+        .admin-table-container { background: var(--bg-elevated); border: 1px solid var(--border); border-radius: var(--radius-lg); overflow: auto; box-shadow: var(--shadow-soft); }
+        .admin-table { width: 100%; border-collapse: collapse; text-align: left; font-size: 0.88rem; }
+        .admin-table th, .admin-table td { padding: 16px 20px; border-bottom: 1px solid var(--border); }
+        .admin-table th { background: #fef2f2; color: #991b1b; font-weight: 600; white-space: nowrap; }
+        .admin-table tr:last-child td { border-bottom: none; }
+        .admin-table tr:hover { background: #f9fafb; }
+        
+        .status-select { padding: 6px 10px; border-radius: 6px; border: 1px solid var(--border); font-size: 0.82rem; font-family: inherit; background: var(--bg); outline: none; }
+        .btn-update { padding: 6px 12px; font-size: 0.8rem; background: var(--text); color: #fff; border: none; border-radius: 6px; cursor: pointer; transition: 0.2s; }
+        .btn-update:hover { background: #333; }
+        
+        /* 避免未驗證前閃現內容 */
+        #adminApp { display: none; }
+    </style>
+</head>
+<body>
+    <header class="site-header scrolled">
+        <div class="header-inner">
+            <a href="index.html" class="brand">
+                <span class="logo-ring logo-ring--sm" aria-hidden="true"><img src="Logo.jpg" alt=""></span>
+                <span class="brand-name">卍物所</span>
+            </a>
+            <nav>
+                <ul class="nav-links">
+                    <li><a href="index.html">返回首頁</a></li>
+                    <li><a href="account.html">我的帳戶</a></li>
+                </ul>
+            </nav>
+        </div>
+    </header>
+
+    <main class="admin-page" id="adminApp">
+        <div class="section-inner" style="max-width: 1200px; margin: 0 auto; padding: 0 24px;">
+            <div class="admin-header">
+                <h1 class="admin-title">🛡️ 訂單管理控制台</h1>
+                <button type="button" class="btn btn-secondary" id="btnRefresh">🔄 重新載入數據</button>
+            </div>
+
+            <div class="admin-table-container">
+                <table class="admin-table">
+                    <thead>
+                        <tr>
+                            <th>訂單 ID</th>
+                            <th>客戶姓名</th>
+                            <th>聯絡電話</th>
+                            <th>產品名稱</th>
+                            <th>數量</th>
+                            <th>取貨日期</th>
+                            <th>目前狀態</th>
+                            <th>操作</th>
+                        </tr>
+                    </thead>
+                    <tbody id="adminOrderList">
+                        <tr><td colspan="8" class="loading-placeholder">載入中...</td></tr>
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </main>
+
+    <div class="modal-overlay" id="customAlertModal" role="dialog" aria-modal="true">
+        <div class="modal-sheet alert-sheet" style="max-width: 400px; text-align: center; padding: 40px 32px;">
+            <div style="font-size: 3rem; margin-bottom: 20px; line-height: 1;">🚫</div>
+            <h3 style="font-family: 'Noto Serif TC', serif; font-size: 1.35rem; margin-bottom: 12px; color: #991b1b;">存取拒絕</h3>
+            <p id="customAlertMessage" style="font-size: 0.95rem; color: var(--text-secondary); margin-bottom: 32px; line-height: 1.6;"></p>
+            <button type="button" id="customAlertBtn" class="btn btn-primary" style="width: 100%;">返回帳戶頁</button>
+        </div>
+    </div>
+
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <script src="supabase-config.js"></script>
+    <script src="js/auth.js"></script>
+    <script>
+        (async function() {
+            'use strict';
+
+            function showCustomAlert(message, callback) {
+                const overlay = document.getElementById('customAlertModal');
+                const msgEl = document.getElementById('customAlertMessage');
+                const btn = document.getElementById('customAlertBtn');
+
+                if (msgEl) msgEl.textContent = message;
+                if (overlay) {
+                    overlay.classList.add('open');
+                    document.body.style.overflow = 'hidden';
+                }
+                btn.onclick = function() {
+                    if (callback) callback();
+                };
+            }
+
+            function escapeHtml(s) {
+                return String(s || '').replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
+            }
+
+            // 1. 嚴格驗證登入身份
+            const session = await WanwuAuth.requireAuth('index.html?auth=login');
+            if (!session) return;
+
+            if (session.user.email !== 'admin@market.local') {
+                showCustomAlert('您沒有權限存取管理員頁面。', () => {
+                    window.location.replace('account.html');
+                });
+                return;
+            }
+
+            // 2. 驗證通過，顯示介面
+            document.getElementById('adminApp').style.display = 'block';
+
+            const client = WanwuAuth.getClient();
+            const orderListEl = document.getElementById('adminOrderList');
+
+            // 載入所有訂單
+            async function loadAllOrders() {
+                orderListEl.innerHTML = '<tr><td colspan="8" class="loading-placeholder">載入中...</td></tr>';
+                
+                const { data: orders, error } = await client
+                    .from('wanwu_orders')
+                    .select('*')
+                    .order('created_at', { ascending: false });
+
+                if (error) {
+                    orderListEl.innerHTML = `<tr><td colspan="8" style="color:red; text-align:center;">載入失敗: ${error.message} <br> <small>(請確保資料庫的 RLS Policy 允許 admin 讀取所有訂單)</small></td></tr>`;
+                    return;
+                }
+
+                if (!orders || orders.length === 0) {
+                    orderListEl.innerHTML = '<tr><td colspan="8" style="text-align:center; padding: 30px;">目前沒有訂單</td></tr>';
+                    return;
+                }
+
+                orderListEl.innerHTML = orders.map(o => `
+                    <tr>
+                        <td>#${o.id}</td>
+                        <td>${escapeHtml(o.customer_name)}</td>
+                        <td>${escapeHtml(o.customer_phone)}</td>
+                        <td><strong>${escapeHtml(o.product_name)}</strong></td>
+                        <td>${o.quantity}</td>
+                        <td>${escapeHtml(o.pickup_date)}</td>
+                        <td>
+                            <select class="status-select" id="status-${o.id}">
+                                <option value="pending" ${o.status === 'pending' ? 'selected' : ''}>待確認</option>
+                                <option value="processing" ${o.status === 'processing' ? 'selected' : ''}>處理中</option>
+                                <option value="ready" ${o.status === 'ready' ? 'selected' : ''}>已完成備貨</option>
+                                <option value="completed" ${o.status === 'completed' ? 'selected' : ''}>已完成交易</option>
+                                <option value="cancelled" ${o.status === 'cancelled' ? 'selected' : ''}>已取消</option>
+                            </select>
+                        </td>
+                        <td>
+                            <button class="btn-update" onclick="updateOrderStatus(${o.id})">儲存</button>
+                        </td>
+                    </tr>
+                `).join('');
+            }
+
+            // 更新訂單狀態的全域函數
+            window.updateOrderStatus = async function(orderId) {
+                const selectEl = document.getElementById(`status-${orderId}`);
+                const newStatus = selectEl.value;
+                const btn = selectEl.parentElement.nextElementSibling.querySelector('button');
+                
+                btn.textContent = '更新中...';
+                btn.disabled = true;
+
+                const { error } = await client
+                    .from('wanwu_orders')
+                    .update({ status: newStatus })
+                    .eq('id', orderId);
+
+                if (error) {
+                    alert('更新失敗: ' + error.message);
+                } else {
+                    btn.style.background = '#16a34a';
+                    btn.textContent = '已更新';
+                    setTimeout(() => {
+                        btn.style.background = 'var(--text)';
+                        btn.textContent = '儲存';
+                        btn.disabled = false;
+                    }, 2000);
+                }
+            };
+
+            document.getElementById('btnRefresh').addEventListener('click', loadAllOrders);
+
+            // 初次載入
+            loadAllOrders();
+        })();
+    </script>
+</body>
+</html>
