@@ -178,7 +178,7 @@ const MODE_LABELS = {
         <div class="pos-product-card__img">
           <img src="${p.image_url || placeholderImg(p.name)}" alt="${p.name}" loading="lazy">
           <span class="pos-product-card__stock">${p.stock_count}</span>
-          <span class="pos-product-card__price">$${Number(p.price).toFixed(2)}</span>
+          <span class="pos-product-card__price">${Number(p.price) < 0 ? '-' : ''}$${Math.abs(Number(p.price)).toFixed(2)}</span>
         </div>
         <div class="pos-product-card__body">
           <p class="pos-product-card__name">${p.name}</p>
@@ -232,14 +232,14 @@ const MODE_LABELS = {
         <div class="pos-cart-line">
           <div class="pos-cart-line__info">
             <p class="pos-cart-line__name">${i.name}</p>
-            <p class="pos-cart-line__meta">$${i.unit_price.toFixed(2)} × ${i.qty}</p>
+            <p class="pos-cart-line__meta">${i.unit_price < 0 ? '-' : ''}$${Math.abs(i.unit_price).toFixed(2)} × ${i.qty}</p>
           </div>
           <div class="pos-cart-line__qty">
             <button type="button" data-dec="${i.product_id}">−</button>
             <span>${i.qty}</span>
             <button type="button" data-inc="${i.product_id}">+</button>
           </div>
-          <strong>$${i.line_total.toFixed(2)}</strong>
+          <strong>${i.line_total < 0 ? '-' : ''}$${Math.abs(i.line_total).toFixed(2)}</strong>
         </div>`).join('');
       list.querySelectorAll('[data-inc]').forEach((b) => {
         b.addEventListener('click', () => {

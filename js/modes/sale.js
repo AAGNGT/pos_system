@@ -4,9 +4,11 @@
   let appCtx = null;
 
   function formatMoney(n) {
-    const v = Math.max(0, Number(n) || 0);
-    return `$${v % 1 === 0 ? v.toFixed(0) : v.toFixed(2)}`;
+    const val = Number(n) || 0;
+    const absVal = Math.abs(val);
+    return `${val < 0 ? '-' : ''}$${absVal % 1 === 0 ? absVal.toFixed(0) : absVal.toFixed(2)}`;
   }
+
 
   function parseReceived() {
     return receivedValue;
@@ -33,55 +35,36 @@
   function openCheckoutModal(ctx) {
     appCtx = ctx || appCtx || (window.posApp?.ctx?.());
     const items = window.posCart.getItems();
-    if (!items.length) {
-      window.ui.toast('購物車是空的', 'error');
-      return;
-    }
+    if (!items.length) { window.ui.toast('購物車是空的', 'error'); return; }
+    
     const discount = Number(document.getElementById('fieldDiscount')?.value || 0);
     const { total } = window.posCart.totals(discount);
-    if (total <= 0) {
-      window.ui.toast('總額必須大於 0', 'error');
-      return;
-    }
+    if (total <= 0) { window.ui.toast('結帳金額不可為 0', 'error'); return; }
+    
     dueAmount = Math.round(total * 100) / 100;
     receivedValue = 0;
     updateCheckoutDisplay();
+    
     const modal = getModal();
-    if (!modal) {
-      window.ui.toast('找不到結帳視窗', 'error');
-      return;
-    }
-    modal.classList.remove('is-leaving');
-    modal.classList.add('active');
+    if (!modal) return;
+    
     document.body.classList.add('checkout-open');
-    modal.setAttribute('aria-hidden', 'false');
-    requestAnimationFrame(() => {
-      requestAnimationFrame(() => modal.classList.add('is-anim-in'));
-    });
+    window.ui.openModal(modal); // 使用共用動畫
     window.posDisplaySync?.syncCheckout?.(dueAmount);
   }
 
   function closeCheckoutModal() {
     const modal = getModal();
-    if (!modal?.classList.contains('active')) {
-      receivedValue = 0;
-      dueAmount = 0;
-      return;
-    }
-    modal.classList.remove('is-anim-in');
-    modal.classList.add('is-leaving');
-    const done = () => {
-      modal.classList.remove('active', 'is-leaving');
+    window.ui.closeModal(modal, () => { // 使用共用動畫，並將原本的隱藏邏輯放入 callback
       document.body.classList.remove('checkout-open');
-      modal.setAttribute('aria-hidden', 'true');
       receivedValue = 0;
       dueAmount = 0;
       if (window.posCart?.getItems?.()?.length) {
         window.posDisplaySync?.syncCart?.();
       }
-    };
-    setTimeout(done, 240);
+    });
   }
+
 
   function handleKey(key) {
     if (key === 'back') {

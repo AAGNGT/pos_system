@@ -1,28 +1,355 @@
 (function () {
-  async function renderHistory() {
+  // ============================================================================
+  // 🌟 共用功能：智慧型動態日曆彈窗 (加入結帳般的滑順彈出動畫)
+  // ============================================================================
+  async function openSharedDatePicker(onDateSelected) {
+    window.ui.setLoading(true, '正在掃描歷史交易日期...');
+    const client = window.posDb.getClient();
+    
+    const { data } = await client.from('pos_orders').select('created_at');
+    const availableDates = new Set();
+    (data || []).forEach(d => {
+      const dt = new Date(d.created_at);
+      const localDate = `${dt.getFullYear()}-${String(dt.getMonth()+1).padStart(2,'0')}-${String(dt.getDate()).padStart(2,'0')}`;
+      availableDates.add(localDate);
+    });
+    window.ui.setLoading(false);
+
+    let modal = document.getElementById('sharedDatePickerModal');
+    if (!modal) {
+      modal = document.createElement('div');
+      modal.id = 'sharedDatePickerModal';
+      modal.className = 'pos-modal';
+      modal.style.zIndex = '2500'; 
+      modal.innerHTML = `
+        <style>
+          .cal-day-btn.available:hover { background: #3b82f6 !important; color: #fff !important; transform: scale(1.05); }
+          .cal-nav-btn { background:none; border:none; cursor:pointer; font-size:18px; color:#64748b; padding:4px 12px; border-radius:8px; transition: background 0.2s;}
+          .cal-nav-btn:hover { background:#e2e8f0; color:#0f172a;}
+          
+          /* 核心動畫：參考結帳 Modal 的物理縮放與透明度過渡 */
+          .anim-modal-box { opacity: 0; transform: scale(0.94) translateY(16px); transition: opacity 0.28s ease, transform 0.35s cubic-bezier(0.22, 1, 0.36, 1); }
+          .pos-modal.is-anim-in .anim-modal-box { opacity: 1; transform: scale(1) translateY(0); }
+          .pos-modal.is-leaving .anim-modal-box { opacity: 0; transform: scale(0.96) translateY(8px); transition: opacity 0.2s ease, transform 0.22s ease; }
+          .pos-modal.is-leaving { background: rgba(15, 23, 42, 0) !important; opacity: 0; transition: background 0.35s ease, opacity 0.28s ease; }
+        </style>
+        <div class="pos-modal__box anim-modal-box" style="width: min(340px, 100%); padding: 24px;">
+          <h2 style="margin: 0 0 16px 0; font-size: 18px; text-align: center; color: #0f172a;">請選擇日期</h2>
+          <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom: 16px; background:#f8fafc; border-radius:8px; padding:4px;">
+            <button id="calPrevMonth" class="cal-nav-btn">&lt;</button>
+            <h3 id="calMonthLabel" style="margin:0; font-size:15px; color:#334155; font-weight:700;"></h3>
+            <button id="calNextMonth" class="cal-nav-btn">&gt;</button>
+          </div>
+          <div id="calGrid"></div>
+          <div style="margin-top:20px; display:flex; gap:8px;">
+            <button class="pos-modal__btn-secondary" style="width:100%; padding:10px;" id="calCancelBtn">取消</button>
+          </div>
+        </div>
+      `;
+      document.body.appendChild(modal);
+    }
+
+    let viewYear = new Date().getFullYear();
+    let viewMonth = new Date().getMonth();
+
+    const renderGrid = () => {
+      document.getElementById('calMonthLabel').textContent = `${viewYear}年 ${viewMonth + 1}月`;
+      const firstDay = new Date(viewYear, viewMonth, 1).getDay();
+      const daysInMonth = new Date(viewYear, viewMonth + 1, 0).getDate();
+
+      let html = '<div style="display:grid; grid-template-columns:repeat(7, 1fr); gap:6px; text-align:center;">';
+      const days = ['日', '一', '二', '三', '四', '五', '六'];
+      days.forEach(d => html += `<div style="font-size:12px; color:#94a3b8; font-weight:bold; padding:8px 0;">${d}</div>`);
+
+      for (let i = 0; i < firstDay; i++) html += `<div></div>`;
+
+      for (let day = 1; day <= daysInMonth; day++) {
+        const dateStr = `${viewYear}-${String(viewMonth + 1).padStart(2, '0')}-${String(day).padStart(2, '0')}`;
+        
+        if (availableDates.has(dateStr)) {
+          html += `<button class="cal-day-btn available" data-date="${dateStr}" style="padding:10px 0; border:none; border-radius:8px; background:#eff6ff; color:#2563eb; cursor:pointer; font-weight:bold; font-size:14px; transition:all 0.15s; box-shadow: 0 2px 4px rgba(37,99,235,0.1);">${day}</button>`;
+        } else {
+          html += `<div style="padding:10px 0; color:#cbd5e1; font-size:14px;">${day}</div>`;
+        }
+      }
+      html += '</div>';
+      document.getElementById('calGrid').innerHTML = html;
+
+      document.querySelectorAll('.cal-day-btn.available').forEach(btn => {
+        btn.onclick = () => {
+          closeModalAnim(modal);
+          onDateSelected(btn.dataset.date);
+        };
+      });
+    };
+
+    const prevBtn = document.getElementById('calPrevMonth');
+    const nextBtn = document.getElementById('calNextMonth');
+    const cancelBtn = document.getElementById('calCancelBtn');
+    
+    const newPrev = prevBtn.cloneNode(true);
+    const newNext = nextBtn.cloneNode(true);
+    const newCancel = cancelBtn.cloneNode(true);
+    prevBtn.replaceWith(newPrev);
+    nextBtn.replaceWith(newNext);
+    cancelBtn.replaceWith(newCancel);
+
+    newPrev.onclick = () => { viewMonth--; if(viewMonth < 0){viewMonth = 11; viewYear--;} renderGrid(); };
+    newNext.onclick = () => { viewMonth++; if(viewMonth > 11){viewMonth = 0; viewYear++;} renderGrid(); };
+    newCancel.onclick = () => closeModalAnim(modal);
+
+    renderGrid();
+    openModalAnim(modal);
+  }
+
+  // 共用：彈出視窗動畫開關邏輯
+  function openModalAnim(modalElement) {
+    modalElement.classList.remove('is-leaving');
+    modalElement.classList.add('active');
+    modalElement.setAttribute('aria-hidden', 'false');
+    requestAnimationFrame(() => {
+      requestAnimationFrame(() => modalElement.classList.add('is-anim-in'));
+    });
+  }
+
+  function closeModalAnim(modalElement) {
+    modalElement.classList.remove('is-anim-in');
+    modalElement.classList.add('is-leaving');
+    setTimeout(() => {
+      modalElement.classList.remove('active', 'is-leaving');
+      modalElement.setAttribute('aria-hidden', 'true');
+    }, 240);
+  }
+
+
+  // ============================================================================
+  // 📜 模組 1：交易紀錄 (帶日期篩選與動畫明細)
+  // ============================================================================
+  async function renderHistory(filterDate = null) {
     const el = document.getElementById('panelHistory');
     if (!el) return;
+
     try {
-      const orders = await window.posApi.fetchOrders(80);
-      if (!orders.length) {
-        el.innerHTML = '<p class="pos-order__empty">尚無訂單</p>';
-        return;
+      const client = window.posDb.getClient();
+      
+      let query = client.from('pos_orders')
+        .select('*, pos_order_items(*, pos_products(name, stock_count))')
+        .order('created_at', { ascending: false });
+
+      if (filterDate) {
+        const start = new Date(`${filterDate}T00:00:00`).toISOString();
+        const end = new Date(`${filterDate}T23:59:59.999`).toISOString();
+        query = query.gte('created_at', start).lte('created_at', end);
+      } else {
+        query = query.limit(80); 
       }
-      const modeZh = { sale: '銷售', restock: '補貨', return: '退貨', damage: '損壞' };
-      el.innerHTML = `<table class="pos-table"><thead><tr><th>編號</th><th>模式</th><th>合計</th><th>實收</th><th>找續</th><th>時間</th></tr></thead><tbody>${orders.map((o) => `
-        <tr>
-          <td>#${o.id}</td>
-          <td>${modeZh[o.mode] || o.mode}</td>
-          <td>$${Number(o.total).toFixed(2)}</td>
-          <td>$${Number(o.amount_received || 0).toFixed(2)}</td>
-          <td>$${Number(o.change_amount || 0).toFixed(2)}</td>
-          <td>${new Date(o.created_at).toLocaleString('zh-TW')}</td>
-        </tr>`).join('')}</tbody></table>`;
+
+      const { data: orders, error } = await query;
+      if (error) throw error;
+
+      window._tempHistoryOrders = orders || [];
+      const modeZh = { sale: '售賣', restock: '入貨', return: '退貨', damage: '報銷' };
+
+      let tableRows = '<p class="pos-order__empty">尚無交易紀錄</p>';
+      if (window._tempHistoryOrders.length > 0) {
+        tableRows = window._tempHistoryOrders.map((o) => {
+          const items = o.pos_order_items || [];
+          let summary = items.map(i => `${i.pos_products?.name || '未知產品'}(x${i.qty})`).join(', ');
+          if (summary.length > 22) summary = summary.substring(0, 22) + '...';
+          if (!summary) summary = '<span style="color:#cbd5e1;">無明細</span>';
+
+          const isSale = o.mode === 'sale';
+          const modeStr = modeZh[o.mode] || o.mode;
+          
+          const subtotalStr = isSale ? `$${Number(o.subtotal).toFixed(2)}` : '-';
+          const discountStr = isSale && Number(o.discount_amount) > 0 ? `<span style="color:#16a34a;">-$${Number(o.discount_amount).toFixed(2)}</span>` : (isSale ? '$0.00' : '-');
+          const totalStr = isSale ? `$${Number(o.total).toFixed(2)}` : '-';
+          const timeStr = new Date(o.created_at).toLocaleString('zh-TW');
+
+          return `
+            <tr>
+              <td style="font-weight: 600; color: #334155;">#${o.id}</td>
+              <td>${modeStr}</td>
+              <td style="color:#64748b; font-size:12px; line-height: 1.4;">${summary}</td>
+              <td>${subtotalStr}</td>
+              <td>${discountStr}</td>
+              <td style="font-weight:bold; color:#0f172a;">${totalStr}</td>
+              <td style="font-size:12px; color:#64748b;">${timeStr}</td>
+              <td style="text-align: right;">
+                <button class="pos-pill btn-view-order" style="background:#eff6ff; color:#2563eb; border-color:#bfdbfe; transition: transform 0.15s ease;" data-id="${o.id}">
+                  👁️ 查閲更多
+                </button>
+              </td>
+            </tr>
+          `;
+        }).join('');
+      }
+
+      // 渲染主畫面：UI 完美貼合 POS 風格，修改為「全部交易記錄」
+      el.innerHTML = `
+        <style>
+          .anim-modal-box { opacity: 0; transform: scale(0.94) translateY(16px); transition: opacity 0.28s ease, transform 0.35s cubic-bezier(0.22, 1, 0.36, 1); }
+          .pos-modal.is-anim-in .anim-modal-box { opacity: 1; transform: scale(1) translateY(0); }
+          .pos-modal.is-leaving .anim-modal-box { opacity: 0; transform: scale(0.96) translateY(8px); transition: opacity 0.2s ease, transform 0.22s ease; }
+          .pos-modal.is-leaving { background: rgba(15, 23, 42, 0) !important; opacity: 0; transition: background 0.35s ease, opacity 0.28s ease; }
+          .btn-view-order:active { transform: scale(0.94); }
+        </style>
+        
+        <div class="pos-form-card" style="display:flex; justify-content:space-between; align-items:center; margin-bottom: 20px; max-width: 100%;">
+          <h3 style="margin:0; color:#0f172a; font-size:18px; display:flex; align-items:center; gap:8px;">
+            ${filterDate ? `📅 ${filterDate} 的交易紀錄` : '📜 全部交易記錄'}
+          </h3>
+          <div style="display:flex; gap:12px; align-items:center; flex-wrap: wrap;">
+            ${filterDate ? `<button class="pos-pill" id="btnClearHistoryFilter" style="background:#fef2f2; color:#dc2626; border-color:#fecaca; font-weight:600; font-size:13px; padding:8px 16px; cursor:pointer;">✖ 清除篩選</button>` : ''}
+            <button class="pos-btn-secondary" id="btnFilterHistory" style="padding: 10px 16px; border-radius: 8px; border: 1px solid #cbd5e1; background:#fff; cursor:pointer; font-weight:600; color:#334155; display:flex; align-items:center; gap:6px; font-size: 14px; box-shadow: 0 1px 2px rgba(0,0,0,0.05); transition: all 0.2s;">
+              <span>📅</span> <span>${filterDate ? filterDate : '選擇指定日期'}</span>
+            </button>
+          </div>
+        </div>
+
+        <div style="overflow-x: auto;">
+          <table class="pos-table" style="min-width: 800px;">
+            <thead>
+              <tr>
+                <th>單號</th>
+                <th>類型</th>
+                <th style="width: 25%;">商品/庫存摘要</th>
+                <th>小計</th>
+                <th>總折扣</th>
+                <th>實付總計</th>
+                <th>時間</th>
+                <th style="text-align: right;">操作</th>
+              </tr>
+            </thead>
+            <tbody>
+              ${window._tempHistoryOrders.length > 0 ? tableRows : ''}
+            </tbody>
+          </table>
+          ${window._tempHistoryOrders.length === 0 ? tableRows : ''}
+        </div>
+
+        <!-- 訂單詳細 Modal (加入 anim-modal-box 類別) -->
+        <div class="pos-modal" id="orderDetailModal" aria-hidden="true" style="z-index: 2100;">
+          <div class="pos-modal__box anim-modal-box" style="width: min(450px, 100%); padding: 0; overflow: hidden;">
+            <div style="padding: 16px 24px; border-bottom: 1px solid #e2e8f0; display:flex; justify-content:space-between; align-items:center; background: #f8fafc;">
+              <h2 style="margin:0; font-size: 18px; color: #0f172a;" id="detailModalTitle">訂單詳細</h2>
+              <button type="button" id="btnDetailClose" style="background:none; border:none; font-size:24px; color:#64748b; cursor:pointer; line-height:1;">&times;</button>
+            </div>
+            <div style="padding: 24px; max-height: 60vh; overflow-y: auto;" id="detailModalBody"></div>
+          </div>
+        </div>
+      `;
+
+      // 綁定事件
+      document.getElementById('btnFilterHistory').onclick = () => {
+        openSharedDatePicker((selectedDate) => {
+          renderHistory(selectedDate);
+        });
+      };
+
+      if (document.getElementById('btnClearHistoryFilter')) {
+        document.getElementById('btnClearHistoryFilter').onclick = () => renderHistory(null);
+      }
+
+      document.querySelectorAll('.btn-view-order').forEach(btn => {
+        btn.onclick = () => {
+          const orderId = Number(btn.dataset.id);
+          const order = window._tempHistoryOrders.find(o => o.id === orderId);
+          if (order) showOrderDetail(order);
+        };
+      });
+
+      const m = document.getElementById('orderDetailModal');
+      document.getElementById('btnDetailClose').onclick = () => closeModalAnim(m);
+      m.onclick = (e) => { if (e.target.id === 'orderDetailModal') closeModalAnim(m); };
+
     } catch (e) {
-      el.innerHTML = `<p class="pos-order__empty">${e.message}</p>`;
+      el.innerHTML = `<p class="pos-order__empty">讀取失敗: ${e.message}</p>`;
     }
   }
 
+  function showOrderDetail(order) {
+    const m = document.getElementById('orderDetailModal');
+    const title = document.getElementById('detailModalTitle');
+    const body = document.getElementById('detailModalBody');
+    if (!m || !title || !body) return;
+
+    const isSale = order.mode === 'sale';
+    const modeZh = { sale: '售賣', restock: '入貨', return: '退貨', damage: '報銷' };
+    title.textContent = `單號 #${order.id} (${modeZh[order.mode] || order.mode})`;
+
+    const items = order.pos_order_items || [];
+    const itemsHtml = items.map(i => {
+      const pName = i.pos_products?.name || '未知產品';
+      if (isSale) {
+        const lineTotal = Number(i.line_total);
+        const amtStr = lineTotal < 0 ? `-$${Math.abs(lineTotal).toFixed(2)}` : `$${lineTotal.toFixed(2)}`;
+        return `
+          <div style="display:flex; justify-content:space-between; border-bottom:1px solid #f1f5f9; padding:10px 0; font-size:14px;">
+              <span style="flex:2; font-weight:500; color:#334155;">${pName}</span>
+              <span style="flex:1; text-align:center; color:#64748b;">x${i.qty}</span>
+              <span style="flex:1; text-align:right; font-weight:600;">${amtStr}</span>
+          </div>`;
+      } else {
+        const currentStock = i.pos_products?.stock_count ?? '未知';
+        const sign = order.mode === 'damage' ? '-' : '+'; 
+        const color = sign === '+' ? '#16a34a' : '#dc2626'; 
+        return `
+          <div style="display:flex; justify-content:space-between; border-bottom:1px solid #f1f5f9; padding:10px 0; font-size:14px;">
+              <span style="flex:2; font-weight:500; color:#334155;">${pName}</span>
+              <span style="flex:1; text-align:center; color:${color}; font-weight:600;">異動: ${sign}${i.qty}</span>
+              <span style="flex:1; text-align:right; color:#64748b;">現時庫存: ${currentStock}</span>
+          </div>`;
+      }
+    }).join('');
+
+    let topInfoHtml = `
+      <div style="display:flex; justify-content:space-between; margin-bottom:8px;">
+          <span>操作時間：</span><span style="color:#0f172a;">${new Date(order.created_at).toLocaleString('zh-TW')}</span>
+      </div>`;
+    if (isSale) {
+      topInfoHtml += `
+        <div style="display:flex; justify-content:space-between; margin-bottom:8px;">
+            <span>付款方式：</span><span style="color:#0f172a;">${order.payment_method || '無'}</span>
+        </div>
+        <div style="display:flex; justify-content:space-between; margin-bottom:8px;">
+            <span>實收 / 找續：</span><span style="color:#0f172a;">$${Number(order.amount_received || 0).toFixed(2)} / $${Number(order.change_amount || 0).toFixed(2)}</span>
+        </div>`;
+    }
+    topInfoHtml += `
+      <div style="display:flex; justify-content:space-between;">
+          <span>備註/原因：</span><span style="color:#0f172a;">${order.note || '無'}</span>
+      </div>`;
+
+    let bottomHtml = '';
+    if (isSale) {
+      bottomHtml = `
+        <div style="display:flex; justify-content:space-between; font-size: 14px; color: #64748b; margin-bottom: 8px;">
+            <span>小計：</span><span>$${Number(order.subtotal).toFixed(2)}</span>
+        </div>
+        <div style="display:flex; justify-content:space-between; font-size: 14px; color: #64748b; margin-bottom: 8px;">
+            <span>總折扣：</span><span style="color:#16a34a;">-$${Number(order.discount_amount).toFixed(2)}</span>
+        </div>
+        <div style="display:flex; justify-content:space-between; font-size: 20px; font-weight: 800; color: #0f172a; margin-top: 16px; padding-top: 16px; border-top: 1px dashed #cbd5e1;">
+            <span>實付總計：</span><span style="color:#2563eb;">$${Number(order.total).toFixed(2)}</span>
+        </div>`;
+    }
+
+    body.innerHTML = `
+      <div style="margin-bottom: 20px; font-size: 13px; color: #64748b; background: #f1f5f9; padding: 16px; border-radius: 12px;">${topInfoHtml}</div>
+      <h4 style="margin: 0 0 12px 0; font-size: 15px; color: #0f172a; display:flex; align-items:center; gap:6px;">
+        ${isSale ? '🛒 購買項目' : '📦 庫存異動明細'}
+      </h4>
+      <div style="border-top: 2px solid #e2e8f0; margin-bottom: ${isSale ? '20px' : '0'};">
+          ${itemsHtml || '<p style="padding:10px 0; color:#94a3b8; font-size:13px; text-align:center;">無商品明細紀錄</p>'}
+      </div>
+      ${bottomHtml}
+    `;
+  }
+
+  // ============================================================================
+  // 📊 模組 2：營業概況
+  // ============================================================================
   async function renderDashboard() {
     const el = document.getElementById('panelDashboard');
     if (!el) return;
@@ -33,17 +360,21 @@
       ]);
       el.innerHTML = `
         <div class="pos-card-grid">
-          <div class="pos-stat-card"><div class="pos-stat-card__val">$${stats.revenue.toFixed(2)}</div><div class="pos-stat-card__lbl">今日營業額</div></div>
+          <div class="pos-stat-card"><div class="pos-stat-card__val">$${stats.revenue.toFixed(2)}</div><div class="pos-stat-card__lbl">今日營收</div></div>
           <div class="pos-stat-card"><div class="pos-stat-card__val">${stats.count}</div><div class="pos-stat-card__lbl">今日訂單</div></div>
-          <div class="pos-stat-card"><div class="pos-stat-card__val">${low.length}</div><div class="pos-stat-card__lbl">低庫存商品</div></div>
+          <div class="pos-stat-card"><div class="pos-stat-card__val">${low.length}</div><div class="pos-stat-card__lbl">低庫存警告</div></div>
         </div>
-        ${low.length ? `<h3 style="margin-top:20px">低庫存</h3><ul>${low.map((p) => `<li>${p.code} ${p.name}: ${p.stock_count}</li>`).join('')}</ul>` : ''}`;
+        ${low.length ? `<h3 style="margin-top:20px">低庫存產品</h3><ul>${low.map((p) => `<li>${p.code} ${p.name}: ${p.stock_count}</li>`).join('')}</ul>` : ''}`;
     } catch (e) {
       el.innerHTML = `<p>${e.message}</p>`;
     }
   }
 
-async function renderSettings() {
+
+  // ============================================================================
+  // ⚙️ 模組 3：系統設定
+  // ============================================================================
+  async function renderSettings() {
     const el = document.getElementById('panelSettings');
     if (!el) return;
     const s = await window.posApi.fetchSettings();
@@ -53,37 +384,31 @@ async function renderSettings() {
         <input id="setStoreName" value="${s.store_name || ''}">
         <label>預設付款方式</label>
         <input id="setPayment" value="${s.default_payment || 'Cash'}">
-
-        <!-- 新增：全站主題強制設定 -->
         <label>深色模式強制設定 (force_dark_mode)</label>
         <select id="setForceDark">
           <option value="" ${!s.force_dark_mode ? 'selected' : ''}>不強制 (依賴本地瀏覽器記憶)</option>
           <option value="true" ${s.force_dark_mode === 'true' ? 'selected' : ''}>強制深色模式</option>
           <option value="false" ${s.force_dark_mode === 'false' ? 'selected' : ''}>強制淺色模式</option>
         </select>
-
-        <!-- 新增：系統維護模式 -->
         <label>系統維護模式 (maintenance_mode)</label>
         <select id="setMaintenance">
           <option value="false" ${s.maintenance_mode !== 'true' ? 'selected' : ''}>關閉 (正常營運)</option>
           <option value="true" ${s.maintenance_mode === 'true' ? 'selected' : ''}>開啟 (僅 ADMIN 可登入)</option>
         </select>
-
         <button class="pos-btn-charge" type="button" id="btnSaveSettings" style="margin-top: 16px;">儲存設定</button>
       </div>`;
-      
     document.getElementById('btnSaveSettings').onclick = async () => {
       await window.posApi.upsertSetting('store_name', document.getElementById('setStoreName').value);
       await window.posApi.upsertSetting('default_payment', document.getElementById('setPayment').value);
-      
-      // 儲存我們新增的兩個變數
       await window.posApi.upsertSetting('force_dark_mode', document.getElementById('setForceDark').value);
       await window.posApi.upsertSetting('maintenance_mode', document.getElementById('setMaintenance').value);
-      
-      window.ui.toast('設定已儲存，重新載入頁面後生效', 'success');
+      window.ui.toast('設定已儲存', 'success');
     };
   }
 
+  // ============================================================================
+  // 👥 模組 4：員工管理
+  // ============================================================================
   async function renderStaff() {
     const el = document.getElementById('panelStaff');
     if (!el) return;
@@ -91,40 +416,57 @@ async function renderSettings() {
     el.innerHTML = `
       <table class="pos-table"><thead><tr><th>名稱</th><th>角色</th><th>狀態</th></tr></thead>
       <tbody>${staff.map((s) => {
-        const role = s.role === 'ADMIN' ? '管理員' : '員工';
+        const role = s.role === 'ADMIN' ? '管理員' : '一般員工';
         return `<tr><td>${s.display_name}</td><td>${role}</td><td>${s.is_active ? '啟用' : '停用'}</td></tr>`;
       }).join('')}</tbody></table>
-      <p style="margin-top:12px"><a href="manager.html">在資料管理新增員工</a></p>`;
+      <p style="margin-top:12px"><a href="manager.html">前往進階後台管理</a></p>`;
   }
 
+  // ============================================================================
+  // 📝 模組 5：營業日結單 (Z-Report)
+  // ============================================================================
   async function renderEod() {
     const el = document.getElementById('panelEod');
     if (!el) return;
 
     const client = window.posDb.getClient();
-    const todayStr = new Date().toISOString().slice(0, 10);
+    const staff = window.posApp?.getStaff?.();
+    const isAdmin = staff && staff.role === 'ADMIN';
 
-    // 1. 獲取歷史結算紀錄 (改為依照建立時間排序，因為同一天可能有多筆)
+    // 預設日期為當日
+    const d = new Date();
+    const localTodayStr = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
+    
+    // 全域變數，紀錄目前選擇要結算的日期
+    window._eodTargetDate = window._eodTargetDate || localTodayStr; 
+
     const { data: reports } = await client
       .from('pos_eod_reports')
       .select('*')
       .order('created_at', { ascending: false })
       .limit(30);
 
-    // 2. 構建 UI (加入刪除按鈕)
     el.innerHTML = `
       <div class="pos-form-card" style="max-width: 100%;">
-        <h2 style="margin-top:0; color:#0f172a;">日終結算 (Z-Report)</h2>
-        <p style="color:#64748b; margin-bottom:16px;">統計目前銷售數據，並存檔為快照。同一日可多次生成報表。</p>
-        <button class="pos-btn-charge" type="button" id="btnEodGenerate" style="max-width: 250px;">📄 生成最新結算表</button>
+        <h2 style="margin-top:0; color:#0f172a;">營業日結單 (Z-Report)</h2>
+        <p style="color:#64748b; margin-bottom:16px;">選擇指定日期統計銷售數據。生成後將作為快照永久保存。</p>
+        
+        <div style="display: flex; gap: 12px; align-items: center; flex-wrap: wrap;">
+          <button class="pos-btn-secondary" type="button" id="btnSelectEodDate" style="padding: 12px 16px; border-radius: 8px; border: 1px solid #cbd5e1; background:#fff; cursor:pointer; font-weight:600; color:#334155; min-width: 160px; text-align:left;">
+            📅 <span id="eodDateLabel">${window._eodTargetDate}</span>
+          </button>
+          <button class="pos-btn-charge" type="button" id="btnEodGenerate" style="max-width: 250px; margin: 0;">📄 生成指定日期結算表</button>
+        </div>
       </div>
 
       <h3 style="margin-top:24px; color:#334155;">歷史交數紀錄</h3>
       <table class="pos-table" style="margin-bottom: 24px;">
         <thead>
           <tr>
-            <th>結算時間</th>
-            <th>總訂單數</th>
+            <th>結算目標日</th>
+            <th>生成時間</th>
+            <th>經手人</th>
+            <th>單數</th>
             <th>總營業額</th>
             <th style="text-align: right;">操作</th>
           </tr>
@@ -132,36 +474,61 @@ async function renderSettings() {
         <tbody>
           ${(reports || []).map(r => `
             <tr>
-              <td>${new Date(r.created_at).toLocaleString('zh-TW')}</td>
+              <td style="font-weight:600;">${r.report_date}</td>
+              <td style="font-size: 11px; color: #64748b;">${new Date(r.created_at).toLocaleString('zh-TW')}</td>
+              <td>${r.payload?.staff || '未知'}</td>
               <td>${r.order_count}</td>
               <td style="color:#3b82f6; font-weight:bold;">$${Number(r.total_sales).toFixed(2)}</td>
               <td style="text-align: right; white-space: nowrap;">
                 <button class="pos-pill btn-view-pdf" style="background:#eff6ff; color:#2563eb; border-color:#bfdbfe;" data-payload='${JSON.stringify(r.payload).replace(/'/g, "&#39;")}'>
                   👁️ 預覽
                 </button>
+                ${isAdmin ? `
                 <button class="pos-pill btn-delete-pdf" style="background:#fef2f2; color:#dc2626; border-color:#fecaca; margin-left:4px;" data-id="${r.id}">
                   🗑️ 刪除
-                </button>
+                </button>` : ''}
               </td>
             </tr>
-          `).join('') || '<tr><td colspan="4" style="text-align:center;">尚無結算紀錄</td></tr>'}
+          `).join('') || '<tr><td colspan="6" style="text-align:center;">尚無結算紀錄</td></tr>'}
         </tbody>
       </table>
     `;
 
-    // 3. 綁定「生成今日報告」按鈕
+    // 綁定智慧日曆選擇器
+    document.getElementById('btnSelectEodDate').onclick = () => {
+      openSharedDatePicker((selectedDate) => {
+        window._eodTargetDate = selectedDate; // 更新全域選擇日期
+        document.getElementById('eodDateLabel').textContent = window._eodTargetDate;
+      });
+    };
+
+    // 綁定「生成報告」按鈕
     document.getElementById('btnEodGenerate').onclick = async () => {
+      const targetDateStr = window._eodTargetDate;
+      if (!targetDateStr) {
+        window.ui.toast('請先選擇要結算的日期', 'error');
+        return;
+      }
+
       window.ui.setLoading(true, '正在深度計算數據...');
       try {
-        const start = new Date();
-        start.setHours(0, 0, 0, 0);
+        const start = new Date(`${targetDateStr}T00:00:00`);
+        const end = new Date(`${targetDateStr}T23:59:59.999`);
 
         const { data: orders } = await client.from('pos_orders')
           .select('*, pos_order_items(*, pos_products(name, code))')
           .eq('mode', 'sale')
-          .gte('created_at', start.toISOString());
+          .gte('created_at', start.toISOString())
+          .lte('created_at', end.toISOString());
 
         const sales = orders || [];
+        
+        if (sales.length === 0) {
+          window.ui.toast(`日期 ${targetDateStr} 沒有任何銷售紀錄！`, 'error');
+          window.ui.setLoading(false);
+          return;
+        }
+
         let totalRevenue = 0;
         let totalDiscount = 0;
         let payments = {};
@@ -184,9 +551,8 @@ async function renderSettings() {
           }
         });
 
-        const staff = window.posApp?.getStaff?.();
         const payload = {
-          date: todayStr,
+          date: targetDateStr,
           generated_at: new Date().toLocaleString('zh-TW'),
           staff: staff ? staff.display_name : 'Admin',
           total_orders: sales.length,
@@ -196,9 +562,8 @@ async function renderSettings() {
           items: Object.keys(itemsMap).map(k => ({ name: k, ...itemsMap[k] }))
         };
 
-        // 改為強制 insert（允許同日多筆）並修正總額寫入
         const { error } = await client.from('pos_eod_reports').insert({
-          report_date: todayStr,
+          report_date: targetDateStr,
           total_sales: totalRevenue,
           order_count: sales.length,
           payload: payload
@@ -216,7 +581,6 @@ async function renderSettings() {
       }
     };
 
-    // 4. 綁定「預覽報告」按鈕
     document.querySelectorAll('.btn-view-pdf').forEach(btn => {
       btn.onclick = () => {
         try {
@@ -228,7 +592,6 @@ async function renderSettings() {
       };
     });
 
-    // 5. 綁定「刪除報告」按鈕
     document.querySelectorAll('.btn-delete-pdf').forEach(btn => {
       btn.onclick = async () => {
         if (!confirm('確定要刪除這筆結算紀錄嗎？（僅刪除報告，不影響實際訂單）')) return;
@@ -246,18 +609,18 @@ async function renderSettings() {
     });
   }
 
-// === 專屬 PDF 排版與生成函數 (已修正置中、縮細比例與單頁顯示) ===
+  // ============================================================================
+  // 🖨️ PDF 產生器
+  // ============================================================================
   function generatePdf(data) {
     const wrapper = document.createElement('div');
     wrapper.style.position = 'absolute';
     wrapper.style.left = '-9999px';
     wrapper.style.top = '0';
-    // 關鍵修正：給予外層容器明確的 A4 比例像素寬度 (794px)，確保 html2pdf 擷取時完美置中
     wrapper.style.width = '794px'; 
     document.body.appendChild(wrapper);
 
     const div = document.createElement('div');
-    // 稍微縮減內部 padding，騰出更多空間給商品列表
     div.style.padding = '10px 20px';
     div.style.fontFamily = 'sans-serif';
     div.style.color = '#111';
@@ -270,15 +633,17 @@ async function renderSettings() {
       </div>
     `).join('');
     
-    let itemsHtml = (data.items || []).map(i => `
+    let itemsHtml = (data.items || []).map(i => {
+      const amt = Number(i.amount);
+      const amtStr = amt < 0 ? `-$${Math.abs(amt).toFixed(2)}` : `$${amt.toFixed(2)}`;
+      return `
       <div style="display:flex; justify-content:space-between; border-bottom:1px solid #f1f5f9; padding:6px 0; font-size:11px;">
         <span style="flex:2;">${i.name}</span>
         <span style="flex:1; text-align:center;">${i.qty}</span>
-        <span style="flex:1; text-align:right;">$${Number(i.amount).toFixed(2)}</span>
+        <span style="flex:1; text-align:right;">${amtStr}</span>
       </div>
-    `).join('');
+    `}).join('');
     
-    // 縮減了各個區塊的 margin-bottom 與 padding，確保極限利用一頁的空間
     div.innerHTML = `
       <div style="text-align:center; margin-bottom: 15px; border-bottom: 2px solid #1e293b; padding-bottom: 10px;">
         <h1 style="margin:0; font-size:22px; font-weight:900; letter-spacing:1px;">ASSTUDIOHK</h1>
@@ -330,7 +695,6 @@ async function renderSettings() {
     wrapper.appendChild(div);
 
     const opt = {
-      // 關鍵修正：上下邊距縮減為 10mm 騰出縱向空間，左右保持 15mm
       margin:       [10, 15, 10, 15], 
       filename:     `Z-Report-${data.date}.pdf`,
       image:        { type: 'jpeg', quality: 0.98 },
@@ -359,8 +723,10 @@ async function renderSettings() {
     });
   }
 
+  // 將方法綁定到全域供 app.js 呼叫
   window.posModes = window.posModes || {};
   window.posModes.management = {
     renderHistory, renderDashboard, renderSettings, renderStaff, renderEod,
   };
+
 })();

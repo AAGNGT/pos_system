@@ -4,8 +4,10 @@
   let storeName = 'POS 商店';
 
   function formatMoney(n) {
-    const v = Math.max(0, Number(n) || 0);
-    return `$${v % 1 === 0 ? v.toFixed(0) : v.toFixed(2)}`;
+    const val = Number(n) || 0;
+    const absVal = Math.abs(val);
+    // 正確處理負數顯示，如 -$20
+    return `${val < 0 ? '-' : ''}$${absVal % 1 === 0 ? absVal.toFixed(0) : absVal.toFixed(2)}`;
   }
 
   function formatDiscountMoney(n) {

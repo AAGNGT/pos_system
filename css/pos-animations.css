@@ -38,17 +38,16 @@ button:active:not(:disabled),
 .pos-keypad button:active {
   transform: scale(0.94);
 }
-
-/* 結帳視窗漸變動畫 */
-#checkoutModal {
+/* ==============================================================
+   共用 Modal 彈出與縮放動畫 (取代原本只綁定 #checkoutModal 的設定)
+   ============================================================== */
+.pos-modal {
   opacity: 0;
   visibility: hidden;
   transition: opacity 0.28s ease, visibility 0.28s ease;
   background: rgba(15, 23, 42, 0);
 }
-
-#checkoutModal.active,
-body.checkout-open #checkoutModal {
+.pos-modal.active, body.checkout-open #checkoutModal {
   display: flex !important;
   opacity: 1;
   visibility: visible;
@@ -56,24 +55,28 @@ body.checkout-open #checkoutModal {
   transition: opacity 0.32s ease, visibility 0s, background 0.35s ease;
 }
 
-#checkoutModal .pos-checkout {
+/* 將動畫套用到結帳面板與所有通用的 modal-box */
+.pos-modal .pos-checkout, 
+.pos-modal .pos-modal__box {
   opacity: 0;
   transform: scale(0.94) translateY(16px);
   transition: opacity 0.28s ease, transform 0.35s cubic-bezier(0.22, 1, 0.36, 1);
 }
 
-#checkoutModal.is-anim-in .pos-checkout,
-#checkoutModal.active.is-anim-in .pos-checkout {
+.pos-modal.is-anim-in .pos-checkout, 
+.pos-modal.active.is-anim-in .pos-checkout,
+.pos-modal.is-anim-in .pos-modal__box {
   opacity: 1;
   transform: scale(1) translateY(0);
 }
 
-#checkoutModal.is-leaving {
+.pos-modal.is-leaving {
   opacity: 0;
   background: rgba(15, 23, 42, 0);
 }
 
-#checkoutModal.is-leaving .pos-checkout {
+.pos-modal.is-leaving .pos-checkout,
+.pos-modal.is-leaving .pos-modal__box {
   opacity: 0;
   transform: scale(0.96) translateY(8px);
   transition: opacity 0.2s ease, transform 0.22s ease;

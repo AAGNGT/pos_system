@@ -58,11 +58,25 @@
     return state.items.reduce((s, i) => s + i.line_total, 0);
   }
 
-  function totals(discountInput = 0) {
-    const sub = subtotal();
-    const disc = Math.max(0, Number(discountInput) || 0);
-    const total = Math.max(0, sub - disc);
-    return { subtotal: sub, discount: disc, total };
+function totals(discountInput = 0) {
+    let posSub = 0;
+    let negDisc = 0;
+    
+    // 將正數產品計入小計，負數產品的絕對值計入折扣
+    state.items.forEach((i) => {
+      if (i.line_total >= 0) {
+        posSub += i.line_total;
+      } else {
+        negDisc += Math.abs(i.line_total);
+      }
+    });
+
+    const manualDisc = Math.max(0, Number(discountInput) || 0);
+    // 總折扣 = 負數產品折扣 + 手動輸入的折扣
+    const totalDisc = negDisc + manualDisc; 
+    const total = Math.max(0, posSub - totalDisc);
+    
+    return { subtotal: posSub, discount: totalDisc, total };
   }
 
   let onChange = null;
