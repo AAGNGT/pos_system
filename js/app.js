@@ -255,17 +255,25 @@
     }
   }
 
-  function updateModeUI() {
+function updateModeUI() {
     const badge = document.getElementById('orderModeBadge');
     if (badge) badge.textContent = MODE_BADGES[mode] || MODE_LABELS[mode] || mode;
+    
     const showProducts = ['sale', 'restock', 'return', 'damage'].includes(mode);
     document.getElementById('productArea')?.classList.toggle('hidden', !showProducts);
     document.getElementById('altPanels')?.classList.toggle('hidden', showProducts);
+    
     const checkout = document.getElementById('saleCheckout');
     const invPanel = document.getElementById('invPanel');
     if (checkout) checkout.style.display = mode === 'sale' ? 'block' : 'none';
     if (invPanel) invPanel.style.display = ['restock', 'return', 'damage'].includes(mode) ? 'block' : 'none';
     
+    // 💡 新增：控制購物車鎖定遮罩 (只有在 'sale' 收銀台模式才隱藏遮罩)
+    const cartLockOverlay = document.getElementById('cartLockOverlay');
+    if (cartLockOverlay) {
+      cartLockOverlay.classList.toggle('hidden', mode === 'sale');
+    }
+
     document.querySelectorAll('.pos-nav__item[data-mode]').forEach((btn) => {
       btn.classList.toggle('active', btn.dataset.mode === mode);
     });
