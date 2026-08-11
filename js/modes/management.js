@@ -1,11 +1,13 @@
 (function () {
+
   // ============================================================================
-  // 🌟 共用功能：智慧型動態日曆彈窗 (加入結帳般的滑順彈出動畫)
+  // 🌟 共用功能：智慧型動態日曆彈窗 (只允許選擇有交易紀錄的日期)
   // ============================================================================
   async function openSharedDatePicker(onDateSelected) {
     window.ui.setLoading(true, '正在掃描歷史交易日期...');
     const client = window.posDb.getClient();
     
+    // 1. 抓取 pos_orders 所有訂單的建立時間，提煉出「有營業的日期」
     const { data } = await client.from('pos_orders').select('created_at');
     const availableDates = new Set();
     (data || []).forEach(d => {
@@ -15,6 +17,7 @@
     });
     window.ui.setLoading(false);
 
+    // 2. 如果彈窗不存在，就動態建立一個
     let modal = document.getElementById('sharedDatePickerModal');
     if (!modal) {
       modal = document.createElement('div');
@@ -26,14 +29,9 @@
           .cal-day-btn.available:hover { background: #3b82f6 !important; color: #fff !important; transform: scale(1.05); }
           .cal-nav-btn { background:none; border:none; cursor:pointer; font-size:18px; color:#64748b; padding:4px 12px; border-radius:8px; transition: background 0.2s;}
           .cal-nav-btn:hover { background:#e2e8f0; color:#0f172a;}
-          
-          /* 核心動畫：參考結帳 Modal 的物理縮放與透明度過渡 */
-          .anim-modal-box { opacity: 0; transform: scale(0.94) translateY(16px); transition: opacity 0.28s ease, transform 0.35s cubic-bezier(0.22, 1, 0.36, 1); }
-          .pos-modal.is-anim-in .anim-modal-box { opacity: 1; transform: scale(1) translateY(0); }
-          .pos-modal.is-leaving .anim-modal-box { opacity: 0; transform: scale(0.96) translateY(8px); transition: opacity 0.2s ease, transform 0.22s ease; }
-          .pos-modal.is-leaving { background: rgba(15, 23, 42, 0) !important; opacity: 0; transition: background 0.35s ease, opacity 0.28s ease; }
+          .btn-view-order:active { transform: scale(0.94); }
         </style>
-        <div class="pos-modal__box anim-modal-box" style="width: min(340px, 100%); padding: 24px;">
+        <div class="pos-modal__box" style="width: min(340px, 100%); padding: 24px;">
           <h2 style="margin: 0 0 16px 0; font-size: 18px; text-align: center; color: #0f172a;">請選擇日期</h2>
           <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom: 16px; background:#f8fafc; border-radius:8px; padding:4px;">
             <button id="calPrevMonth" class="cal-nav-btn">&lt;</button>
@@ -49,6 +47,7 @@
       document.body.appendChild(modal);
     }
 
+    // 3. 日曆渲染邏輯
     let viewYear = new Date().getFullYear();
     let viewMonth = new Date().getMonth();
 
@@ -77,12 +76,14 @@
 
       document.querySelectorAll('.cal-day-btn.available').forEach(btn => {
         btn.onclick = () => {
-          closeModalAnim(modal);
-          onDateSelected(btn.dataset.date);
+          window.ui.closeModal(modal, () => {
+            onDateSelected(btn.dataset.date);
+          });
         };
       });
     };
 
+    // 4. 綁定導航按鈕
     const prevBtn = document.getElementById('calPrevMonth');
     const nextBtn = document.getElementById('calNextMonth');
     const cancelBtn = document.getElementById('calCancelBtn');
@@ -96,29 +97,11 @@
 
     newPrev.onclick = () => { viewMonth--; if(viewMonth < 0){viewMonth = 11; viewYear--;} renderGrid(); };
     newNext.onclick = () => { viewMonth++; if(viewMonth > 11){viewMonth = 0; viewYear++;} renderGrid(); };
-    newCancel.onclick = () => closeModalAnim(modal);
+    newCancel.onclick = () => window.ui.closeModal(modal);
 
+    // 5. 顯示彈窗 (使用全域動畫)
     renderGrid();
-    openModalAnim(modal);
-  }
-
-  // 共用：彈出視窗動畫開關邏輯
-  function openModalAnim(modalElement) {
-    modalElement.classList.remove('is-leaving');
-    modalElement.classList.add('active');
-    modalElement.setAttribute('aria-hidden', 'false');
-    requestAnimationFrame(() => {
-      requestAnimationFrame(() => modalElement.classList.add('is-anim-in'));
-    });
-  }
-
-  function closeModalAnim(modalElement) {
-    modalElement.classList.remove('is-anim-in');
-    modalElement.classList.add('is-leaving');
-    setTimeout(() => {
-      modalElement.classList.remove('active', 'is-leaving');
-      modalElement.setAttribute('aria-hidden', 'true');
-    }, 240);
+    window.ui.openModal(modal);
   }
 
 
@@ -185,16 +168,7 @@
         }).join('');
       }
 
-      // 渲染主畫面：UI 完美貼合 POS 風格，修改為「全部交易記錄」
       el.innerHTML = `
-        <style>
-          .anim-modal-box { opacity: 0; transform: scale(0.94) translateY(16px); transition: opacity 0.28s ease, transform 0.35s cubic-bezier(0.22, 1, 0.36, 1); }
-          .pos-modal.is-anim-in .anim-modal-box { opacity: 1; transform: scale(1) translateY(0); }
-          .pos-modal.is-leaving .anim-modal-box { opacity: 0; transform: scale(0.96) translateY(8px); transition: opacity 0.2s ease, transform 0.22s ease; }
-          .pos-modal.is-leaving { background: rgba(15, 23, 42, 0) !important; opacity: 0; transition: background 0.35s ease, opacity 0.28s ease; }
-          .btn-view-order:active { transform: scale(0.94); }
-        </style>
-        
         <div class="pos-form-card" style="display:flex; justify-content:space-between; align-items:center; margin-bottom: 20px; max-width: 100%;">
           <h3 style="margin:0; color:#0f172a; font-size:18px; display:flex; align-items:center; gap:8px;">
             ${filterDate ? `📅 ${filterDate} 的交易紀錄` : '📜 全部交易記錄'}
@@ -228,9 +202,9 @@
           ${window._tempHistoryOrders.length === 0 ? tableRows : ''}
         </div>
 
-        <!-- 訂單詳細 Modal (加入 anim-modal-box 類別) -->
+        <!-- 訂單詳細 Modal -->
         <div class="pos-modal" id="orderDetailModal" aria-hidden="true" style="z-index: 2100;">
-          <div class="pos-modal__box anim-modal-box" style="width: min(450px, 100%); padding: 0; overflow: hidden;">
+          <div class="pos-modal__box" style="width: min(450px, 100%); padding: 0; overflow: hidden;">
             <div style="padding: 16px 24px; border-bottom: 1px solid #e2e8f0; display:flex; justify-content:space-between; align-items:center; background: #f8fafc;">
               <h2 style="margin:0; font-size: 18px; color: #0f172a;" id="detailModalTitle">訂單詳細</h2>
               <button type="button" id="btnDetailClose" style="background:none; border:none; font-size:24px; color:#64748b; cursor:pointer; line-height:1;">&times;</button>
@@ -240,7 +214,6 @@
         </div>
       `;
 
-      // 綁定事件
       document.getElementById('btnFilterHistory').onclick = () => {
         openSharedDatePicker((selectedDate) => {
           renderHistory(selectedDate);
@@ -260,8 +233,8 @@
       });
 
       const m = document.getElementById('orderDetailModal');
-      document.getElementById('btnDetailClose').onclick = () => closeModalAnim(m);
-      m.onclick = (e) => { if (e.target.id === 'orderDetailModal') closeModalAnim(m); };
+      document.getElementById('btnDetailClose').onclick = () => window.ui.closeModal(m);
+      m.onclick = (e) => { if (e.target.id === 'orderDetailModal') window.ui.closeModal(m); };
 
     } catch (e) {
       el.innerHTML = `<p class="pos-order__empty">讀取失敗: ${e.message}</p>`;
@@ -345,7 +318,10 @@
       </div>
       ${bottomHtml}
     `;
+
+    window.ui.openModal(m);
   }
+
 
   // ============================================================================
   // 📊 模組 2：營業概況
@@ -406,6 +382,7 @@
     };
   }
 
+
   // ============================================================================
   // 👥 模組 4：員工管理
   // ============================================================================
@@ -422,6 +399,7 @@
       <p style="margin-top:12px"><a href="manager.html">前往進階後台管理</a></p>`;
   }
 
+
   // ============================================================================
   // 📝 模組 5：營業日結單 (Z-Report)
   // ============================================================================
@@ -433,11 +411,9 @@
     const staff = window.posApp?.getStaff?.();
     const isAdmin = staff && staff.role === 'ADMIN';
 
-    // 預設日期為當日
     const d = new Date();
     const localTodayStr = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
     
-    // 全域變數，紀錄目前選擇要結算的日期
     window._eodTargetDate = window._eodTargetDate || localTodayStr; 
 
     const { data: reports } = await client
@@ -452,7 +428,7 @@
         <p style="color:#64748b; margin-bottom:16px;">選擇指定日期統計銷售數據。生成後將作為快照永久保存。</p>
         
         <div style="display: flex; gap: 12px; align-items: center; flex-wrap: wrap;">
-          <button class="pos-btn-secondary" type="button" id="btnSelectEodDate" style="padding: 12px 16px; border-radius: 8px; border: 1px solid #cbd5e1; background:#fff; cursor:pointer; font-weight:600; color:#334155; min-width: 160px; text-align:left;">
+          <button class="pos-btn-secondary" type="button" id="btnSelectEodDate" style="padding: 12px 16px; border-radius: 8px; border: 1px solid #cbd5e1; background:#fff; cursor:pointer; font-weight:600; color:#334155; min-width: 160px; text-align:left; box-shadow: 0 1px 2px rgba(0,0,0,0.05); transition: all 0.2s;">
             📅 <span id="eodDateLabel">${window._eodTargetDate}</span>
           </button>
           <button class="pos-btn-charge" type="button" id="btnEodGenerate" style="max-width: 250px; margin: 0;">📄 生成指定日期結算表</button>
@@ -494,15 +470,13 @@
       </table>
     `;
 
-    // 綁定智慧日曆選擇器
     document.getElementById('btnSelectEodDate').onclick = () => {
       openSharedDatePicker((selectedDate) => {
-        window._eodTargetDate = selectedDate; // 更新全域選擇日期
+        window._eodTargetDate = selectedDate; 
         document.getElementById('eodDateLabel').textContent = window._eodTargetDate;
       });
     };
 
-    // 綁定「生成報告」按鈕
     document.getElementById('btnEodGenerate').onclick = async () => {
       const targetDateStr = window._eodTargetDate;
       if (!targetDateStr) {
