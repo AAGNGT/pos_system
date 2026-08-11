@@ -56,6 +56,7 @@
   <div class="container">
     <div class="app-header">
       <h1>POS 資料管理</h1>
+      <button onclick="resetTransactions()" class="btn btn-danger" style="margin-right: 8px;">⚠️ 重設所有訂單與編號</button>
       <a href="index.html" class="btn btn-ghost">← 返回 POS</a>
     </div>
     <div id="messageArea"></div>
@@ -274,15 +275,57 @@
       }
     }
 
-    function requireAdminGate() {
-      const key = 'pos_manager_verified';
-      if (sessionStorage.getItem(key) === '1') return true;
-      const pin = prompt('管理後台 PIN（預設與員工 PIN 相同：1234）');
-      if (pin === '1234') { sessionStorage.setItem(key, '1'); return true; }
-      alert('驗證失敗');
-      window.location.href = 'index.html';
-      return false;
+function requireAdminGate() {
+      try {
+        // 1. 讀取主系統 (index.html) 登入後存入的員工資料
+        const staffJson = sessionStorage.getItem('pos_staff');
+        
+        // 如果沒有登入紀錄
+        if (!staffJson) {
+          alert('你沒有權限查閲該數據庫');
+          window.location.href = 'index.html';
+          return false;
+        }
+
+        const staff = JSON.parse(staffJson);
+
+        // 2. 檢查該帳戶是否為 ADMIN 權限
+        if (staff.role !== 'ADMIN') {
+          alert('你沒有權限查閲該數據庫');
+          window.location.href = 'index.html';
+          return false;
+        }
+
+        // 驗證通過
+        return true;
+      } catch (e) {
+        // 若解析資料出錯，一律視為無權限
+        alert('你沒有權限查閲該數據庫');
+        window.location.href = 'index.html';
+        return false;
+      }
     }
+
+    window.onload = async () => {
+      // 步驟一：嚴格權限檢查。如果不通過，程式會在這裡直接 return 中斷
+      if (!requireAdminGate()) return;
+
+      // 步驟二：確認擁有 Admin 權限後，才允許初始化連接 Supabase 數據庫
+      if (!initSupabase()) { 
+        showMessage('無法載入 Supabase', 'error'); 
+        return; 
+      }
+      
+      // 步驟三：載入介面與資料
+      buildUI();
+      await loadStats();
+      await loadTable(currentTab);
+      
+      const firstTab = document.querySelector('.tab');
+      if (firstTab) {
+        firstTab.addEventListener('click', function () {});
+      }
+    };
 
 // 控制全選/取消全選
 function toggleSelectAll(tableName) {
@@ -330,7 +373,32 @@ function toggleSelectAll(tableName) {
       await loadTable(currentTab);
       document.querySelector('.tab').addEventListener('click', function () {});
     };
+    async function resetTransactions() {
+      // 第一層防呆：確認視窗
+      const confirmMsg = '【極度危險操作】\n這將會永久刪除所有「訂單」、「訂單明細」及「庫存異動」紀錄，並將編號全部重設為 1！\n\n請輸入大寫的 "RESET" 來確認執行：';
+      const userInput = prompt(confirmMsg);
+      
+      // 檢查使用者是否輸入正確的確認碼
+      if (userInput !== 'RESET') {
+        if (userInput !== null) {
+          alert('輸入錯誤，重設操作已取消。');
+        }
+        return;
+      }
 
+      try {
+        // 呼叫我們在 Supabase 建立的函數
+        const { error } = await supabaseClient.rpc('reset_transaction_data');
+        if (error) throw error;
+        
+        // 顯示成功訊息並刷新畫面
+        showMessage('所有交易紀錄已清空，編號已完美重設為 1！', 'success');
+        await loadStats(); 
+        await loadTable(currentTab); 
+      } catch (e) {
+        showMessage(`重設失敗：${e.message}`, 'error');
+      }
+    }
 
   </script>
 </body>

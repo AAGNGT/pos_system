@@ -32,10 +32,37 @@
     const s = getStaff();
     const el = document.getElementById('sidebarUser');
     const header = document.getElementById('headerUser');
-    const text = s ? `${s.display_name}（${roleLabel(s.role)}）` : '未登入';
+    const text = s ? `${s.display_name} ${roleLabel(s.role)} ` : '未登入';
     if (el) el.textContent = text;
     if (header) header.textContent = text;
+
+    // === 新增：根據角色動態顯示「鎖定」樣式 ===
+    const isAdmin = s && s.role === 'ADMIN';
+    const restrictedBtns = document.querySelectorAll('.pos-nav__item[data-mode="products"], .pos-nav__item[data-mode="settings"]');
+    
+    restrictedBtns.forEach((btn) => {
+      const iconSpan = btn.querySelector('.pos-nav__icon');
+      const mode = btn.dataset.mode;
+
+      if (!isAdmin) {
+        // 員工狀態：顯示為被封鎖
+        btn.style.opacity = '0.4';
+        btn.style.cursor = 'not-allowed';
+        btn.style.background = 'transparent'; // 防止 hover 效果
+        if (iconSpan) iconSpan.textContent = '🔒';
+      } else {
+        // ADMIN 狀態：恢復正常顯示
+        btn.style.opacity = '1';
+        btn.style.cursor = 'pointer';
+        btn.style.background = '';
+        if (iconSpan) {
+          if (mode === 'products') iconSpan.textContent = '🗄️';
+          if (mode === 'settings') iconSpan.textContent = '⚙️'; // 假設原本設定的圖標是齒輪
+        }
+      }
+    });
   }
+
 
   const PIN_KEY = 'pos_sidebar_pinned';
   const RAIL_BREAKPOINT = 1100;
@@ -63,19 +90,35 @@
   }
 
   function setSidebarPinned(pinned) {
+    const sidebar = document.getElementById('posSidebar');
+    
+    // === 解決突兀 Bug：取消釘選時，先暫時關閉動畫，讓畫面瞬間消失 ===
+    if (!pinned && sidebar) {
+      sidebar.style.transition = 'none';
+    }
+
     document.body.classList.toggle('sidebar-pinned', pinned);
     localStorage.setItem(PIN_KEY, pinned ? '1' : '0');
-    const sidebar = document.getElementById('posSidebar');
+    
     if (pinned) {
       sidebar?.classList.add('open');
       document.body.classList.add('sidebar-open');
       document.getElementById('btnOpenMenu')?.setAttribute('aria-expanded', 'true');
     } else {
       closeSidebar();
+      
+      // 給瀏覽器一點緩衝時間後恢復動畫，以免影響下一次「打開選單」的滑動特效
+      if (sidebar) {
+        setTimeout(() => {
+          sidebar.style.transition = '';
+        }, 50);
+      }
     }
+    
     updateSidebarRail();
     updatePinButton();
   }
+
 
   function toggleSidebarPin() {
     setSidebarPinned(!isSidebarPinned());
@@ -97,10 +140,10 @@
     document.body.classList.remove('sidebar-open');
   }
 
-  const MODE_LABELS = {
-    sale: '銷售', restock: '補貨', return: '退貨', damage: '損壞',
-    products: '產品', history: '歷史紀錄', dashboard: '儀表板',
-    settings: '設定', staff: '員工', eod: '日終報告',
+const MODE_LABELS = {
+    sale: '收銀台', restock: '入貨', return: '退貨', damage: '報銷',
+    products: '數據庫管理', history: '交易紀錄', dashboard: '營業概況',
+    settings: '系統設定', staff: '員工管理', eod: '營業日結單'
   };
 
   const MODE_BADGES = {
@@ -261,7 +304,7 @@
     }
   }
 
-  function setMode(m) {
+function setMode(m) {
     if (m === 'logout') {
       sessionStorage.removeItem(STAFF_KEY);
       closeSidebar();
@@ -269,8 +312,20 @@
       return;
     }
     if (m === 'dark') return;
+
+    // === 新增：權限不足攔截 ===
+    const s = getStaff();
+    const restrictedModes = ['products', 'settings']; // 受保護的頁面
+    if (restrictedModes.includes(m) && s && s.role !== 'ADMIN') {
+      window.ui.toast('權限不足：您沒有權限存取此頁面', 'error');
+      return; // 立即中斷，不執行換頁
+    }
+    // =======================
+
     mode = m;
     closeSidebar();
+    
+    // ... 下方保留原本的程式碼 (const headerLabel = ...)
     const headerLabel = document.getElementById('headerModeLabel');
     if (headerLabel) headerLabel.textContent = MODE_LABELS[m] || m;
     updateModeUI();
@@ -408,15 +463,42 @@
       });
     });
 
+// === 讀取設定檔以判斷深色模式邏輯 ===
+    const settings = await window.posApi.fetchSettings();
+    const forceDark = settings.force_dark_mode;
+    
+    // 初始化主題
+    if (forceDark === 'true') {
+      document.body.classList.add('dark');
+      document.getElementById('darkToggle')?.classList.add('on');
+    } else if (forceDark === 'false') {
+      document.body.classList.remove('dark');
+      document.getElementById('darkToggle')?.classList.remove('on');
+    } else if (localStorage.getItem('pos_dark') === '1') {
+      // 依賴本地記憶
+      document.body.classList.add('dark');
+      document.getElementById('darkToggle')?.classList.add('on');
+    }
+
+    // 點擊切換按鈕事件
     document.getElementById('darkToggle')?.addEventListener('click', () => {
+      if (forceDark === 'true' || forceDark === 'false') {
+        window.ui.toast('系統已強制設定主題，無法手動切換', 'error');
+        return;
+      }
       document.body.classList.toggle('dark');
       const on = document.body.classList.contains('dark');
       document.getElementById('darkToggle').classList.toggle('on', on);
       localStorage.setItem('pos_dark', on ? '1' : '0');
     });
-    if (localStorage.getItem('pos_dark') === '1') {
-      document.body.classList.add('dark');
-      document.getElementById('darkToggle')?.classList.add('on');
+
+    const btnLogout = document.getElementById('btnLogout');
+    if (btnLogout) {
+      btnLogout.addEventListener('click', () => {
+        sessionStorage.removeItem(STAFF_KEY);
+        closeSidebar();
+        window.location.reload(); 
+      });
     }
 
     window.posModes.inventory.bind(ctx());
@@ -439,13 +521,23 @@
     const pin = document.getElementById('loginPin').value;
     const row = await window.posApi.verifyStaff(id, pin);
     if (!row) {
-      window.ui.toast('PIN 錯誤', 'error');
+      window.ui.toast('PIN 碼錯誤', 'error');
       return;
     }
+
+    // === 新增：系統維護模式檢查 ===
+    const settings = await window.posApi.fetchSettings();
+    if (settings.maintenance_mode === 'true' && row.role !== 'ADMIN') {
+      window.ui.toast('系統目前正在維護中，僅開放管理員 (ADMIN) 登入', 'error');
+      return; // 阻止登入
+    }
+    // ===========================
+
     setStaff(row);
     document.getElementById('loginModal').classList.remove('active');
-    window.ui.toast(`歡迎，${row.display_name}`, 'success');
+    window.ui.toast(`歡迎回來，${row.display_name}`, 'success');
   }
+
 
   window.addEventListener('DOMContentLoaded', () => {
     document.getElementById('btnLogin')?.addEventListener('click', doLogin);

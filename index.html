@@ -1,331 +1,245 @@
 <!DOCTYPE html>
-
 <html lang="zh-TW">
-
 <head>
-
   <meta charset="UTF-8">
-
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-
-  <title>POS 收銀系統 - ASSTUDIOHK</title>
-
+  <title>POS 系統 - ASSTUDIOHK</title>
+  
+  <!-- 網站圖標 -->
   <link rel="icon" href="images.png" type="image/png">
-
   <link rel="apple-touch-icon" href="images.png">
-
+  
+  <!-- 樣式表 -->
   <link rel="stylesheet" href="css/pos-layout.css">
-
   <link rel="stylesheet" href="css/pos-theme.css">
-
   <link rel="stylesheet" href="css/pos-animations.css">
-
+  
+  <!-- 外部套件 (PDF 生成與 Supabase) -->
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-
+  
+  <!-- 系統設定 -->
   <script src="config.js"></script>
-
 </head>
-
 <body>
 
+  <!-- 手機版側邊欄背景遮罩 -->
   <div class="pos-sidebar-backdrop" id="sidebarBackdrop" aria-hidden="true"></div>
 
+  <!-- 應用程式主體容器 -->
   <div class="pos-app">
 
+    <!-- ==================== 側邊導航欄 (Sidebar) ==================== -->
     <aside class="pos-sidebar" id="posSidebar" aria-hidden="true">
-
       <div class="pos-sidebar__brand">
-
         <img class="pos-sidebar__logo" src="images.png" alt="POS" width="40" height="40">
-
         <div class="pos-sidebar__meta">
-
-          <p class="pos-sidebar__name">POS 商店</p>
-
-          <span class="pos-sidebar__badge">專業會員</span>
-
+          <p class="pos-sidebar__name">POS 系統</p>
+          <span class="pos-sidebar__badge">PRO</span>
         </div>
-
-        <button type="button" class="pos-sidebar__pin" id="btnSidebarPin" title="釘選工作列" aria-label="釘選工作列" aria-pressed="false">📌</button>
-
+        <button type="button" class="pos-sidebar__pin" id="btnSidebarPin" title="釘選選單" aria-label="釘選選單" aria-pressed="false">📌</button>
       </div>
 
+      <p class="pos-nav__label">主要功能</p>
+      <button type="button" class="pos-nav__item active" data-mode="sale">
+        <span class="pos-nav__icon">🛒</span><span>收銀台</span>
+      </button>
+      <button type="button" class="pos-nav__item" data-mode="restock">
+        <span class="pos-nav__icon">📦</span><span>入貨</span>
+      </button>
+      <button type="button" class="pos-nav__item" data-mode="return">
+        <span class="pos-nav__icon">🔙</span><span>退貨</span>
+      </button>
+      <button type="button" class="pos-nav__item" data-mode="damage">
+        <span class="pos-nav__icon">🗑️</span><span>報銷</span>
+      </button>
 
+      <p class="pos-nav__label">管理功能</p>
+      <button type="button" class="pos-nav__item" data-mode="products">
+        <span class="pos-nav__icon">🗄️</span><span>數據庫管理</span>
+      </button>
+      <button type="button" class="pos-nav__item" data-mode="history">
+        <span class="pos-nav__icon">📜</span><span>交易紀錄</span>
+      </button>
+      <button type="button" class="pos-nav__item" data-mode="dashboard">
+        <span class="pos-nav__icon">📊</span><span>營業概況</span>
+      </button>
+      <button type="button" class="pos-nav__item" data-mode="settings">
+        <span class="pos-nav__icon">⚙️</span><span>系統設定</span>
+      </button>
+      <button type="button" class="pos-nav__item" data-mode="staff">
+        <span class="pos-nav__icon">👥</span><span>員工管理</span>
+      </button>
 
-      <p class="pos-nav__label">模式</p>
-
-      <button type="button" class="pos-nav__item active" data-mode="sale"><span class="pos-nav__icon">🛒</span><span>銷售</span></button>
-
-      <button type="button" class="pos-nav__item" data-mode="restock"><span class="pos-nav__icon">📦</span><span>補貨</span></button>
-
-      <button type="button" class="pos-nav__item" data-mode="return"><span class="pos-nav__icon">↩</span><span>退貨</span></button>
-
-      <button type="button" class="pos-nav__item" data-mode="damage"><span class="pos-nav__icon">⚡</span><span>損壞</span></button>
-
-
-
-      <p class="pos-nav__label">管理</p>
-
-      <button type="button" class="pos-nav__item" data-mode="products"><span class="pos-nav__icon">📋</span><span>產品</span></button>
-
-      <button type="button" class="pos-nav__item" data-mode="history"><span class="pos-nav__icon">📁</span><span>歷史紀錄</span></button>
-
-      <button type="button" class="pos-nav__item" data-mode="dashboard"><span class="pos-nav__icon">📊</span><span>儀表板</span></button>
-
-      <button type="button" class="pos-nav__item" data-mode="settings"><span class="pos-nav__icon">⚙</span><span>設定</span></button>
-
-      <button type="button" class="pos-nav__item" data-mode="staff"><span class="pos-nav__icon">👥</span><span>員工</span></button>
-
-
-
-      <p class="pos-nav__label">系統</p>
-
+      <p class="pos-nav__label">其他功能</p>
       <div class="pos-toggle-row">
-
-        <span>🌙 深色模式</span>
-
-        <button type="button" class="pos-switch" id="darkToggle" aria-label="深色模式"></button>
-
+        <span>深色模式</span>
+        <button type="button" class="pos-switch" id="darkToggle" aria-label="切換深色模式"></button>
       </div>
-
-      <button type="button" class="pos-nav__item" data-mode="eod"><span class="pos-nav__icon">📄</span><span>日終報告</span></button>
-
+      <button type="button" class="pos-nav__item" data-mode="eod">
+        <span class="pos-nav__icon">📝</span><span>營業日結單</span>
+      </button>
       <a class="pos-nav__item pos-nav__link" href="display.html" target="_blank" rel="noopener noreferrer">
-        <span class="pos-nav__icon">🖥</span><span>客戶顯示屏</span>
+        <span class="pos-nav__icon">🖥️</span><span>客戶顯示屏</span>
       </a>
-
       <a class="pos-nav__item pos-nav__link" href="sheet.html" target="_blank" rel="noopener noreferrer">
-        <span class="pos-nav__icon">📈</span><span>財務報表系統</span>
+        <span class="pos-nav__icon">📈</span><span>財務報表</span>
       </a>
 
+      <!-- 側邊欄底部 (登出與授權) -->
       <div class="pos-sidebar__footer">
-
-        <p class="pos-sidebar__user" id="sidebarUser">管理員</p>
-
-        <button type="button" class="pos-sidebar__logout" data-mode="logout">登出</button>
-
+        <p class="pos-sidebar__user" id="sidebarUser">未登入</p>
+        <button type="button" class="pos-sidebar__logout" id="btnLogout">
+          <span style="font-size: 16px;">🚪</span> <span>登出系統</span>
+        </button>
         <p class="pos-sidebar__powered">技術支持：陳燃㮾</p>
-
       </div>
-
     </aside>
 
-
-
+    <!-- ==================== 中間主畫面 (Main Content) ==================== -->
     <main class="pos-main">
-
       <header class="pos-main-header">
-
-        <button type="button" class="pos-menu-btn" id="btnOpenMenu" aria-label="更多功能" aria-expanded="false" aria-controls="posSidebar" title="更多功能">
-
+        <button type="button" class="pos-menu-btn" id="btnOpenMenu" aria-label="開啟選單" aria-expanded="false" aria-controls="posSidebar" title="選單">
           <span class="pos-menu-btn__bar"></span>
-
           <span class="pos-menu-btn__bar"></span>
-
           <span class="pos-menu-btn__bar"></span>
-
         </button>
-
-        <span class="pos-main-header__mode" id="headerModeLabel">銷售</span>
-
+        <span class="pos-main-header__mode" id="headerModeLabel">收銀台</span>
+        
         <div class="pos-main-header__search">
-          <input type="search" id="orderSearch" placeholder="搜尋商品…" aria-label="搜尋商品">
-          <button type="button" class="pos-btn-reset-display" id="btnResetDisplay" title="重設顯示屏">重設顯示屏</button>
+          <input type="search" id="orderSearch" placeholder="搜尋產品..." aria-label="搜尋產品">
+          <button type="button" class="pos-btn-reset-display" id="btnResetDisplay" title="重設客顯屏">重設客顯</button>
         </div>
-
         <span class="pos-main-header__user" id="headerUser"></span>
-
       </header>
 
+      <!-- 產品顯示區 -->
       <div id="productArea">
-
         <div class="pos-toolbar">
-
-          <div id="categoryPills" style="display:flex;gap:8px;flex-wrap:wrap;flex:1"></div>
-
-          <select class="pos-toolbar__sort" id="sortSelect" aria-label="排序">
-
-            <option value="default">預設</option>
-
-            <option value="name">名稱</option>
-
-            <option value="price_asc">價格 ↑</option>
-
-            <option value="price_desc">價格 ↓</option>
-
+          <div id="categoryPills" style="display:flex; gap:8px; flex-wrap:wrap; flex:1;"></div>
+          <select class="pos-toolbar__sort" id="sortSelect" aria-label="排序方式">
+            <option value="default">預設排序</option>
+            <option value="name">名稱排序</option>
+            <option value="price_asc">價格：由低至高</option>
+            <option value="price_desc">價格：由高至低</option>
           </select>
-
         </div>
-
         <div class="pos-products" id="productGrid"></div>
-
       </div>
 
-
-
-      <div id="altPanels" class="hidden" style="flex:1;overflow:auto">
-
+      <!-- 其他功能面板 (隱藏切換用) -->
+      <div id="altPanels" class="hidden" style="flex:1; overflow:auto;">
         <div id="panelHistory" class="pos-panel-view"></div>
-
         <div id="panelDashboard" class="pos-panel-view"></div>
-
         <div id="panelSettings" class="pos-panel-view"></div>
-
         <div id="panelStaff" class="pos-panel-view"></div>
-
         <div id="panelEod" class="pos-panel-view"></div>
-
         <div id="panelProducts" class="pos-panel-view"></div>
-
       </div>
-
     </main>
 
-
-
+    <!-- ==================== 右側訂單/購物車 (Order Side) ==================== -->
     <aside class="pos-order">
-
       <div class="pos-order__head">
-
-        <h2 class="pos-order__title">訂單 <span class="pos-badge-sale" id="orderModeBadge">銷售</span></h2>
-
+        <h2 class="pos-order__title">目前訂單 <span class="pos-badge-sale" id="orderModeBadge">售賣</span></h2>
         <button type="button" class="pos-order__clear" id="btnClear">清空</button>
-
       </div>
-
+      
       <div class="pos-order__scroll">
         <div class="pos-order__items" id="cartItems">
-          <p class="pos-order__empty">尚無商品</p>
+          <p class="pos-order__empty">購物車是空的</p>
         </div>
-        <div class="pos-inv-panel" id="invPanel" style="display:none">
-          <p id="invSelectedName" style="margin:0 0 8px;font-size:13px;color:#64748b">請點選商品</p>
+        
+        <!-- 庫存操作面板 (入貨/退貨時顯示) -->
+        <div class="pos-inv-panel" id="invPanel" style="display:none;">
+          <p id="invSelectedName" style="margin:0 0 8px; font-size:13px; color:#64748b;">請選擇產品</p>
           <input type="number" id="fieldInvQty" min="1" value="1" placeholder="數量">
-          <input type="text" id="fieldInvReason" placeholder="原因（選填）">
-          <button type="button" class="pos-btn-charge" id="btnInvConfirm">確認異動</button>
+          <input type="text" id="fieldInvReason" placeholder="備註/原因">
+          <button type="button" class="pos-btn-charge" id="btnInvConfirm">確認執行</button>
         </div>
       </div>
 
       <div class="pos-order__footer pos-order__checkout" id="saleCheckout">
         <div class="pos-checkout-fields">
           <label class="pos-field-row">
-            <span class="pos-field-label">支付方式</span>
-            <select id="fieldPayment" aria-label="支付方式">
+            <span class="pos-field-label">付款方式</span>
+            <select id="fieldPayment" aria-label="付款方式">
               <option value="現金">現金</option>
               <option value="AlipayHK">AlipayHK</option>
               <option value="WeChat Pay">WeChat Pay</option>
             </select>
           </label>
           <div class="pos-field-row pos-field-row--discount">
-            <span class="pos-field-label pos-field-label--sm">折扣金額</span>
-            <button type="button" class="pos-btn-discount" id="btnOpenDiscount" aria-haspopup="dialog">點擊輸入</button>
+            <span class="pos-field-label pos-field-label--sm">折扣</span>
+            <button type="button" class="pos-btn-discount" id="btnOpenDiscount" aria-haspopup="dialog">設定折扣</button>
             <input type="hidden" id="fieldDiscount" value="0">
           </div>
         </div>
-        <button type="button" class="pos-btn-note" id="btnToggleNote">＋ 訂單備註</button>
+        
+        <button type="button" class="pos-btn-note" id="btnToggleNote">新增備註</button>
+        
         <div class="pos-order__summary pos-order__summary--compact">
           <div><span>小計</span><span id="sumSubtotal">$0.00</span></div>
           <div><span>折扣</span><span id="sumDiscount">-$0.00</span></div>
-          <div class="total"><span>合計</span><span id="sumTotal">$0.00</span></div>
+          <div class="total"><span>總計</span><span id="sumTotal">$0.00</span></div>
         </div>
+        
         <button type="button" class="pos-btn-charge" id="btnCharge" disabled>結帳 $0.00</button>
       </div>
-
     </aside>
-
   </div>
 
-
-
+  <!-- ==================== 彈出視窗與 Modal 區塊 ==================== -->
+  
+  <!-- 結帳 Modal -->
   <div class="pos-modal" id="checkoutModal" aria-labelledby="checkoutTitle" aria-hidden="true">
-
     <div class="pos-checkout">
-
       <h2 class="pos-checkout__title" id="checkoutTitle">結帳</h2>
-
       <div class="pos-checkout__body">
-
         <div class="pos-checkout__summary">
-
           <div class="pos-checkout__row">
-
-            <span class="pos-checkout__label">應收</span>
-
+            <span class="pos-checkout__label">應付金額</span>
             <span class="pos-checkout__amount" id="checkoutDue">$0</span>
-
           </div>
-
           <div class="pos-checkout__row">
-
-            <span class="pos-checkout__label">實收</span>
-
+            <span class="pos-checkout__label">實收金額</span>
             <span class="pos-checkout__amount" id="checkoutReceived">$0</span>
-
           </div>
-
-          <button type="button" class="pos-checkout__exact" id="btnExactAmount">收足額</button>
-
+          <button type="button" class="pos-checkout__exact" id="btnExactAmount">全額付清</button>
           <div class="pos-checkout__row pos-checkout__row--change">
-
             <span class="pos-checkout__label">找續</span>
-
             <span class="pos-checkout__change" id="checkoutChange">$0</span>
-
           </div>
-
         </div>
-
         <div class="pos-checkout__keypad">
-
           <div class="pos-keypad" id="checkoutKeypad">
-
             <button type="button" data-key="1">1</button>
-
             <button type="button" data-key="2">2</button>
-
             <button type="button" data-key="3">3</button>
-
             <button type="button" data-key="4">4</button>
-
             <button type="button" data-key="5">5</button>
-
             <button type="button" data-key="6">6</button>
-
             <button type="button" data-key="7">7</button>
-
             <button type="button" data-key="8">8</button>
-
             <button type="button" data-key="9">9</button>
-
             <button type="button" data-key="00">00</button>
-
             <button type="button" data-key="0">0</button>
-
-            <button type="button" class="pos-keypad__back" data-key="back" aria-label="刪除">⌫</button>
-
+            <button type="button" class="pos-keypad__back" data-key="back" aria-label="退格">⌫</button>
           </div>
-
           <div class="pos-checkout__actions">
-
             <button type="button" class="pos-checkout__cancel" id="btnCheckoutCancel">取消</button>
-
-            <button type="button" class="pos-checkout__confirm" id="btnCheckoutConfirm" disabled>確認收款</button>
-
+            <button type="button" class="pos-checkout__confirm" id="btnCheckoutConfirm" disabled>確認結帳</button>
           </div>
-
         </div>
-
       </div>
-
     </div>
-
   </div>
 
-
-
+  <!-- 重設客顯 Modal -->
   <div class="pos-modal" id="resetDisplayModal" aria-hidden="true">
     <div class="pos-modal__box pos-modal__box--confirm">
-      <h2>重設顯示屏</h2>
-      <p class="pos-modal__hint">確定將客戶顯示屏重設為歡迎畫面？收銀台購物車不會被清空。</p>
+      <h2>重設客顯屏</h2>
+      <p class="pos-modal__hint">確定要重設客顯屏嗎？這將會清除客顯屏上的所有內容並返回閒置畫面。</p>
       <div class="pos-modal__actions">
         <button type="button" class="pos-modal__btn-secondary" id="btnResetDisplayCancel">取消</button>
         <button type="button" class="pos-btn-reset-display pos-modal__btn-confirm" id="btnResetDisplayConfirm">確認重設</button>
@@ -333,83 +247,61 @@
     </div>
   </div>
 
+  <!-- 折扣設定 Popover -->
   <div class="pos-note-popover hidden" id="discountModal" aria-hidden="true">
     <div class="pos-note-popover__backdrop" id="discountModalBackdrop"></div>
     <div class="pos-note-popover__panel pos-discount-panel">
-      <h3 class="pos-note-popover__title">折扣金額</h3>
-      <p class="pos-discount-panel__hint">點擊輸入折扣金額</p>
+      <h3 class="pos-note-popover__title">設定折扣</h3>
+      <p class="pos-discount-panel__hint">請輸入要扣減的金額</p>
       <label class="pos-discount-input-wrap">
         <input type="text" inputmode="decimal" id="discountInput" placeholder="0" autocomplete="off" aria-label="折扣金額">
         <span class="pos-discount-input-suffix">$</span>
       </label>
       <div class="pos-discount-modal__actions">
         <button type="button" class="pos-modal__btn-secondary" id="btnDiscountCancel">取消</button>
-        <button type="button" class="pos-btn-discount-clear" id="btnDiscountClear">清空</button>
-        <button type="button" class="pos-btn-primary" id="btnDiscountConfirm">確定</button>
+        <button type="button" class="pos-btn-discount-clear" id="btnDiscountClear">清除</button>
+        <button type="button" class="pos-btn-primary" id="btnDiscountConfirm">確認</button>
       </div>
     </div>
   </div>
 
+  <!-- 訂單備註 Popover -->
   <div class="pos-note-popover hidden" id="notePopover" aria-hidden="true">
     <div class="pos-note-popover__backdrop" id="notePopoverBackdrop"></div>
     <div class="pos-note-popover__panel">
       <h3 class="pos-note-popover__title">訂單備註</h3>
-      <textarea id="fieldNote" rows="3" placeholder="例如：5 號枱、禮品包裝"></textarea>
-      <button type="button" class="pos-btn-primary pos-note-popover__done" id="btnNoteDone">確定</button>
+      <textarea id="fieldNote" rows="3" placeholder="請輸入備註內容..."></textarea>
+      <button type="button" class="pos-btn-primary pos-note-popover__done" id="btnNoteDone">完成</button>
     </div>
   </div>
 
+  <!-- 登入 Modal -->
   <div class="pos-modal" id="loginModal" aria-hidden="true">
-
     <div class="pos-modal__box">
-
       <h2>員工登入</h2>
-
-      <label>員工</label>
-
+      <label>選擇員工</label>
       <select id="loginStaff"></select>
-
-      <label>密碼 PIN</label>
-
-      <input type="password" id="loginPin" placeholder="請輸入 PIN" maxlength="8">
-
+      <label>輸入 PIN 碼</label>
+      <input type="password" id="loginPin" placeholder="請輸入 4 位數 PIN 碼" maxlength="8">
       <div class="pos-modal__actions">
-
-        <button type="button" class="pos-btn-primary" id="btnLogin">登入</button>
-
+        <button type="button" class="pos-btn-primary" id="btnLogin">登入系統</button>
       </div>
-
-      <p style="font-size:12px;color:#64748b;margin-top:12px">預設管理員 PIN：1234</p>
-
+      <p style="font-size:12px;color:#64748b;margin-top:12px">預設管理員 PIN 碼為 1234</p>
     </div>
-
   </div>
 
-
-
+  <!-- ==================== 腳本引入區塊 ==================== -->
   <script src="js/ui.js"></script>
-
   <script src="js/product-thumb.js"></script>
-
   <script src="js/supabase-client.js"></script>
-
   <script src="js/display-sync.js"></script>
-
   <script src="js/cart.js"></script>
-
   <script src="js/api.js"></script>
-
   <script src="js/modes/sale.js"></script>
-
   <script src="js/modes/inventory.js"></script>
-
   <script src="js/modes/management.js"></script>
-
   <script src="js/discount-modal.js"></script>
-
   <script src="js/app.js"></script>
 
 </body>
-
 </html>
-

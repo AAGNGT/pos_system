@@ -275,18 +275,36 @@ body.sidebar-pinned.sidebar-rail .pos-sidebar__pin {
 }
 .pos-sidebar__user { color: #e2e8f0; font-weight: 600; }
 .pos-sidebar__logout {
-  color: #f87171;
-  background: none;
-  border: none;
-  padding: 0;
-  margin-top: 6px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  width: 100%;
+  color: #f87171; /* 淺紅色文字 */
+  background: rgba(248, 113, 113, 0.1); /* 帶有透明度的紅色背景 */
+  border: 1px solid rgba(248, 113, 113, 0.2);
+  border-radius: 8px;
+  padding: 10px 12px;
+  margin-top: 16px;
   cursor: pointer;
-  font-size: 13px;
+  font-size: 14px;
+  font-weight: 600;
+  transition: all 0.2s ease;
+}
+
+.pos-sidebar__logout:hover {
+  background: rgba(248, 113, 113, 0.2);
+  color: #fca5a5;
+  transform: translateY(-1px); /* 滑鼠懸停時微向上浮 */
+}
+
+.pos-sidebar__logout:active {
+  transform: translateY(1px); /* 點擊時微向下壓 */
 }
 .pos-sidebar__powered {
   margin-top: 12px;
-  font-size: 10px;
-  color: #64748b;
+  font-size: 13px;
+  color: #8d5500;
 }
 .pos-toggle-row {
   display: flex;
