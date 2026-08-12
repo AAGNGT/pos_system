@@ -7,6 +7,10 @@
   <link rel="icon" href="images.png" type="image/png">
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
   <script src="config.js"></script>
+  
+  <!-- Vercel Web Analytics -->
+  <script type="module" src="analytics.js"></script>
+  
   <style>
     :root {
       --bg-soft: #f6f7fb;
@@ -327,7 +331,7 @@ function requireAdminGate() {
       }
     };
 
-// 控制全選/取消全選
+// 控制��選/取消全選
 function toggleSelectAll(tableName) {
       const selectAll = document.getElementById(`selectAll_${tableName}`);
       const checkboxes = document.querySelectorAll(`.row-checkbox_${tableName}`);

@@ -1,0 +1,17 @@
+{
+  "name": "pos-system",
+  "version": "1.0.0",
+  "description": "POS System with Vercel Web Analytics",
+  "type": "module",
+  "scripts": {
+    "dev": "npx serve .",
+    "build": "echo 'No build step required for static site'",
+    "test": "echo 'No tests specified'"
+  },
+  "keywords": ["pos", "analytics"],
+  "author": "",
+  "license": "ISC",
+  "dependencies": {
+    "@vercel/analytics": "^1.1.1"
+  }
+}
