@@ -1,0 +1,326 @@
+/* track.css - POS 風格電子收據 */
+
+.track-page { 
+    padding: calc(var(--header-h) + 60px) 24px 80px; 
+    min-height: 80vh; 
+    background: var(--bg); 
+}
+
+/* =========================================================
+   搜尋表單視圖 (無 ?id= 時顯示) - 獨立雙卡片佈局
+   ========================================================= */
+.track-search-view {
+    max-width: 900px; /* 稍微放寬以容納雙欄和間隙 */
+    margin: 0 auto; 
+}
+
+.track-split-layout {
+    display: flex;
+    gap: 24px; /* 設定左右兩個框之間的空隙 */
+    align-items: flex-start; /* 讓左右兩個框各自根據內容適應高度 */
+}
+
+/* 左側：搜尋表單框 */
+.track-left-col {
+    flex: 1;
+    min-width: 0;
+    background: var(--bg-elevated); 
+    padding: 40px 32px; 
+    border-radius: var(--radius-lg); 
+    box-shadow: var(--shadow-soft); 
+    border: 1px solid var(--border); 
+}
+
+/* 右側：歷史查詢框 */
+.track-right-col {
+    width: 300px;
+    flex-shrink: 0;
+    background: var(--bg-elevated); 
+    padding: 32px 24px; 
+    border-radius: var(--radius-lg); 
+    box-shadow: var(--shadow-soft); 
+    border: 1px solid var(--border); 
+}
+
+/* 左欄內容樣式 */
+.track-title { 
+    font-family: "Noto Serif TC", serif; 
+    font-size: 1.8rem; 
+    margin-bottom: 12px; 
+    color: var(--text); 
+}
+
+.track-subtitle { 
+    color: var(--text-secondary); 
+    margin-bottom: 32px; 
+    font-size: 0.95rem; 
+    line-height: 1.5; 
+}
+
+.form-group { margin-bottom: 20px; }
+
+.form-group label { 
+    display: block; 
+    margin-bottom: 8px; 
+    font-weight: 600; 
+    font-size: 0.9rem; 
+    color: var(--text-secondary); 
+}
+
+.form-group input { 
+    width: 100%; 
+    padding: 14px 16px; 
+    border: 1px solid var(--border); 
+    border-radius: 12px; 
+    font-size: 1rem; 
+    background: var(--bg); 
+    transition: border-color 0.2s; 
+    outline: none; 
+}
+
+.form-group input:focus { border-color: var(--text); }
+
+.btn-track { 
+    width: 100%; 
+    padding: 14px; 
+    background: var(--text); 
+    color: #fff; 
+    border: none; 
+    border-radius: 999px; 
+    font-weight: 600; 
+    cursor: pointer; 
+    transition: transform 0.2s, background 0.2s; 
+    font-size: 1rem; 
+}
+
+.btn-track:hover { background: #333; }
+.btn-track:active { transform: scale(0.98); }
+.btn-track:disabled { opacity: 0.6; cursor: not-allowed; }
+
+.error-msg { 
+    background: #fef2f2; 
+    color: #b91c1c; 
+    padding: 12px; 
+    border-radius: 8px; 
+    text-align: center; 
+    margin-top: 20px; 
+    font-size: 0.9rem; 
+    display: none; 
+}
+
+.track-image-container {
+    margin-top: 32px; 
+    text-align: center;
+}
+
+.track-image-container img {
+    max-width: 100%; 
+    border-radius: 12px; 
+    box-shadow: var(--shadow-soft); 
+    border: 1px solid var(--border);
+}
+
+/* 右欄歷史記錄樣式 */
+.history-title {
+    font-size: 1rem;
+    color: var(--text);
+    margin: 0 0 16px 0;
+    padding-bottom: 12px;
+    border-bottom: 1px dashed var(--border);
+}
+
+.history-item {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 12px 0;
+    border-bottom: 1px solid rgba(0,0,0,0.03);
+    cursor: pointer;
+    transition: background 0.2s;
+}
+
+.history-item:hover {
+    background: #f8fafc;
+    border-radius: 8px;
+    padding: 12px 8px;
+    margin: 0 -8px;
+}
+
+.history-info {
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+}
+
+.history-id {
+    font-family: monospace;
+    font-weight: 700;
+    color: var(--text); 
+    font-size: 1.05rem;
+}
+
+.history-time {
+    font-size: 0.75rem;
+    color: var(--text-tertiary);
+}
+
+.btn-delete-history {
+    background: none;
+    border: none;
+    color: #cbd5e1;
+    font-size: 1.2rem;
+    cursor: pointer;
+    padding: 4px;
+    border-radius: 4px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: all 0.2s;
+}
+
+.btn-delete-history:hover {
+    color: #ef4444;
+    background: #fef2f2;
+}
+
+/* 手機版雙欄改為上下排列，並保持間距 */
+@media (max-width: 768px) {
+    .track-split-layout { flex-direction: column; gap: 24px; }
+    .track-right-col { width: 100%; }
+}
+
+
+/* =========================================================
+   電子收據視圖 (POS 美學風格)
+   ========================================================= */
+.track-receipt-view {
+    max-width: 540px; 
+    margin: 0 auto;
+    display: none;
+    animation: fadeUp 0.4s ease forwards;
+}
+
+.receipt-header-actions {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 24px;
+}
+
+.btn-new-search {
+    padding: 8px 16px;
+    border-radius: 999px;
+    border: 1px solid var(--border);
+    background: var(--bg-elevated);
+    color: var(--text);
+    font-size: 0.9rem;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.2s;
+}
+
+.btn-new-search:hover { background: var(--bg); }
+
+/* 狀態橫幅 */
+.receipt-status-banner {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    padding: 16px 20px;
+    border-radius: 12px;
+    margin-bottom: 24px;
+    font-weight: 600;
+}
+.status-success { background: #f0fdf4; border: 1px solid #bbf7d0; color: #166534; }
+.status-neutral { background: #f8fafc; border: 1px solid #e2e8f0; color: #334155; }
+.status-warning { background: #fef2f2; border: 1px solid #fecaca; color: #991b1b; }
+
+.status-icon { font-size: 1.5rem; }
+.status-text h3 { margin: 0; font-size: 1.05rem; }
+.status-text p { margin: 4px 0 0 0; font-size: 0.85rem; font-weight: 400; opacity: 0.8; }
+
+/* 收據卡片主體 */
+.pos-receipt-card {
+    background: #fff;
+    border-radius: 16px;
+    padding: 28px 24px;
+    border: 1px solid #e2e8f0;
+    box-shadow: 0 12px 40px rgba(0,0,0,0.06);
+}
+
+.pos-receipt-meta {
+    background: #f8fafc;
+    padding: 16px 20px;
+    border-radius: 12px;
+    margin-bottom: 24px;
+    font-size: 0.9rem;
+    color: #64748b;
+    border: 1px solid #f1f5f9;
+}
+
+.pos-receipt-row {
+    display: flex;
+    justify-content: space-between;
+    margin-bottom: 10px;
+}
+.pos-receipt-row:last-child { margin-bottom: 0; }
+
+.pos-receipt-val { color: #0f172a; font-weight: 500; }
+.pos-receipt-code { 
+    color: var(--text);
+    font-family: monospace; 
+    font-weight: 700; 
+    font-size: 1.1rem; 
+}
+
+.pos-receipt-items {
+    border-top: 2px solid #e2e8f0;
+    margin-bottom: 20px;
+}
+
+.pos-receipt-item {
+    display: flex;
+    justify-content: space-between;
+    border-bottom: 1px solid #f1f5f9;
+    padding: 12px 0;
+    font-size: 0.95rem;
+}
+.pos-receipt-item:last-child { border-bottom: none; }
+
+.pos-receipt-summary-row {
+    display: flex;
+    justify-content: space-between;
+    font-size: 0.95rem;
+    color: #64748b;
+    margin-bottom: 8px;
+}
+
+.pos-receipt-total-row {
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-end;
+    margin-top: 16px;
+    padding-top: 16px;
+    border-top: 1px dashed #cbd5e1;
+    font-weight: 800;
+    color: #0f172a;
+    font-size: 1.1rem;
+}
+
+.pos-receipt-total-val {
+    color: #2563eb; 
+    font-size: 1.6rem;
+    line-height: 1;
+}
+
+.loading-overlay {
+    text-align: center;
+    padding: 60px 20px;
+    color: var(--text-secondary);
+    font-size: 1.1rem;
+}
+
+@keyframes fadeUp {
+    from { opacity: 0; transform: translateY(10px); }
+    to { opacity: 1; transform: translateY(0); }
+}

@@ -661,4 +661,43 @@
     }
 });
 
+document.addEventListener('DOMContentLoaded', () => {
+    // 使用 window 的「捕獲階段 (Capture)」來做最高優先級的攔截
+    window.addEventListener('click', function(e) {
+        const toggleBtn = e.target.closest('.dropdown-toggle');
+        const dropdownLink = e.target.closest('.dropdown-menu a');
+
+        // 情境 1：如果點擊的是「更多工具」按鈕 (或是旁邊的箭頭)
+        if (toggleBtn) {
+            e.preventDefault();
+            // 🔴 終極攔截：在事件傳遞給原本的 app.js 之前，直接在這裡砍斷！
+            // 這會完美防止觸發「點擊連結就關閉手機選單」的邏輯
+            e.stopPropagation();
+            e.stopImmediatePropagation();
+
+            const navDropdown = toggleBtn.closest('.nav-dropdown');
+            if (navDropdown) {
+                navDropdown.classList.toggle('active'); // 展開或收起子選單
+            }
+        } 
+        // 情境 2：如果點擊的是「子選單裡的連結」(例如 追蹤市集訂單 或 畫家投稿)
+        else if (dropdownLink) {
+            const navDropdown = dropdownLink.closest('.nav-dropdown');
+            if (navDropdown) {
+                // 順手把子選單的 active 移除，這樣下次打開手機選單時，就不會預設是展開的！
+                navDropdown.classList.remove('active');
+            }
+            // 注意：這裡我們「不攔截」事件，讓原本的 app.js 正常運作，
+            // 順利幫你關閉手機的主選單並跳轉頁面。
+        } 
+        // 情境 3：如果點擊網頁的「其他空白地方」
+        else {
+            const activeDropdown = document.querySelector('.nav-dropdown.active');
+            if (activeDropdown && !activeDropdown.contains(e.target)) {
+                activeDropdown.classList.remove('active'); // 自動收起子選單
+            }
+        }
+    }, true); // <--- 關鍵字 true，代表在「捕獲階段」優先執行，這是整個網站第一個被觸發的事件！
+});
+
 })();

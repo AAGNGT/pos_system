@@ -1,0 +1,116 @@
+<!DOCTYPE html>
+<html lang="zh-HK">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>電子收據查詢 — 卍物所 POS</title>
+    <link rel="icon" href="Logo.jpg" type="image/jpeg">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&family=Noto+Serif+TC:wght@400;500;600&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="css/main.css">
+    <link rel="stylesheet" href="css/track.css">
+</head>
+<body>
+    <header class="site-header scrolled">
+        <div class="header-inner">
+            <a href="index.html" class="brand">
+                <span class="logo-ring logo-ring--sm" aria-hidden="true">
+                    <img src="Logo.jpg" alt="卍物所">
+                </span>
+                <span class="brand-name">卍物所</span>
+            </a>
+            
+            <button class="nav-toggle" type="button" aria-label="開啟選單">
+                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" aria-hidden="true">
+                    <path d="M4 7h16M4 12h16M4 17h16"/>
+                </svg>
+            </button>
+            
+            <nav>
+                <ul class="nav-links">
+                    <li><a href="index.html">返回首頁</a></li>
+                    <li><a href="account.html">我的帳戶</a></li>
+                </ul>
+            </nav>
+            
+            <div class="header-auth" id="headerAuth"></div>
+        </div>
+    </header>
+
+    <script>
+        (function() {
+            var cachedName = localStorage.getItem('session_username');
+            var authContainer = document.getElementById('headerAuth');
+            if (authContainer) {
+                if (cachedName) {
+                    var safeName = cachedName.replace(/</g, "&lt;").replace(/>/g, "&gt;");
+                    authContainer.innerHTML = '<a href="account.html" class="header-auth-link">' + safeName + '</a>';
+                } else {
+                    authContainer.innerHTML = '<button type="button" class="header-auth-btn" id="openAuthBtn">登入</button>';
+                }
+            }
+        })();
+    </script>
+
+    <main class="track-page">
+        <!-- 視圖 1：搜尋表單 (無 URL 參數時顯示) -->
+        <div id="searchView" class="track-search-view" style="display: none;">
+            <div class="track-split-layout">
+                <!-- 左側：搜尋表單與圖片 -->
+                <div class="track-left-col">
+                    <h1 class="track-title">🔍 查詢電子收據</h1>
+                    <p class="track-subtitle">請輸入您在市集或實體店購買時，獲得的訂單編號</p>
+                    
+                    <form id="trackForm">
+                        <div class="form-group">
+                            <label for="orderId">訂單編號</label>
+                            <input type="text" id="orderId" placeholder="例如: T9ADC" autocomplete="off">
+                        </div>
+                        <button type="submit" class="btn-track" id="btnSubmit">查詢收據</button>
+                    </form>
+                    <div id="errorMsg" class="error-msg">找不到該訂單，請檢查編號是否正確。</div>
+                    
+                    <!-- 參考圖片區塊 -->
+                    <div class="track-image-container">
+                        <p style="font-size: 0.85rem; color: var(--text-secondary); margin-bottom: 12px;">可參考下圖尋找您的收據編號位置：</p>
+                        <img src="track.jpg" alt="收據編號位置指示">
+                    </div>
+                </div>
+
+                <!-- 右側：瀏覽記錄 (預設隱藏，有記錄時顯示) -->
+                <div class="track-right-col" id="historyPanel" style="display: none;">
+                    <h3 class="history-title">🕒 最近查詢</h3>
+                    <div class="history-list" id="historyList">
+                        <!-- 由 JS 動態生成 -->
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- 視圖 2：電子收據詳情 (有 URL 參數時顯示) -->
+        <div id="receiptView" class="track-receipt-view" style="display: none;">
+            <div id="receiptLoading" class="loading-overlay">
+                <p>載入訂單資料中，請稍候...</p>
+            </div>
+            
+            <div id="receiptContent" style="display: none;"></div>
+        </div>
+    </main>
+
+    <footer class="site-footer">
+        <p class="footer-brand">卍物所 · 香磚 • 寧磚 · 萬物皆可能</p>
+        <nav class="footer-legal" aria-label="法律文件">
+            <a href="privacy.html">私隱權政策</a>
+            <span aria-hidden="true">·</span>
+            <a href="data-security.html">數據安全聲明</a>
+            <span aria-hidden="true">·</span>
+            <a href="account.html">我的帳戶</a>
+        </nav>
+        <p class="footer-copy">© 2026 卍物所 · 最後更新：2026-07-12</p>
+    </footer>
+
+    <!-- 引入 Supabase JS -->
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <script src="js/track.js"></script>
+</body>

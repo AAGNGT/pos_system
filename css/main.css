@@ -209,3 +209,128 @@ section { padding: 120px 24px; }
     color: #fff;
     box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
 }
+/* =========================================
+   導航列下拉選單 (更多工具)
+========================================= */
+/* 桌面版預設樣式 */
+.nav-dropdown {
+    position: relative;
+    display: block; /* 移除 flex，解決手機版擠壓與高度問題 */
+}
+
+.dropdown-toggle {
+    display: inline-flex !important;
+    align-items: center;
+    gap: 4px;
+    vertical-align: middle;
+}
+
+.dropdown-toggle svg {
+    transition: transform 0.3s ease;
+    margin-top: 1px;
+}
+.dropdown-menu {
+    position: absolute;
+    top: 100%;
+    left: 50%;
+    transform: translateX(-50%) translateY(10px);
+    background: rgba(247, 246, 243, 0.95);
+    backdrop-filter: blur(12px);
+    -webkit-backdrop-filter: blur(12px);
+    min-width: 170px;
+    box-shadow: 0 12px 32px rgba(0, 0, 0, 0.08);
+    border-radius: 12px;
+    padding: 8px 0;
+    list-style: none;
+    opacity: 0;
+    visibility: hidden;
+    transition: all 0.3s ease;
+    border: 1px solid rgba(0, 0, 0, 0.06);
+    z-index: 100;
+}
+
+.nav-dropdown.active .dropdown-menu {
+    opacity: 1;
+    visibility: visible;
+    transform: translateX(-50%) translateY(0);
+}
+
+.nav-dropdown.active .dropdown-toggle svg {
+    transform: rotate(180deg);
+}
+
+.dropdown-menu li {
+    margin: 0;
+}
+
+.dropdown-menu a {
+    padding: 12px 20px !important;
+    display: flex;
+    align-items: center;
+    gap: 8px; /* 設定 SVG 圖示與文字的間距 */
+    color: var(--text, #1d1d1f);
+    font-size: 0.95rem;
+    transition: background 0.2s, color 0.2s;
+    text-align: left;
+    white-space: nowrap;
+}
+
+/* 滑鼠經過子選項的微底色 */
+.dropdown-menu a:hover {
+    background: rgba(0, 0, 0, 0.03); 
+    color: var(--text, #1d1d1f);
+}
+.dropdown-menu li {
+    margin: 0;
+}
+
+.dropdown-menu a {
+    padding: 10px 20px !important;
+    display: block;
+    color: var(--text, #0f172a);
+    font-size: 0.95rem;
+    transition: background 0.2s, color 0.2s;
+    text-align: left;
+    white-space: nowrap;
+}F
+
+.dropdown-menu a:hover {
+    background: #f1f5f9;
+    color: #0f172a;
+}
+
+/* =========================================
+   手機版響應式 (Accordion 展開效果)
+========================================= */
+@media (max-width: 768px) {
+    .dropdown-menu {
+        position: static;
+        transform: none !important;
+        box-shadow: none;
+        border: none;
+        background: rgba(0, 0, 0, 0.03); /* 手機版內縮區域微灰背景 */
+        backdrop-filter: none;
+        -webkit-backdrop-filter: none;
+        display: none; 
+        opacity: 1;
+        visibility: visible;
+        margin-top: 4px;
+        border-radius: 8px;
+        padding: 4px 0;
+        width: 100%;
+    }
+
+    .nav-dropdown {
+        flex-direction: column;
+        align-items: flex-start; /* 讓文字靠左對齊 */
+        width: 100%;
+    }
+
+    .nav-dropdown.active .dropdown-menu {
+        display: block;
+    }
+
+    .dropdown-menu a {
+        padding-left: 32px !important; /* 子選單縮排 */
+    }
+}
