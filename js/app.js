@@ -3,9 +3,14 @@
   let mode = 'sale';
   let categories = [];
   let products = [];
-  let activeCategoryId = null;
+  let activeCategoryId = null; 
   let productSearch = '';
   let sortBy = 'default';
+  
+  const ORDER_PIN_KEY = 'pos_order_pinned';
+  let isOrderPinned = localStorage.getItem(ORDER_PIN_KEY) !== '0'; 
+  let currentForceOrderPinned = ''; // 💡 保存從伺服器抓到的強制狀態
+
 
   function getStaff() {
     try {
@@ -36,7 +41,6 @@
     if (el) el.textContent = text;
     if (header) header.textContent = text;
 
-    // === 權限控制 ===
     const isAdmin = s && s.role === 'ADMIN';
     const restrictedBtns = document.querySelectorAll('.pos-nav__item[data-mode="products"], .pos-nav__item[data-mode="settings"]');
     
@@ -255,10 +259,34 @@
     }
   }
 
-function updateModeUI() {
+  // 💡 2. 判斷並控制右側購物車面板顯示與否的共用函數
+  function updateOrderPinUI() {
+    const btn = document.getElementById('btnOrderPin');
+    
+    // 收銀、入貨、退貨、報銷這四個主要模式，必須強制顯示購物車欄位
+    const alwaysShowModes = ['sale', 'restock', 'return', 'damage'];
+    const isMainMode = alwaysShowModes.includes(mode);
+
+    if (btn) {
+      // 💡 重點改動：如果是主要功能頁面，完全隱藏按鈕；其他管理頁面才顯示按鈕
+      btn.style.display = isMainMode ? 'none' : 'flex';
+      btn.classList.toggle('is-pinned', isOrderPinned);
+    }
+    
+    // 決定是否顯示右側面板：如果是主要功能 (必定顯示) 或 用戶手動點亮了按鈕 (isOrderPinned)
+    const shouldShowOrder = isMainMode || isOrderPinned;
+    
+    // 切換隱藏 Class，控制右方購物車面板的出現/消失
+    document.body.classList.toggle('hide-order-panel', !shouldShowOrder);
+  }
+
+  function updateModeUI() {
     const badge = document.getElementById('orderModeBadge');
     if (badge) badge.textContent = MODE_BADGES[mode] || MODE_LABELS[mode] || mode;
     
+    // 💡 3. 執行購物車顯示/隱藏邏輯
+    updateOrderPinUI();
+
     const showProducts = ['sale', 'restock', 'return', 'damage'].includes(mode);
     document.getElementById('productArea')?.classList.toggle('hidden', !showProducts);
     document.getElementById('altPanels')?.classList.toggle('hidden', showProducts);
@@ -268,7 +296,6 @@ function updateModeUI() {
     if (checkout) checkout.style.display = mode === 'sale' ? 'block' : 'none';
     if (invPanel) invPanel.style.display = ['restock', 'return', 'damage'].includes(mode) ? 'block' : 'none';
     
-    // 💡 新增：控制購物車鎖定遮罩 (只有在 'sale' 收銀台模式才隱藏遮罩)
     const cartLockOverlay = document.getElementById('cartLockOverlay');
     if (cartLockOverlay) {
       cartLockOverlay.classList.toggle('hidden', mode === 'sale');
@@ -338,8 +365,9 @@ function updateModeUI() {
     try {
       categories = await window.posApi.fetchCategories();
       await loadProducts();
-      renderCategoryPills();
-      activeCategoryId = categories.find((c) => c.slug === 'keychain')?.id ?? null;
+      
+      activeCategoryId = null; // 預設全部分類
+      
       renderCategoryPills();
       renderProducts();
     } catch (e) {
@@ -357,7 +385,6 @@ function updateModeUI() {
     };
     window.posDiscountModal?.bind?.();
     
-    // 💡 修正：使用全域的 window.ui.openModal 來打開重設客顯彈窗
     const resetModal = document.getElementById('resetDisplayModal');
     const openResetModal = () => window.ui.openModal(resetModal);
     const closeResetModal = () => window.ui.closeModal(resetModal);
@@ -399,6 +426,17 @@ function updateModeUI() {
     window.posModes.sale?.bindCheckoutModal?.(ctx());
     window.posModes.sale?.bindChargeButton?.();
     
+    // 💡 4. 綁定右方購物車按鈕點擊事件
+    document.getElementById('btnOrderPin')?.addEventListener('click', () => {
+    if (currentForceOrderPinned === 'true' || currentForceOrderPinned === 'false') {
+        window.ui.toast('管理員已強制鎖定購物車面板顯示狀態', 'error');
+        return;
+      }
+      isOrderPinned = !isOrderPinned;
+      localStorage.setItem(ORDER_PIN_KEY, isOrderPinned ? '1' : '0');
+      updateOrderPinUI();
+    });
+
     document.getElementById('btnOpenMenu')?.addEventListener('click', () => {
       if (isSidebarPinned()) {
         document.body.classList.toggle('sidebar-rail');
@@ -432,7 +470,7 @@ function updateModeUI() {
         document.getElementById('notePopover')?.classList.add('hidden');
         document.getElementById('discountModal')?.classList.add('hidden');
         window.posDiscountModal?.close?.();
-        if(resetModal) window.ui.closeModal(resetModal); // 💡 支援 Escape 關閉
+        if(resetModal) window.ui.closeModal(resetModal); 
       }
     });
     
@@ -453,6 +491,17 @@ function updateModeUI() {
     const settings = await window.posApi.fetchSettings();
     const forceDark = settings.force_dark_mode;
     
+    currentForceOrderPinned = settings.force_order_pinned || '';
+    if (currentForceOrderPinned === 'true') {
+      isOrderPinned = true;
+    } else if (currentForceOrderPinned === 'false') {
+      isOrderPinned = false;
+    } else {
+      isOrderPinned = localStorage.getItem(ORDER_PIN_KEY) !== '0';
+    }
+    updateOrderPinUI();
+
+
     if (forceDark === 'true') {
       document.body.classList.add('dark');
       document.getElementById('darkToggle')?.classList.add('on');
@@ -490,17 +539,15 @@ function updateModeUI() {
     setMode('sale');
   }
 
-  // 💡 修正：使用全域的 window.ui.openModal 來打開登入視窗
   async function showLoginModal() {
     const modal = document.getElementById('loginModal');
     const sel = document.getElementById('loginStaff');
     const staff = await window.posApi.fetchStaff();
     sel.innerHTML = staff.map((s) => `<option value="${s.id}">${s.display_name} ${roleLabel(s.role)}</option>`).join('');
     
-    window.ui.openModal(modal); // 使用新版動畫顯示
+    window.ui.openModal(modal);
   }
 
-  // 💡 修正：使用全域的 window.ui.closeModal 來關閉登入視窗
   async function doLogin() {
     const id = Number(document.getElementById('loginStaff').value);
     const pin = document.getElementById('loginPin').value;
@@ -511,14 +558,24 @@ function updateModeUI() {
     }
     
     const settings = await window.posApi.fetchSettings();
+    // 💡 新增：讀取並套用預設付款方式到收銀台介面
+    const defaultPayment = settings.default_payment || '現金';
+    const fieldPayment = document.getElementById('fieldPayment');
+    if (fieldPayment) {
+      fieldPayment.value = defaultPayment;
+    }
+
+    const forceDark = settings.force_dark_mode;
+
+    currentForceOrderPinned = settings.force_order_pinned || '';
+
+
     if (settings.maintenance_mode === 'true' && row.role !== 'ADMIN') {
       window.ui.toast('系統維護中 (僅限 ADMIN 登入)', 'error');
       return; 
     }
     
     setStaff(row);
-    
-    // 使用新版動畫關閉
     window.ui.closeModal(document.getElementById('loginModal'));
     window.ui.toast(`登入成功！歡迎回來 ${row.display_name}`, 'success');
   }

@@ -105,8 +105,8 @@
   }
 
 
-  // ============================================================================
-  // 📜 模組 1：交易紀錄 (帶日期篩選與動畫明細)
+   // ============================================================================
+  // 📜 模組 1：交易紀錄 (加入訂單代碼、簡化摘要、條件隱藏備註)
   // ============================================================================
   async function renderHistory(filterDate = null) {
     const el = document.getElementById('panelHistory');
@@ -137,9 +137,17 @@
       if (window._tempHistoryOrders.length > 0) {
         tableRows = window._tempHistoryOrders.map((o) => {
           const items = o.pos_order_items || [];
-          let summary = items.map(i => `${i.pos_products?.name || '未知產品'}(x${i.qty})`).join(', ');
-          if (summary.length > 22) summary = summary.substring(0, 22) + '...';
-          if (!summary) summary = '<span style="color:#cbd5e1;">無明細</span>';
+          
+          // 💡 1. 簡化「商品/庫存摘要」顯示邏輯
+          let summary = '';
+          if (items.length === 0) {
+            summary = '<span style="color:#cbd5e1;">無明細</span>';
+          } else if (items.length === 1) {
+            summary = `${items[0].pos_products?.name || '未知產品'} (x${items[0].qty})`;
+          } else {
+            const totalQty = items.reduce((sum, i) => sum + i.qty, 0);
+            summary = `${items[0].pos_products?.name || '未知產品'} 等 ${items.length} 項 (共 ${totalQty} 件)`;
+          }
 
           const isSale = o.mode === 'sale';
           const modeStr = modeZh[o.mode] || o.mode;
@@ -148,6 +156,9 @@
           const discountStr = isSale && Number(o.discount_amount) > 0 ? `<span style="color:#16a34a;">-$${Number(o.discount_amount).toFixed(2)}</span>` : (isSale ? '$0.00' : '-');
           const totalStr = isSale ? `$${Number(o.total).toFixed(2)}` : '-';
           const timeStr = new Date(o.created_at).toLocaleString('zh-TW');
+          
+          // 💡 2. 獲取訂單代碼 (僅售賣顯示)
+          const orderCodeStr = isSale && o.order_code ? o.order_code : '-';
 
           return `
             <tr>
@@ -158,6 +169,7 @@
               <td>${discountStr}</td>
               <td style="font-weight:bold; color:#0f172a;">${totalStr}</td>
               <td style="font-size:12px; color:#64748b;">${timeStr}</td>
+              <td style="font-family: monospace; font-size:14px; color:#8b5cf6; font-weight:bold;">${orderCodeStr}</td>
               <td style="text-align: right;">
                 <button class="pos-pill btn-view-order" style="background:#eff6ff; color:#2563eb; border-color:#bfdbfe; transition: transform 0.15s ease;" data-id="${o.id}">
                   👁️ 查閲更多
@@ -182,16 +194,17 @@
         </div>
 
         <div style="overflow-x: auto;">
-          <table class="pos-table" style="min-width: 800px;">
+          <table class="pos-table" style="min-width: 850px;">
             <thead>
               <tr>
                 <th>單號</th>
                 <th>類型</th>
-                <th style="width: 25%;">商品/庫存摘要</th>
+                <th style="width: 22%;">商品摘要</th>
                 <th>小計</th>
                 <th>總折扣</th>
                 <th>實付總計</th>
                 <th>時間</th>
+                <th>訂單代碼</th> <!-- 💡 新增標題欄位 -->
                 <th style="text-align: right;">操作</th>
               </tr>
             </thead>
@@ -280,6 +293,15 @@
       <div style="display:flex; justify-content:space-between; margin-bottom:8px;">
           <span>操作時間：</span><span style="color:#0f172a;">${new Date(order.created_at).toLocaleString('zh-TW')}</span>
       </div>`;
+      
+    // 💡 也在詳細視窗內補上訂單代碼，方便查閱
+    if (isSale && order.order_code) {
+      topInfoHtml += `
+        <div style="display:flex; justify-content:space-between; margin-bottom:8px;">
+            <span>訂單代碼：</span><span style="color:#8b5cf6; font-weight:bold; font-family:monospace; font-size:15px;">${order.order_code}</span>
+        </div>`;
+    }
+
     if (isSale) {
       topInfoHtml += `
         <div style="display:flex; justify-content:space-between; margin-bottom:8px;">
@@ -289,10 +311,14 @@
             <span>實收 / 找續：</span><span style="color:#0f172a;">$${Number(order.amount_received || 0).toFixed(2)} / $${Number(order.change_amount || 0).toFixed(2)}</span>
         </div>`;
     }
-    topInfoHtml += `
-      <div style="display:flex; justify-content:space-between;">
-          <span>備註/原因：</span><span style="color:#0f172a;">${order.note || '無'}</span>
-      </div>`;
+    
+    // 💡 3. 條件判斷：如果備註沒有內容，則不會渲染出這行
+    if (order.note && order.note.trim() !== '') {
+      topInfoHtml += `
+        <div style="display:flex; justify-content:space-between;">
+            <span>備註/原因：</span><span style="color:#0f172a;">${order.note}</span>
+        </div>`;
+    }
 
     let bottomHtml = '';
     if (isSale) {
@@ -322,7 +348,6 @@
     window.ui.openModal(m);
   }
 
-
   // ============================================================================
   // 📊 模組 2：營業概況
   // ============================================================================
@@ -346,43 +371,149 @@
     }
   }
 
-
   // ============================================================================
-  // ⚙️ 模組 3：系統設定
+  // ⚙️ 模組 3：系統設定 (全新現代化卡片排版)
   // ============================================================================
   async function renderSettings() {
     const el = document.getElementById('panelSettings');
     if (!el) return;
-    const s = await window.posApi.fetchSettings();
-    el.innerHTML = `
-      <div class="pos-form-card">
-        <label>商店名稱</label>
-        <input id="setStoreName" value="${s.store_name || ''}">
-        <label>預設付款方式</label>
-        <input id="setPayment" value="${s.default_payment || 'Cash'}">
-        <label>深色模式強制設定 (force_dark_mode)</label>
-        <select id="setForceDark">
-          <option value="" ${!s.force_dark_mode ? 'selected' : ''}>不強制 (依賴本地瀏覽器記憶)</option>
-          <option value="true" ${s.force_dark_mode === 'true' ? 'selected' : ''}>強制深色模式</option>
-          <option value="false" ${s.force_dark_mode === 'false' ? 'selected' : ''}>強制淺色模式</option>
-        </select>
-        <label>系統維護模式 (maintenance_mode)</label>
-        <select id="setMaintenance">
-          <option value="false" ${s.maintenance_mode !== 'true' ? 'selected' : ''}>關閉 (正常營運)</option>
-          <option value="true" ${s.maintenance_mode === 'true' ? 'selected' : ''}>開啟 (僅 ADMIN 可登入)</option>
-        </select>
-        <button class="pos-btn-charge" type="button" id="btnSaveSettings" style="margin-top: 16px;">儲存設定</button>
-      </div>`;
-    document.getElementById('btnSaveSettings').onclick = async () => {
-      await window.posApi.upsertSetting('store_name', document.getElementById('setStoreName').value);
-      await window.posApi.upsertSetting('default_payment', document.getElementById('setPayment').value);
-      await window.posApi.upsertSetting('force_dark_mode', document.getElementById('setForceDark').value);
-      await window.posApi.upsertSetting('maintenance_mode', document.getElementById('setMaintenance').value);
-      window.ui.toast('設定已儲存', 'success');
-    };
+    
+    // 載入中的過渡狀態
+    el.innerHTML = '<div style="padding: 40px; text-align: center; color: #94a3b8; font-weight: 600;">讀取設定中...</div>';
+    
+    try {
+      const s = await window.posApi.fetchSettings();
+      
+      el.innerHTML = `
+        <div style="max-width: 760px; margin: 0 auto; padding-bottom: 40px; animation: cdispFadeIn 0.3s ease;">
+          <div style="display:flex; align-items:center; justify-content:space-between; margin-bottom: 24px;">
+            <h2 style="margin:0; color:#0f172a; font-size:24px; font-weight:800;">系統設定</h2>
+            <button class="pos-btn-charge" type="button" id="btnSaveSettings" style="width:auto; padding: 10px 24px; font-size: 14px; margin: 0; box-shadow: 0 4px 12px rgba(59, 130, 246, 0.25); transition: all 0.2s;">
+              💾 儲存所有設定
+            </button>
+          </div>
+
+          <!-- 區塊 1：基本資訊 -->
+          <div style="margin-bottom: 32px;">
+            <h3 style="font-size:13px; color:#64748b; font-weight:700; margin:0 0 10px 12px; text-transform:uppercase; letter-spacing:1px;">基本資訊</h3>
+            <div style="background:#fff; border-radius:16px; border:1px solid #e2e8f0; box-shadow:0 1px 2px rgba(0,0,0,0.02); overflow:hidden;">
+              
+              <div style="display:flex; justify-content:space-between; align-items:center; padding:16px 20px; border-bottom:1px solid #f1f5f9;">
+                <div>
+                  <span style="font-weight:600; color:#1e293b; font-size:15px; display:block; margin-bottom:2px;">商店名稱</span>
+                  <span style="font-size:12px; color:#94a3b8;">顯示在客顯屏與列印收據上</span>
+                </div>
+                <input id="setStoreName" value="${s.store_name || ''}" placeholder="請輸入店名" style="width:260px; padding:10px 14px; border:1px solid #cbd5e1; border-radius:8px; background:#f8fafc; font-size:14px; outline:none; transition:all 0.2s;" onfocus="this.style.borderColor='#3b82f6'; this.style.background='#fff';" onblur="this.style.borderColor='#cbd5e1'; this.style.background='#f8fafc';">
+              </div>
+              
+              <div style="display:flex; justify-content:space-between; align-items:center; padding:16px 20px;">
+                <div>
+                  <span style="font-weight:600; color:#1e293b; font-size:15px; display:block; margin-bottom:2px;">預設付款方式</span>
+                  <span style="font-size:12px; color:#94a3b8;">結帳畫面預設選擇的收款途徑</span>
+                </div>
+                <select id="setPayment" style="width:260px; padding:10px 14px; border:1px solid #cbd5e1; border-radius:8px; background:#f8fafc; font-size:14px; outline:none; cursor:pointer;">
+                  <option value="現金" ${s.default_payment === '現金' || !s.default_payment ? 'selected' : ''}>現金 Cash</option>
+                  <option value="AlipayHK" ${s.default_payment === 'AlipayHK' ? 'selected' : ''}>支付寶 AlipayHK</option>
+                  <option value="WeChat Pay" ${s.default_payment === 'WeChat Pay' ? 'selected' : ''}>微信 WeChat Pay</option>
+                </select>
+              </div>
+
+            </div>
+          </div>
+
+          <!-- 區塊 2：介面與顯示 -->
+          <div style="margin-bottom: 32px;">
+            <h3 style="font-size:13px; color:#64748b; font-weight:700; margin:0 0 10px 12px; text-transform:uppercase; letter-spacing:1px;">介面與顯示</h3>
+            <div style="background:#fff; border-radius:16px; border:1px solid #e2e8f0; box-shadow:0 1px 2px rgba(0,0,0,0.02); overflow:hidden;">
+              
+              <div style="display:flex; justify-content:space-between; align-items:center; padding:16px 20px; border-bottom:1px solid #f1f5f9;">
+                <div>
+                  <span style="font-weight:600; color:#1e293b; font-size:15px; display:block; margin-bottom:2px;">深色模式強制設定</span>
+                  <span style="font-size:12px; color:#94a3b8;">統一控制所有終端的色彩主題</span>
+                </div>
+                <select id="setForceDark" style="width:260px; padding:10px 14px; border:1px solid #cbd5e1; border-radius:8px; background:#f8fafc; font-size:14px; outline:none; cursor:pointer;">
+                  <option value="" ${!s.force_dark_mode ? 'selected' : ''}>不強制 (允許員工自行切換)</option>
+                  <option value="true" ${s.force_dark_mode === 'true' ? 'selected' : ''}>🌙 強制鎖定深色模式</option>
+                  <option value="false" ${s.force_dark_mode === 'false' ? 'selected' : ''}>☀️ 強制鎖定淺色模式</option>
+                </select>
+              </div>
+
+              <!-- 💡 新增：購物車預設狀態 -->
+              <div style="display:flex; justify-content:space-between; align-items:center; padding:16px 20px;">
+                <div>
+                  <span style="font-weight:600; color:#1e293b; font-size:15px; display:block; margin-bottom:2px;">購物車側邊欄預設狀態</span>
+                  <span style="font-size:12px; color:#94a3b8;">控制管理頁面中，右側面板是否強制顯示</span>
+                </div>
+                <select id="setForceOrderPinned" style="width:260px; padding:10px 14px; border:1px solid #cbd5e1; border-radius:8px; background:#f8fafc; font-size:14px; outline:none; cursor:pointer;">
+                  <option value="" ${!s.force_order_pinned ? 'selected' : ''}>不強制 (依賴各裝置本地記憶)</option>
+                  <option value="true" ${s.force_order_pinned === 'true' ? 'selected' : ''}>📌 強制釘選 (永遠保持展開)</option>
+                  <option value="false" ${s.force_order_pinned === 'false' ? 'selected' : ''}>👁️‍🗨️ 強制隱藏 (騰出全螢幕)</option>
+                </select>
+              </div>
+
+            </div>
+          </div>
+
+          <!-- 區塊 3：系統安全 -->
+          <div style="margin-bottom: 32px;">
+            <h3 style="font-size:13px; color:#64748b; font-weight:700; margin:0 0 10px 12px; text-transform:uppercase; letter-spacing:1px;">系統安全</h3>
+            <div style="background:#fff; border-radius:16px; border:1px solid #fecaca; box-shadow:0 4px 12px rgba(220, 38, 38, 0.05); overflow:hidden;">
+              
+              <div style="display:flex; justify-content:space-between; align-items:center; padding:16px 20px;">
+                <div>
+                  <span style="font-weight:600; color:#b91c1c; font-size:15px; display:block; margin-bottom:2px;">系統維護模式</span>
+                  <span style="font-size:12px; color:#ef4444;">開啟後，一般員工將無法登入系統</span>
+                </div>
+                <select id="setMaintenance" style="width:260px; padding:10px 14px; border:1px solid #fca5a5; border-radius:8px; background:#fef2f2; color:#b91c1c; font-weight:bold; font-size:14px; outline:none; cursor:pointer;">
+                  <option value="false" ${s.maintenance_mode !== 'true' ? 'selected' : ''}>🟢 關閉 (正常營運)</option>
+                  <option value="true" ${s.maintenance_mode === 'true' ? 'selected' : ''}>🔴 開啟 (僅限 ADMIN)</option>
+                </select>
+              </div>
+
+            </div>
+          </div>
+        </div>
+      `;
+
+      // 按鈕互動邏輯
+      const btnSave = document.getElementById('btnSaveSettings');
+      btnSave.onclick = async () => {
+        const originalText = btnSave.innerHTML;
+        btnSave.innerHTML = '🔄 儲存中...';
+        btnSave.disabled = true;
+        btnSave.style.opacity = '0.7';
+        
+        try {
+          await window.posApi.upsertSetting('store_name', document.getElementById('setStoreName').value);
+          await window.posApi.upsertSetting('default_payment', document.getElementById('setPayment').value);
+          await window.posApi.upsertSetting('force_dark_mode', document.getElementById('setForceDark').value);
+          await window.posApi.upsertSetting('maintenance_mode', document.getElementById('setMaintenance').value);
+          // 💡 寫入全新的購物車釘選狀態設定
+          await window.posApi.upsertSetting('force_order_pinned', document.getElementById('setForceOrderPinned').value);
+          
+          window.ui.toast('設定已成功儲存！', 'success');
+          
+          // 如果設定更改，提示使用者重新整理
+          setTimeout(() => {
+            if(confirm('部份介面設定需要重新載入頁面才能生效，是否立即重新整理？')) {
+              window.location.reload();
+            }
+          }, 400);
+
+        } catch (err) {
+          window.ui.toast(`儲存失敗: ${err.message}`, 'error');
+        } finally {
+          btnSave.innerHTML = originalText;
+          btnSave.disabled = false;
+          btnSave.style.opacity = '1';
+        }
+      };
+
+    } catch (e) {
+      el.innerHTML = `<div style="padding: 40px; text-align: center; color: #ef4444; font-weight:bold;">讀取設定失敗: ${e.message}</div>`;
+    }
   }
-
-
+  
   // ============================================================================
   // 👥 模組 4：員工管理
   // ============================================================================

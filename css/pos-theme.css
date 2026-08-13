@@ -39,3 +39,18 @@ body.dark .pos-checkout { background: #334155; }
 body.dark .pos-checkout__title,
 body.dark .pos-checkout__amount { color: #f1f5f9; }
 body.dark .pos-keypad button { background: #475569; color: #e2e8f0; }
+/* 🌙 支援深色模式的購物車釘選按鈕 (零飽和度純暗灰) */
+body.dark .pos-order-pin {
+  background: #2b2b2b; /* 純暗灰底色 */
+  border-color: #404040;
+  color: #8c8c8c; /* 純暗灰圖示 */
+}
+body.dark .pos-order-pin:hover {
+  background: #3a3a3a;
+  color: #b3b3b3;
+}
+body.dark .pos-order-pin.is-pinned {
+  background: #3b82f6; /* 釘選時依然保留鮮豔藍色以示啟用 */
+  border-color: #3b82f6;
+  color: #fff;
+}
