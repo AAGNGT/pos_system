@@ -157,9 +157,17 @@
           const totalStr = isSale ? `$${Number(o.total).toFixed(2)}` : '-';
           const timeStr = new Date(o.created_at).toLocaleString('zh-TW');
           
-          // 💡 2. 獲取訂單代碼 (僅售賣顯示)
-          const orderCodeStr = isSale && o.order_code ? o.order_code : '-';
-
+          // 修改：將純文字變成帶有 Hover 效果與圖標的投射按鈕
+          let orderCodeStr = '-';
+          if (isSale && o.order_code) {
+          orderCodeStr = `
+              <button type="button" class="pos-btn-secondary btn-redisplay-qr" data-id="${o.id}"
+                 style="padding: 4px 10px; font-size: 13px; font-family: monospace; font-weight: bold; display: inline-flex; align-items: center; gap: 6px; cursor: pointer; border-radius: 6px;"
+                 title="重新顯示取餐號碼及二維碼">
+                 ${o.order_code}
+                 <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="2" y="7" width="20" height="15" rx="2" ry="2"></rect><polyline points="17 2 12 7 7 2"></polyline></svg>
+              </button>`;
+          }
           return `
             <tr>
               <td style="font-weight: 600; color: #334155;">#${o.id}</td>
@@ -171,9 +179,9 @@
               <td style="font-size:12px; color:#64748b;">${timeStr}</td>
               <td style="font-family: monospace; font-size:14px; color:#8b5cf6; font-weight:bold;">${orderCodeStr}</td>
               <td style="text-align: right;">
-                <button class="pos-pill btn-view-order" style="background:#eff6ff; color:#2563eb; border-color:#bfdbfe; transition: transform 0.15s ease;" data-id="${o.id}">
-                  👁️ 查閲更多
-                </button>
+                <button class="pos-btn-secondary btn-view-order" style="padding: 6px 12px; font-size: 13px; border-radius: 6px; cursor: pointer; transition: transform 0.15s ease;" data-id="${o.id}">
+                     查看詳情
+                  </button>
               </td>
             </tr>
           `;
@@ -225,6 +233,18 @@
             <div style="padding: 24px; max-height: 60vh; overflow-y: auto;" id="detailModalBody"></div>
           </div>
         </div>
+
+        <!-- 重新顯示 QR Code 確認 Modal -->
+        <div class="pos-modal" id="reDisplayModal" aria-hidden="true" style="z-index: 2200;">
+          <div class="pos-modal__box pos-modal__box--confirm">
+            <h2 style="margin: 0 0 16px; color: #0f172a;">重新顯示收據</h2>
+            <p class="pos-modal__hint">確定要在客戶顯示屏重新顯示訂單 <strong id="reDisplayCodeTxt" style="color:#3b82f6; font-family:monospace;"></strong> 的電子收據與感謝畫面嗎？</p>
+            <div class="pos-modal__actions">
+              <button type="button" class="pos-modal__btn-secondary" id="btnReDisplayCancel">取消</button>
+              <button type="button" class="pos-btn-primary pos-modal__btn-confirm" id="btnReDisplayConfirm">投放到螢幕</button>
+            </div>
+          </div>
+        </div>
       `;
 
       document.getElementById('btnFilterHistory').onclick = () => {
@@ -248,6 +268,42 @@
       const m = document.getElementById('orderDetailModal');
       document.getElementById('btnDetailClose').onclick = () => window.ui.closeModal(m);
       m.onclick = (e) => { if (e.target.id === 'orderDetailModal') window.ui.closeModal(m); };
+
+      let targetOrderForDisplay = null;
+      const reDisplayModal = document.getElementById('reDisplayModal');
+
+      // 綁定所有「訂單代碼」按鈕
+      document.querySelectorAll('.btn-redisplay-qr').forEach(btn => {
+        btn.onclick = (e) => {
+          e.stopPropagation(); // 阻止觸發整行點擊查看詳情的事件
+          const orderId = Number(btn.dataset.id);
+          targetOrderForDisplay = window._tempHistoryOrders.find(o => o.id === orderId);
+          if (targetOrderForDisplay) {
+            document.getElementById('reDisplayCodeTxt').textContent = targetOrderForDisplay.order_code;
+            window.ui.openModal(reDisplayModal);
+          }
+        };
+      });
+
+      document.getElementById('btnReDisplayCancel').onclick = () => {
+        window.ui.closeModal(reDisplayModal);
+      };
+
+      document.getElementById('btnReDisplayConfirm').onclick = () => {
+        if (targetOrderForDisplay) {
+          window.ui.closeModal(reDisplayModal, async () => {
+            if (window.posDisplaySync?.syncThankYou) {
+              await window.posDisplaySync.syncThankYou({
+                total: targetOrderForDisplay.total,
+                received: targetOrderForDisplay.amount_received,
+                change: targetOrderForDisplay.change_amount,
+                order_code: targetOrderForDisplay.order_code
+              });
+              window.ui.toast('已成功投送至客戶顯示屏', 'success');
+            }
+          });
+        }
+      };
 
     } catch (e) {
       el.innerHTML = `<p class="pos-order__empty">讀取失敗: ${e.message}</p>`;
@@ -388,6 +444,9 @@
         <div style="max-width: 760px; margin: 0 auto; padding-bottom: 40px; animation: cdispFadeIn 0.3s ease;">
           <div style="display:flex; align-items:center; justify-content:space-between; margin-bottom: 24px;">
             <h2 style="margin:0; color:#0f172a; font-size:24px; font-weight:800;">系統設定</h2>
+            <button class="pos-btn-secondary btn-refresh-spin" type="button" id="btnRefreshSettings" title="重新整理頁面以套用變更" style="padding: 10px; border-radius: 8px; display: flex; align-items: center; justify-content: center; background: #f8fafc; border: 1px solid #e2e8f0; color: #64748b; cursor: pointer; transition: all 0.2s;">
+              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="transition: transform 0.4s cubic-bezier(0.4, 0, 0.2, 1);"><path d="M3 12a9 9 0 1 0 9-9 9.75 9.75 0 0 0-6.74 2.74L3 8"></path><path d="M3 3v5h5"></path></svg>
+            </button>
             <button class="pos-btn-charge" type="button" id="btnSaveSettings" style="width:auto; padding: 10px 24px; font-size: 14px; margin: 0; box-shadow: 0 4px 12px rgba(59, 130, 246, 0.25); transition: all 0.2s;">
               💾 儲存所有設定
             </button>
@@ -451,6 +510,17 @@
                 </select>
               </div>
 
+              <div style="display:flex; justify-content:space-between; align-items:center; padding:16px 20px; border-bottom:1px solid #f1f5f9;">
+                <div>
+                  <span style="font-weight:600; color:#1e293b; font-size:15px; display:block; margin-bottom:2px;">客顯屏顯示風格</span>
+                  <span style="font-size:12px; color:#94a3b8;">設定面向顧客螢幕的色彩與主題</span>
+                </div>
+                <select id="setDisplayTheme" style="width:260px; padding:10px 14px; border:1px solid #cbd5e1; border-radius:8px; background:#f8fafc; font-size:14px; outline:none; cursor:pointer;">
+                  <option value="default" ${s.display_theme !== 'nature' ? 'selected' : ''}>🌌 經典深空 (深色科技)</option>
+                  <option value="nature" ${s.display_theme === 'nature' ? 'selected' : ''}>🌿 自然木質 (卍物所品牌)</option>
+                </select>
+              </div>
+
             </div>
           </div>
 
@@ -488,6 +558,9 @@
           await window.posApi.upsertSetting('default_payment', document.getElementById('setPayment').value);
           await window.posApi.upsertSetting('force_dark_mode', document.getElementById('setForceDark').value);
           await window.posApi.upsertSetting('maintenance_mode', document.getElementById('setMaintenance').value);
+                    // 儲存顯示風格
+          await window.posApi.upsertSetting('display_theme', document.getElementById('setDisplayTheme').value);
+
           // 💡 寫入全新的購物車釘選狀態設定
           await window.posApi.upsertSetting('force_order_pinned', document.getElementById('setForceOrderPinned').value);
           

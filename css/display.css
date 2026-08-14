@@ -1,11 +1,93 @@
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;600;800&family=Noto+Serif+TC:wght@500;700;900&display=swap');
+
 * { box-sizing: border-box; }
+
+/* =========================================================
+   🎨 1. 主題變數設定 (Theme Variables)
+   集中管理所有顏色與字體，未來只需在這裡更改即可
+========================================================= */
+
+/* 預設主題：🌌 經典深空 (深色科技) */
+:root {
+  /* 字體 */
+  --font-base: 'Segoe UI', system-ui, sans-serif;
+  --font-heading: 'Segoe UI', system-ui, sans-serif;
+  --font-numbers: 'Segoe UI', system-ui, sans-serif;
+  
+  /* 背景與版面 */
+  --c-bg: #0f172a;
+  --bg-pattern: linear-gradient(rgba(96, 165, 250, 0.05) 1px, transparent 1px), linear-gradient(90deg, rgba(96, 165, 250, 0.05) 1px, transparent 1px);
+  --c-logo-bg: rgba(255, 255, 255, 0.08);
+  --c-border-header: rgba(96, 165, 250, 0.25);
+  --c-border-line: rgba(255, 255, 255, 0.08);
+  
+  /* 文字顏色 */
+  --c-text-main: #f8fafc;
+  --c-text-sub: #94a3b8;
+  
+  /* 重點與價格顏色 */
+  --c-price-total: #3b82f6; /* 深色模式使用漸變，此為備用色 */
+  --c-price-checkout: #fbbf24;
+  --c-price-discount: #4ade80;
+  
+  /* 呼吸燈特效顏色 */
+  --glow-color-1: rgba(251, 191, 36, 0.2);
+  --glow-color-2: rgba(251, 191, 36, 0.5);
+  --glow-color-3: rgba(251, 191, 36, 0.15);
+
+  /* Loading 動畫顏色 */
+  --c-loader-track: #334155;
+  --c-loader-bar: #3b82f6;
+}
+
+/* 切換主題：🌿 自然木質 (卍物所品牌) */
+body.theme-nature {
+  /* 字體：導入品牌專屬高級字型 */
+  --font-base: 'Noto Serif TC', serif;
+  --font-heading: 'Noto Serif TC', serif;
+  --font-numbers: 'Inter', sans-serif;
+
+  /* 背景與版面 */
+  --c-bg: #f7f6f3;
+  --bg-pattern: none;
+  --c-logo-bg: #ffffff;
+  --c-border-header: rgba(122, 107, 88, 0.15);
+  --c-border-line: rgba(0, 0, 0, 0.05);
+  
+  /* 文字顏色 */
+  --c-text-main: #1d1d1f;
+  --c-text-sub: #6e6e73;
+  
+  /* 重點與價格顏色 (卍物所專屬木質調) */
+  --c-price-total: #1d1d1f;
+  --c-price-checkout: #7a6b58;
+  --c-price-discount: #7a6b58;
+
+  /* 呼吸燈特效顏色 (木質光暈) */
+  --glow-color-1: rgba(122, 107, 88, 0.15);
+  --glow-color-2: rgba(122, 107, 88, 0.35);
+  --glow-color-3: rgba(122, 107, 88, 0.1);
+
+  /* Loading 動畫顏色 */
+  --c-loader-track: #e2e8f0;
+  --c-loader-bar: #7a6b58;
+}
+
+
+/* =========================================================
+   🖥️ 2. 全局版面與結構 (Layout & Structure)
+========================================================= */
 html, body {
   height: 100%;
   margin: 0;
-  font-family: 'Segoe UI', system-ui, sans-serif;
-  background: #0f172a;
-  color: #f8fafc;
+  font-family: var(--font-base);
+  background-color: var(--c-bg);
+  background-image: var(--bg-pattern);
+  background-size: 32px 32px;
+  background-position: center center;
+  color: var(--c-text-main);
   overflow: hidden;
+  transition: background-color 0.4s ease, color 0.4s ease;
 }
 
 .cdisp {
@@ -21,24 +103,30 @@ html, body {
   gap: 16px;
   flex-shrink: 0;
   padding-bottom: 16px;
-  border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+  border-bottom: 1px solid var(--c-border-header);
+  box-shadow: 0 4px 24px rgba(0, 0, 0, 0.03);
 }
+
 .cdisp__logo {
   width: 56px;
   height: 56px;
   object-fit: contain;
   border-radius: 12px;
-  background: rgba(255, 255, 255, 0.08);
+  background: var(--c-logo-bg);
 }
+
 .cdisp__store {
+  font-family: var(--font-heading);
   font-size: 1.5rem;
   font-weight: 700;
   margin: 0;
+  color: var(--c-text-main);
 }
+
 .cdisp__status {
   margin-left: auto;
   font-size: 0.85rem;
-  color: #64748b;
+  color: var(--c-text-sub);
 }
 
 .cdisp__views {
@@ -56,33 +144,36 @@ html, body {
   min-height: 0;
   animation: cdispFadeIn 0.35s ease;
 }
+
 .cdisp-view.active {
   display: flex;
 }
 
-@keyframes cdispFadeIn {
-  from { opacity: 0; transform: translateY(8px); }
-  to { opacity: 1; transform: translateY(0); }
-}
 
-/* idle */
+/* =========================================================
+   ✨ 3. 視圖樣式 (Views)
+========================================================= */
+
+/* --- 閒置畫面 (Idle) --- */
 .cdisp-idle {
   align-items: center;
   justify-content: center;
   text-align: center;
 }
 .cdisp-idle__title {
+  font-family: var(--font-heading);
   font-size: clamp(2.5rem, 6vw, 4rem);
   font-weight: 800;
   margin: 24px 0 12px;
-  color: #f8fafc;
+  color: var(--c-text-main);
 }
 .cdisp-idle__sub {
+  font-family: var(--font-heading);
   font-size: clamp(1.2rem, 3vw, 1.8rem);
-  color: #94a3b8;
+  color: var(--c-text-sub);
 }
 
-/* cart */
+/* --- 購物車列表 (Cart) --- */
 .cdisp-cart__list {
   flex: 1;
   overflow-y: auto;
@@ -93,7 +184,11 @@ html, body {
   align-items: center;
   gap: 16px;
   padding: 16px 0;
-  border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+  border-bottom: 1px solid var(--c-border-line);
+  /* 瀑布流載入動畫 */
+  opacity: 0;
+  transform: translateX(16px);
+  animation: cdispStaggerIn 0.4s cubic-bezier(0.2, 0.8, 0.2, 1) forwards;
 }
 .cdisp-cart__thumb {
   width: clamp(64px, 10vw, 96px);
@@ -101,32 +196,42 @@ html, body {
   flex-shrink: 0;
   object-fit: cover;
   border-radius: 12px;
-  background: rgba(255, 255, 255, 0.08);
+  background: var(--c-logo-bg);
+  border: 1px solid var(--c-border-line);
 }
 .cdisp-cart__info {
   flex: 1;
   min-width: 0;
 }
 .cdisp-cart__name {
-  font-size: clamp(1.4rem, 3.5vw, 2.2rem);
+  font-family: var(--font-heading);
+  font-size: clamp(1.5rem, 3.8vw, 2.4rem);
   font-weight: 700;
   margin: 0 0 4px;
+  color: var(--c-text-main);
 }
 .cdisp-cart__meta {
+  font-family: var(--font-numbers);
+  font-variant-numeric: tabular-nums;
   font-size: clamp(1rem, 2vw, 1.35rem);
-  color: #94a3b8;
+  font-weight: 600;
+  color: var(--c-text-sub);
   margin: 0;
 }
 .cdisp-cart__line-total {
+  font-family: var(--font-numbers);
+  font-variant-numeric: tabular-nums;
   font-size: clamp(1.5rem, 3vw, 2rem);
   font-weight: 800;
-  color: #60a5fa;
+  color: var(--c-price-checkout);
   white-space: nowrap;
 }
+
+/* 購物車底部 (Footer) */
 .cdisp-cart__footer {
   flex-shrink: 0;
   padding-top: 20px;
-  border-top: 2px solid rgba(255, 255, 255, 0.15);
+  border-top: 2px solid var(--c-border-header);
 }
 .cdisp-cart__footer-row {
   display: flex;
@@ -134,77 +239,158 @@ html, body {
   justify-content: center;
   gap: clamp(40px, 4vw, 48px);
 }
-.cdisp-cart__footer-row--single .cdisp-cart__total-wrap {
-  text-align: center;
-}
-.cdisp-cart__discount-wrap,
-.cdisp-cart__total-wrap {
+.cdisp-cart__discount-wrap, .cdisp-cart__total-wrap {
   flex: 0 0 auto;
   text-align: center;
 }
-.cdisp-cart__discount-wrap.hidden {
-  display: none;
-}
+.cdisp-cart__discount-wrap.hidden { display: none; }
+
 .cdisp-cart__total-label {
+  font-family: var(--font-heading);
   font-size: clamp(1.2rem, 2.5vw, 1.6rem);
-  color: #94a3b8;
+  color: var(--c-text-sub);
   margin: 0 0 8px;
 }
 .cdisp-cart__amount {
+  font-family: var(--font-heading);
   font-size: clamp(3rem, 8vw, 5rem);
   font-weight: 900;
   margin: 0;
   line-height: 1.1;
 }
-.cdisp-cart__discount {
-  color: #4ade80;
-}
-.cdisp-cart__total {
-  color: #3b82f6;
+.cdisp-cart__discount { color: var(--c-price-discount); }
+.cdisp-cart__total { color: var(--c-price-total); }
+
+/* 深空主題：總計數字保留漸變效果 */
+body:not(.theme-nature) .cdisp-cart__total {
+  background: linear-gradient(135deg, #60a5fa, #c084fc);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  color: transparent;
 }
 
-/* checkout */
+/* --- 結帳畫面 (Checkout) --- */
 .cdisp-checkout {
   align-items: center;
   justify-content: center;
   text-align: center;
 }
 .cdisp-checkout__label {
+  font-family: var(--font-heading);
   font-size: clamp(1.5rem, 4vw, 2.5rem);
-  color: #94a3b8;
+  color: var(--c-text-sub);
   margin: 0 0 16px;
 }
 .cdisp-checkout__amount {
+  font-family: var(--font-heading);
   font-size: clamp(4rem, 12vw, 7rem);
   font-weight: 900;
   margin: 0;
-  color: #fbbf24;
+  color: var(--c-price-checkout);
   line-height: 1;
-  text-shadow: 0 4px 24px rgba(251, 191, 36, 0.3);
+  animation: cdispPulseGlow 2s infinite alternate ease-in-out;
 }
 
-/* thankyou */
+/* --- 找贖畫面 (Thank you) --- */
 .cdisp-thankyou {
   align-items: center;
   justify-content: center;
   text-align: center;
 }
 .cdisp-thankyou__title {
+  font-family: var(--font-heading);
   font-size: clamp(2.5rem, 7vw, 4.5rem);
   font-weight: 900;
   margin: 0 0 32px;
-  color: #4ade80;
+  color: var(--c-price-discount);
 }
 .cdisp-thankyou__row {
+  font-family: var(--font-numbers);
+  font-variant-numeric: tabular-nums;
+  font-weight: 600;
   font-size: clamp(1.8rem, 4vw, 3rem);
   margin: 12px 0;
-  color: #e2e8f0;
+  color: var(--c-text-sub);
 }
 .cdisp-thankyou__row strong {
-  color: #60a5fa;
+  color: var(--c-text-main);
   font-weight: 800;
 }
 
+
+/* =========================================================
+   🎭 4. 品牌專屬字距微調 (Letter Spacing overrides)
+========================================================= */
+body.theme-nature .cdisp__store,
+body.theme-nature .cdisp-idle__title,
+body.theme-nature .cdisp-idle__sub,
+body.theme-nature .cdisp-cart__name,
+body.theme-nature .cdisp-cart__total-label,
+body.theme-nature .cdisp-checkout__label,
+body.theme-nature .cdisp-thankyou__title {
+  letter-spacing: 0.05em;
+}
+
+body.theme-nature .cdisp-cart__amount,
+body.theme-nature .cdisp-checkout__amount {
+  letter-spacing: -0.02em;
+}
+
+
+/* =========================================================
+   🎬 5. 動畫效果 (Animations & Errors)
+========================================================= */
+@keyframes cdispFadeIn {
+  from { opacity: 0; transform: translateY(8px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+@keyframes cdispStaggerIn {
+  to { opacity: 1; transform: translateX(0); }
+}
+@keyframes cdispPulseGlow {
+  0% { 
+    text-shadow: 0 4px 16px var(--glow-color-1); 
+    transform: scale(1); 
+  }
+  100% { 
+    text-shadow: 0 8px 36px var(--glow-color-2), 0 0 60px var(--glow-color-3); 
+    transform: scale(1.025); 
+  }
+}
+
+/* --- 結帳 Loading 動畫 (無縫流暢版) --- */
+.loader {
+  display: inline-block;
+  --size: 1.8px;
+  margin: 0 auto 32px auto;
+  width: calc(48 * var(--size));
+  height: calc(48 * var(--size));
+  border-radius: 50%;
+  position: relative;
+  animation: rotate 2s linear infinite;
+}
+.loader::before,
+.loader::after {
+  content: '';
+  box-sizing: border-box;
+  position: absolute;
+  inset: 0;
+  border-radius: 50%;
+  border: calc(5 * var(--size)) solid var(--c-loader-track);
+  border-top-color: transparent;
+}
+.loader::after {
+  inset: calc(8 * var(--size));
+  border-color: var(--c-loader-bar);
+  border-bottom-color: transparent;
+  animation: rotate 1.5s cubic-bezier(0.4, 0, 0.2, 1) infinite;
+}
+@keyframes rotate {
+  0% { transform: rotate(0deg); }
+  100% { transform: rotate(360deg); }
+}
+
+/* --- 錯誤提示 (Error Toasts) --- */
 .cdisp__errors {
   position: fixed;
   bottom: 16px;
@@ -217,9 +403,7 @@ html, body {
   width: 100%;
   z-index: 100;
 }
-.cdisp__errors.show {
-  display: flex;
-}
+.cdisp__errors.show { display: flex; }
 .cdisp__error-item {
   display: flex;
   align-items: center;
@@ -249,4 +433,88 @@ html, body {
 }
 .cdisp__error-dismiss:hover {
   background: rgba(0, 0, 0, 0.35);
+}
+
+/* ==========================================
+   Thank You 畫面 - QR Code 與流暢排版動畫
+========================================== */
+.cdisp-thankyou__inner {
+  display: flex;
+  flex-direction: row;
+  align-items: center;
+  justify-content: center;
+  gap: 140px; /* 4. 加大兩者間距 (原為80px) */
+  width: 100%;
+}
+
+/* 1. 左側文字：停留在中央 2.5 秒，再用 1.5 秒緩慢流暢地退到左邊 */
+.cdisp-thankyou__left {
+  text-align: right;
+  /* 初始設定向右偏移約 180px，藉此在畫面正中央完美居中 */
+  transform: translateX(180px);
+  animation: slideLeftSmooth 1.5s cubic-bezier(0.25, 0.1, 0.25, 1) 1.1s forwards;
+}
+
+/* 2. 放大「多謝惠顧」並加入「光影交錯」特效 */
+body.theme-nature .cdisp-thankyou__title {
+  font-size: clamp(3.5rem, 8vw, 5.5rem); /* 放名字體 */
+  background: linear-gradient(120deg, #7a6b58 20%, #d4c5b3 50%, #7a6b58 80%);
+  background-size: 200% auto;
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  /* 光影交錯動畫：持續掃過文字 */
+  animation: shimmerLight 3s linear infinite;
+}
+
+/* 3. 右側 QR Code：放大並減緩浮現速度 */
+.cdisp-thankyou__right {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  text-align: center;
+  opacity: 0;
+  transform: translateX(40px);
+  /* 等待 3.2 秒 (等左邊退讓完)，再用 1.5 秒極度緩慢且柔和地浮現 */
+  animation: fadeSlideInRightSlow 1.5s cubic-bezier(0.25, 0.1, 0.25, 1) 1.4s forwards;
+}
+
+.qr-box {
+  background: #ffffff;
+  padding: 24px; /* 3. 放大 QR Code 白色留白區域 */
+  border-radius: 20px;
+  box-shadow: 0 16px 40px rgba(122, 107, 88, 0.15); /* 加深一點光暈質感 */
+  margin-bottom: 24px;
+  border: 1px solid var(--c-border-line);
+}
+
+.qr-text {
+  font-family: var(--font-heading);
+  font-size: 1.4rem; /* 3. 放大說明文字 */
+  font-weight: 700;
+  color: var(--c-text-main);
+  margin: 0 0 8px 0;
+}
+
+.qr-order {
+  font-family: var(--font-numbers);
+  font-size: 1.15rem; /* 3. 放大單號文字 */
+  color: var(--c-text-sub);
+  margin: 0;
+  letter-spacing: 0.1em;
+}
+
+/* --- 動畫 Keyframes --- */
+@keyframes slideLeftSmooth {
+  from { transform: translateX(180px); }
+  to { transform: translateX(0); }
+}
+
+@keyframes fadeSlideInRightSlow {
+  from { opacity: 0; transform: translateX(40px); }
+  to { opacity: 1; transform: translateX(0); }
+}
+
+@keyframes shimmerLight {
+  0% { background-position: -200% center; }
+  100% { background-position: 200% center; }
 }

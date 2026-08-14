@@ -7,6 +7,7 @@
   <link rel="icon" href="images.png" type="image/png">
   <link rel="stylesheet" href="css/display.css">
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
   <script src="config.js"></script>
 </head>
 <body>
@@ -43,20 +44,37 @@
       </section>
 
       <section class="cdisp-view cdisp-checkout" data-view="checkout">
-        <div class="cdisp-checkout">
-          <p class="cdisp-checkout__label">請支付</p>
+        <!-- 補上 Flexbox 確保 Loading 和文字完美垂直對齊 -->
+        <div class="cdisp-checkout" style="display: flex; flex-direction: column; align-items: center; justify-content: center; height: 100%;">
+          
+          <div class="loader"></div> <!-- 改用 div 也可以，或者保留 span -->
+          
+          <p class="cdisp-checkout__label">請付款</p>
           <p class="cdisp-checkout__amount" id="checkoutAmount">$0</p>
         </div>
       </section>
 
+
       <section class="cdisp-view cdisp-thankyou" data-view="thankyou">
-        <div class="cdisp-thankyou">
-          <h2 class="cdisp-thankyou__title">多謝惠顧</h2>
-          <p class="cdisp-thankyou__row">應付：<strong id="thankTotal">$0</strong></p>
-          <p class="cdisp-thankyou__row">實收：<strong id="thankReceived">$0</strong></p>
-          <p class="cdisp-thankyou__row">找續：<strong id="thankChange">$0</strong></p>
+        <div class="cdisp-thankyou__inner">
+          <!-- 左側：原有感謝文字 -->
+          <div class="cdisp-thankyou__left">
+            <h2 class="cdisp-thankyou__title">多謝惠顧</h2>
+            <p class="cdisp-thankyou__row">總計: <strong id="thankTotal">$0</strong></p>
+            <p class="cdisp-thankyou__row">實收: <strong id="thankReceived">$0</strong></p>
+            <p class="cdisp-thankyou__row">找贖: <strong id="thankChange">$0</strong></p>
+          </div>
+          <!-- 右側：QR Code 區塊 (預設隱藏，靠動畫滑入) -->
+          <div class="cdisp-thankyou__right" id="receiptQrWrap">
+            <div class="qr-box">
+              <div id="qrcode"></div>
+            </div>
+            <p class="qr-text">掃描獲取電子收據</p>
+            <p class="qr-order" id="displayOrderCode">單號: -</p>
+          </div>
         </div>
       </section>
+
     </div>
   </div>
 

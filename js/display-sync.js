@@ -93,21 +93,25 @@
     }));
   }
 
-  async function syncThankYou({ total, received, change }) {
+  // 修改：參數加入 order_code
+  async function syncThankYou({ total, received, change, order_code }) {
     thankYouActive = true;
     await pushState(buildPayload({
       phase: 'thankyou',
       total: Number(total) || 0,
       amount_received: Number(received) || 0,
       change_amount: Number(change) || 0,
+      order_code: order_code || null // 新增這一行
     }));
+    
     if (thankYouTimer) clearTimeout(thankYouTimer);
     thankYouTimer = setTimeout(() => {
       thankYouTimer = null;
       thankYouActive = false;
       syncIdle();
-    }, 8000);
+    }, 25000); // 延長到 25000 毫秒 (25秒)，確保顧客有充分時間掃碼
   }
+
 
   async function syncFromRegister() {
     const items = window.posCart?.getItems?.() || [];

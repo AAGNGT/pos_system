@@ -1275,3 +1275,23 @@ body.hide-order-panel .pos-order { display: none !important; }
     grid-template-columns: 1fr 1fr;
   }
 }
+
+/* 重新整理按鈕互動效果 */
+.btn-refresh-spin:hover {
+    background: #f1f5f9 !important;
+    color: #0f172a !important;
+    border-color: #cbd5e1 !important;
+}
+
+.btn-refresh-spin:hover svg {
+    transform: rotate(180deg);
+}
+
+.btn-refresh-spin.is-spinning svg {
+    animation: spinRefresh 0.6s linear infinite;
+}
+
+@keyframes spinRefresh {
+    from { transform: rotate(0deg); }
+    to { transform: rotate(360deg); }
+} 

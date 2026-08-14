@@ -171,6 +171,8 @@
         total: due,
         received,
         change,
+        // 若系統有自動生成 order_code 則使用，否則作為備案隨機生成五位英數代碼
+        order_code: order.order_code || Math.random().toString(36).substring(2, 7).toUpperCase()
       });
       window.posCart.clear();
       closeCheckoutModal();

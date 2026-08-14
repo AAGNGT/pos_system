@@ -3,6 +3,30 @@
   let channel = null;
   let storeName = 'POS 商店';
 
+  const tickerVals = new WeakMap();
+  function animateValue(el, endVal, formatFn, duration = 450) {
+    if (!el) return;
+    const startVal = tickerVals.get(el) || 0;
+    if (startVal === endVal) {
+      el.textContent = formatFn(endVal);
+      return;
+    }
+    tickerVals.set(el, endVal);
+    const startTime = performance.now();
+    const step = (currentTime) => {
+      const progress = Math.min((currentTime - startTime) / duration, 1);
+      const ease = 1 - Math.pow(1 - progress, 4); // easeOutQuart 緩動函數
+      const current = startVal + (endVal - startVal) * ease;
+      el.textContent = formatFn(current);
+      if (progress < 1) {
+        requestAnimationFrame(step);
+      } else {
+        el.textContent = formatFn(endVal);
+      }
+    };
+    requestAnimationFrame(step);
+  }
+
   function formatMoney(n) {
     const val = Number(n) || 0;
     const absVal = Math.abs(val);
@@ -66,15 +90,17 @@
       list.innerHTML = '<p style="text-align:center;color:#64748b;font-size:1.2rem">尚無商品</p>';
     } else {
       const thumb = window.posProductThumb;
-      list.innerHTML = items.map((i) => {
+      list.innerHTML = items.map((i, index) => {
         const imgSrc = thumb?.thumbSrc?.(i, productCatalog) || thumb?.svgPlaceholder?.(i.name) || '';
         const fallback = thumb?.svgPlaceholder?.(i.name) || '';
+        const delay = index * 0.05;
+        
         return `
-        <div class="cdisp-cart__item">
+        <div class="cdisp-cart__item" style="animation-delay: ${delay}s">
           <img class="cdisp-cart__thumb" src="${safeImgAttr(imgSrc)}" data-fallback="${safeImgAttr(fallback)}" alt="${escapeHtml(i.name)}" loading="lazy">
           <div class="cdisp-cart__info">
             <p class="cdisp-cart__name">${escapeHtml(i.name)}</p>
-            <p class="cdisp-cart__meta">${escapeHtml(i.code || '')} · ${i.qty} × ${formatMoney(i.unit_price)}</p>
+            <p class="cdisp-cart__meta">${escapeHtml(i.code || '')} × ${i.qty} @ ${formatMoney(i.unit_price)}</p>
           </div>
           <span class="cdisp-cart__line-total">${formatMoney(i.line_total)}</span>
         </div>
@@ -94,27 +120,55 @@
     if (discount > 0) {
       discountWrap?.classList.remove('hidden');
       footerRow?.classList.remove('cdisp-cart__footer-row--single');
-      if (discountEl) discountEl.textContent = formatDiscountMoney(discount);
+      if (discountEl) animateValue(discountEl, discount, formatDiscountMoney);
     } else {
       discountWrap?.classList.add('hidden');
       footerRow?.classList.add('cdisp-cart__footer-row--single');
     }
-    if (totalEl) totalEl.textContent = formatMoney(state.total);
+    if (totalEl) animateValue(totalEl, state.total, formatMoney);
   }
 
   function renderCheckout(state) {
     const el = document.getElementById('checkoutAmount');
-    if (el) el.textContent = formatMoney(state.total);
+    if (el) animateValue(el, state.total, formatMoney);
   }
+
+  let qrCodeInstance = null; // 在最外層宣告一個變數存放 QR 實例
 
   function renderThankYou(state) {
     const total = document.getElementById('thankTotal');
     const received = document.getElementById('thankReceived');
     const change = document.getElementById('thankChange');
-    if (total) total.textContent = formatMoney(state.total);
-    if (received) received.textContent = formatMoney(state.amount_received);
-    if (change) change.textContent = formatMoney(state.change_amount);
+    
+    if (total) animateValue(total, state.total, formatMoney);
+    if (received) animateValue(received, state.amount_received, formatMoney);
+    if (change) animateValue(change, state.change_amount, formatMoney);
+
+    // 處理 QR Code 顯示
+    const orderCodeEl = document.getElementById('displayOrderCode');
+    const qrContainer = document.getElementById('qrcode');
+    
+    if (state.order_code && qrContainer) {
+      if (orderCodeEl) orderCodeEl.textContent = `單號: ${state.order_code}`;
+      
+      // 拼接對應的 track.html 網址
+      const receiptUrl = `https://hkrss.dpdns.org/track.html?id=${state.order_code}`;
+      
+      // 清空舊的 QR Code
+      qrContainer.innerHTML = ''; 
+      
+      // 生成新的 QR Code
+      qrCodeInstance = new QRCode(qrContainer, {
+        text: receiptUrl,
+        width: 210,
+        height: 210,
+        colorDark: "#1d1d1f",
+        colorLight: "#ffffff",
+        correctLevel: QRCode.CorrectLevel.M
+      });
+    }
   }
+
 
   function render(state) {
     if (!state) return;
@@ -152,12 +206,27 @@
     }
   }
 
-  async function loadStoreName(client) {
+  async function loadSettings(client) {
     try {
-      const { data } = await client.from('pos_settings').select('value').eq('key', 'store_name').maybeSingle();
-      if (data?.value) storeName = data.value;
-      const el = document.getElementById('storeName');
-      if (el) el.textContent = storeName;
+      const { data } = await client.from('pos_settings').select('key, value');
+      if (data) {
+        const settings = {};
+        data.forEach(r => { settings[r.key] = r.value; });
+        
+        // 1. 設定商店名稱
+        if (settings.store_name) {
+          storeName = settings.store_name;
+          const el = document.getElementById('storeName');
+          if (el) el.textContent = storeName;
+        }
+        
+        // 2. 套用顯示屏風格 (若為 nature，則加上 class)
+        if (settings.display_theme === 'nature') {
+          document.body.classList.add('theme-nature');
+        } else {
+          document.body.classList.remove('theme-nature');
+        }
+      }
     } catch (_) { /* ignore */ }
   }
 
@@ -174,6 +243,7 @@
   function subscribeRealtime(client) {
     channel = client
       .channel('pos-display-main')
+      // 1. 原有的：監聽購物車狀態變化
       .on(
         'postgres_changes',
         { event: '*', schema: 'public', table: 'pos_display_state', filter: `id=eq.${DISPLAY_ID}` },
@@ -181,16 +251,41 @@
           render(payload.new || payload.old);
         }
       )
+      // 2. 新增的：監聽系統設定 (pos_settings) 變化
+      .on(
+        'postgres_changes',
+        { event: '*', schema: 'public', table: 'pos_settings' },
+        (payload) => {
+          const row = payload.new;
+          if (row) {
+            // 如果更改了顯示風格
+            if (row.key === 'display_theme') {
+              if (row.value === 'nature') {
+                document.body.classList.add('theme-nature');
+              } else {
+                document.body.classList.remove('theme-nature');
+              }
+            }
+            // 順便讓「商店名稱」也能即時更新！
+            else if (row.key === 'store_name') {
+              storeName = row.value;
+              const el = document.getElementById('storeName');
+              if (el) el.textContent = storeName;
+            }
+          }
+        }
+      )
       .subscribe((status) => {
         const el = document.getElementById('displayStatus');
         if (status === 'SUBSCRIBED' && el) {
-          el.textContent = el.textContent || '已連線';
+          el.textContent = el.textContent || '連線中...';
         }
         if (status === 'CHANNEL_ERROR') {
-          showError('Realtime 連線失敗，請在 Supabase 啟用 pos_display_state');
+          showError('Realtime 連線失敗，請檢查 Supabase 設定');
         }
       });
   }
+
 
   async function init() {
     if (!window.posDb?.initSupabase?.()) {
@@ -199,7 +294,7 @@
       return;
     }
     const client = window.posDb.getClient();
-    await loadStoreName(client);
+    await loadSettings(client);
     await loadProductCatalog(client);
     try {
       await loadInitial(client);
