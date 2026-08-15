@@ -1,6 +1,5 @@
 (function () {
-
-  // ============================================================================
+   // ============================================================================
   // 🌟 共用功能：智慧型動態日曆彈窗 (只允許選擇有交易紀錄的日期)
   // ============================================================================
   async function openSharedDatePicker(onDateSelected) {
@@ -116,7 +115,7 @@
       const client = window.posDb.getClient();
       
       let query = client.from('pos_orders')
-        .select('*, pos_order_items(*, pos_products(name, stock_count))')
+        .select('*, pos_order_items(*, pos_products(id, code, name, image_url, stock_count, price))')
         .order('created_at', { ascending: false });
 
       if (filterDate) {
@@ -149,25 +148,60 @@
             summary = `${items[0].pos_products?.name || '未知產品'} 等 ${items.length} 項 (共 ${totalQty} 件)`;
           }
 
-          const isSale = o.mode === 'sale';
+                   const isSale = o.mode === 'sale';
+          const isVoided = o.status === 'voided';
+          const isAdmin = window.posApp?.getStaff?.()?.role === 'ADMIN';
           const modeStr = modeZh[o.mode] || o.mode;
           
+          const rowOpacity = isVoided ? 'opacity: 0.5;' : '';
+          
+          let statusBadge = '';
+          if (isVoided) {
+             statusBadge = `<span style="background:#fef2f2; color:#dc2626; padding:4px 8px; border-radius:6px; font-size:11px; font-weight:bold; margin-left:8px; border: 1px solid #fecaca;">已作廢</span>`;
+          } else if (isSale && o.status === 'completed') {
+             statusBadge = `<span style="background:#ecfdf5; color:#059669; padding:4px 8px; border-radius:6px; font-size:11px; font-weight:bold; margin-left:8px; border: 1px solid #a7f3d0;">已支付</span>`;
+          } else if (!isSale) {
+             statusBadge = `<span style="background:#f1f5f9; color:#475569; padding:4px 8px; border-radius:6px; font-size:11px; font-weight:bold; margin-left:8px; border: 1px solid #cbd5e1;">已完成</span>`;
+          }
+
           const subtotalStr = isSale ? `$${Number(o.subtotal).toFixed(2)}` : '-';
           const discountStr = isSale && Number(o.discount_amount) > 0 ? `<span style="color:#16a34a;">-$${Number(o.discount_amount).toFixed(2)}</span>` : (isSale ? '$0.00' : '-');
           const totalStr = isSale ? `$${Number(o.total).toFixed(2)}` : '-';
           const timeStr = new Date(o.created_at).toLocaleString('zh-TW');
           
-          // 修改：將純文字變成帶有 Hover 效果與圖標的投射按鈕
           let orderCodeStr = '-';
           if (isSale && o.order_code) {
-          orderCodeStr = `
-              <button type="button" class="pos-btn-secondary btn-redisplay-qr" data-id="${o.id}"
-                 style="padding: 4px 10px; font-size: 13px; font-family: monospace; font-weight: bold; display: inline-flex; align-items: center; gap: 6px; cursor: pointer; border-radius: 6px;"
-                 title="重新顯示取餐號碼及二維碼">
+             orderCodeStr = `
+              <button type="button" class="pos-btn-secondary btn-redisplay-qr" data-id="${o.id}" 
+                 style="padding: 4px 10px; font-size: 13px; font-family: monospace; font-weight: bold; display: inline-flex; align-items: center; gap: 6px; cursor: pointer; border-radius: 6px;" 
+                 title="重新顯示顧客憑證 QR Code">
                  ${o.order_code}
                  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="2" y="7" width="20" height="15" rx="2" ry="2"></rect><polyline points="17 2 12 7 7 2"></polyline></svg>
               </button>`;
           }
+
+          let voidBtnHtml = '';
+          if (isSale && isAdmin && !isVoided) {
+             voidBtnHtml = `<button class="pos-btn-secondary btn-void-order" style="padding: 6px 12px; font-size: 13px; border-radius: 6px; cursor: pointer; color: #dc2626; border-color: #fecaca; background: #fff;" data-id="${o.id}">作廢</button>`;
+          }
+
+          return `
+            <tr style="${rowOpacity}">
+              <td style="font-weight: 600; color: #334155;">#${o.id} ${statusBadge}</td>
+              <td>${modeStr}</td>
+              <td style="color:#64748b; font-size:12px; line-height: 1.4;">${summary}</td>
+              <td>${subtotalStr}</td>
+              <td>${discountStr}</td>
+              <td style="font-weight:bold; color:#0f172a;">${totalStr}</td>
+              <td style="font-size:12px; color:#64748b;">${timeStr}</td>
+              <td style="font-family: monospace; font-size:14px; color:#8b5cf6; font-weight:bold;">${orderCodeStr}</td>
+              <td style="text-align: right; display: flex; gap: 6px; justify-content: flex-end;">
+                ${voidBtnHtml}
+                <button class="pos-btn-secondary btn-view-order" style="padding: 6px 12px; font-size: 13px; border-radius: 6px; cursor: pointer; transition: transform 0.15s ease;" data-id="${o.id}">查看</button>
+              </td>
+            </tr>
+          `;
+
           return `
             <tr>
               <td style="font-weight: 600; color: #334155;">#${o.id}</td>
@@ -245,6 +279,19 @@
             </div>
           </div>
         </div>
+
+        <div class="pos-modal" id="voidOrderModal" aria-hidden="true" style="z-index: 2200;">
+          <div class="pos-modal__box pos-modal__box--confirm">
+            <h2 style="margin: 0 0 16px; color: #dc2626;">作廢訂單 <span id="voidOrderTitleId"></span></h2>
+            <p class="pos-modal__hint">作廢後將無法復原，商品庫存將會自動退回系統。</p>
+            <label style="display:block; text-align:left; font-size:13px; color:#64748b; margin-bottom:8px;">作廢原因 (必填)：</label>
+            <input type="text" id="voidReasonInput" placeholder="例如：入錯商品、打錯折..." style="width:100%; padding:10px; border:1px solid #e2e8f0; border-radius:8px; margin-bottom:16px;">
+            <div class="pos-modal__actions">
+              <button type="button" class="pos-modal__btn-secondary" id="btnVoidCancel">取消</button>
+              <button type="button" class="pos-btn-primary pos-modal__btn-confirm" id="btnVoidConfirm" style="background:#dc2626;">確認作廢</button>
+            </div>
+          </div>
+        </div>
       `;
 
       document.getElementById('btnFilterHistory').onclick = () => {
@@ -302,6 +349,67 @@
               window.ui.toast('已成功投送至客戶顯示屏', 'success');
             }
           });
+        }
+      };
+
+      // ==== 作廢訂單事件綁定 ====
+      let targetOrderForVoid = null;
+      const voidModal = document.getElementById('voidOrderModal');
+      
+      document.querySelectorAll('.btn-void-order').forEach(btn => {
+        btn.onclick = (e) => {
+          e.stopPropagation();
+          const orderId = Number(btn.dataset.id);
+          targetOrderForVoid = window._tempHistoryOrders.find(o => o.id === orderId);
+          if (targetOrderForVoid) {
+            document.getElementById('voidOrderTitleId').textContent = `#${orderId}`;
+            document.getElementById('voidReasonInput').value = '';
+            window.ui.openModal(voidModal);
+          }
+        };
+      });
+
+      document.getElementById('btnVoidCancel').onclick = () => window.ui.closeModal(voidModal);
+      
+      document.getElementById('btnVoidConfirm').onclick = async () => {
+        const reason = document.getElementById('voidReasonInput').value.trim();
+        if (!reason) {
+          window.ui.toast('請填寫作廢原因', 'error');
+          return;
+        }
+        if (!targetOrderForVoid) return;
+        
+        window.ui.setLoading(true, '作廢中...');
+        try {
+          const staff = window.posApp?.getStaff?.();
+          await window.posApi.voidOrder(targetOrderForVoid.id, reason, staff?.id);
+          window.ui.closeModal(voidModal);
+          window.ui.toast('訂單已成功作廢，庫存已退回', 'success');
+          
+          if (confirm('訂單已作廢。\n是否需要將舊有商品載入購物車，以修改並重新結帳？')) {
+            window.posCart.clear();
+            
+            targetOrderForVoid.pos_order_items.forEach(item => {
+              const p = item.pos_products;
+              const productObj = {
+                id: item.product_id,
+                code: p?.code || '',
+                name: p?.name || '未知商品',
+                price: item.unit_price,
+                image_url: p?.image_url || null,
+                stock_count: p?.stock_count || 0
+              };
+              window.posCart.add(productObj, item.qty);
+            });
+            
+            window.posApp.setMode('sale');
+          } else {
+            renderHistory();
+          }
+        } catch (e) {
+          window.ui.toast(`作廢失敗: ${e.message}`, 'error');
+        } finally {
+          window.ui.setLoading(false);
         }
       };
 
@@ -375,6 +483,23 @@
             <span>備註/原因：</span><span style="color:#0f172a;">${order.note}</span>
         </div>`;
     }
+        // ==== 加入作廢原因顯示 ====
+    if (order.status === 'voided') {
+      topInfoHtml += `
+        <div style="display:flex; justify-content:space-between; margin-top: 8px; padding-top: 8px; border-top: 1px dashed #fca5a5;">
+            <span style="color:#dc2626; font-weight:bold;">訂單狀態：</span>
+            <span style="color:#dc2626; font-weight:bold;">已作廢</span>
+        </div>`;
+        
+      if (order.void_reason) {
+        topInfoHtml += `
+        <div style="display:flex; justify-content:space-between; margin-top: 4px;">
+            <span style="color:#dc2626;">作廢原因：</span>
+            <span style="color:#dc2626; text-align:right;">${order.void_reason}</span>
+        </div>`;
+      }
+    }
+
 
     let bottomHtml = '';
     if (isSale) {
@@ -407,26 +532,182 @@
   // ============================================================================
   // 📊 模組 2：營業概況
   // ============================================================================
-  async function renderDashboard() {
-    const el = document.getElementById('panelDashboard');
-    if (!el) return;
-    try {
-      const [stats, low] = await Promise.all([
-        window.posApi.fetchTodayStats(),
-        window.posApi.fetchLowStock(5),
-      ]);
-      el.innerHTML = `
-        <div class="pos-card-grid">
-          <div class="pos-stat-card"><div class="pos-stat-card__val">$${stats.revenue.toFixed(2)}</div><div class="pos-stat-card__lbl">今日營收</div></div>
-          <div class="pos-stat-card"><div class="pos-stat-card__val">${stats.count}</div><div class="pos-stat-card__lbl">今日訂單</div></div>
-          <div class="pos-stat-card"><div class="pos-stat-card__val">${low.length}</div><div class="pos-stat-card__lbl">低庫存警告</div></div>
-        </div>
-        ${low.length ? `<h3 style="margin-top:20px">低庫存產品</h3><ul>${low.map((p) => `<li>${p.code} ${p.name}: ${p.stock_count}</li>`).join('')}</ul>` : ''}`;
-    } catch (e) {
-      el.innerHTML = `<p>${e.message}</p>`;
-    }
+  // 建立全域變數作快取，避免切換頁面時重複載入
+  window._dashCache = window._dashCache || null;
+  window._dashLastUpdate = window._dashLastUpdate || null;
+  window._dashTargetDateStr = window._dashTargetDateStr || null;
+  window.dashboardChartInstance = null;
+
+  // 計算「上次更新」時間的輔助函數
+  function getTimeAgo(timestamp) {
+    if (!timestamp) return '從未更新';
+    const seconds = Math.floor((Date.now() - timestamp) / 1000);
+    if (seconds < 60) return `${Math.max(0, seconds)} 秒前`;
+    const minutes = Math.floor(seconds / 60);
+    if (minutes < 60) return `${minutes} 分鐘前`;
+    const hours = Math.floor(minutes / 60);
+    if (hours < 24) return `${hours} 小時前`;
+    return '很久以前';
   }
 
+  // 獨立出撈取數據嘅邏輯
+  async function fetchDashboardData(targetDateStr) {
+    const client = window.posDb.getClient();
+    const start = new Date(`${targetDateStr}T00:00:00`);
+    const end = new Date(`${targetDateStr}T23:59:59.999`);
+
+    const [ordersRes, lowStockRes] = await Promise.all([
+      client.from('pos_orders')
+            .select('total, mode, created_at, status')
+            .eq('mode', 'sale')
+            .gte('created_at', start.toISOString())
+            .lte('created_at', end.toISOString()),
+      window.posApi.fetchLowStock(5)
+    ]);
+
+    if (ordersRes.error) throw ordersRes.error;
+
+    const validSales = (ordersRes.data || []).filter(o => o.status !== 'voided');
+    const revenue = validSales.reduce((sum, o) => sum + Number(o.total), 0);
+    const orderCount = validSales.length;
+
+    const hourlyData = new Array(24).fill(0);
+    validSales.forEach(o => {
+      const hour = new Date(o.created_at).getHours();
+      hourlyData[hour] += 1;
+    });
+
+    // 寫入快取
+    window._dashCache = {
+      revenue,
+      orderCount,
+      lowStock: lowStockRes || [],
+      hourlyData
+    };
+    window._dashLastUpdate = Date.now();
+    window._dashTargetDateStr = targetDateStr;
+  }
+
+  // 渲染儀表板 (加入 forceRefresh 參數控制是否強制更新)
+  async function renderDashboard(selectedDate = null, forceRefresh = false) {
+    const el = document.getElementById('panelDashboard');
+    if (!el) return;
+
+    // 決定目標日期
+    if (!window._dashTargetDateStr) {
+      const d = new Date();
+      window._dashTargetDateStr = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
+    }
+    const targetDateStr = selectedDate || window._dashTargetDateStr;
+
+    // 判斷是否需要向數據庫拿資料：強制刷新 OR 選擇了新日期 OR 沒有快取
+    const needsFetch = forceRefresh || (targetDateStr !== window._dashTargetDateStr) || !window._dashCache;
+
+    if (needsFetch) {
+      window.ui.setLoading(true, '載入數據中...');
+      try {
+        await fetchDashboardData(targetDateStr);
+      } catch (e) {
+        window.ui.setLoading(false);
+        el.innerHTML = `<p style="padding: 20px; color: #dc2626; text-align: center; font-weight: bold;">讀取數據失敗: ${e.message}</p>`;
+        return;
+      }
+      window.ui.setLoading(false);
+    }
+
+    const data = window._dashCache;
+
+    // 渲染 UI (左邊文字 + 右邊按鈕：Refresh -> DatePicker)
+    el.innerHTML = `
+      <div class="pos-form-card" style="max-width: 100%; display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px; flex-wrap: wrap; gap: 12px;">
+        <div style="display: flex; align-items: baseline; gap: 12px;">
+          <h2 style="margin: 0; color: #0f172a;">營業概況</h2>
+          <span style="font-size: 13px; color: #64748b; font-weight: 500;">上次更新: <span id="dashLastUpdateText">${getTimeAgo(window._dashLastUpdate)}</span></span>
+        </div>
+        
+        <div style="display: flex; gap: 12px; align-items: center;">
+          <button class="pos-btn-secondary btn-refresh-spin" id="btnRefreshDashboard" title="重新整理" style="padding: 10px; border-radius: 8px; display: flex; align-items: center; justify-content: center; background: #f8fafc; border: 1px solid #e2e8f0; color: #64748b; cursor: pointer; transition: all 0.2s;">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="transition: transform 0.4s cubic-bezier(0.4, 0, 0.2, 1);"><path d="M3 12a9 9 0 1 0 9-9 9.75 9.75 0 0 0-6.74 2.74L3 8"></path><path d="M3 3v5h5"></path></svg>
+          </button>
+          <button class="pos-btn-secondary" id="btnDashboardDate" style="padding: 10px 16px; border-radius: 8px; border: 1px solid #cbd5e1; background:#fff; cursor: pointer; display: flex; align-items: center; gap: 8px; font-weight: 600; color: #334155; transition: all 0.2s; box-shadow: 0 1px 2px rgba(0,0,0,0.05);">
+            📅 <span>${targetDateStr}</span>
+          </button>
+        </div>
+      </div>
+
+      <div class="pos-card-grid" style="margin-bottom: 24px;">
+        <div class="pos-stat-card"><div class="pos-stat-card__val">$${data.revenue.toFixed(2)}</div><div class="pos-stat-card__lbl">總銷售額</div></div>
+        <div class="pos-stat-card"><div class="pos-stat-card__val">${data.orderCount}</div><div class="pos-stat-card__lbl">完成訂單</div></div>
+        <div class="pos-stat-card"><div class="pos-stat-card__val">${data.lowStock.length}</div><div class="pos-stat-card__lbl">低庫存項目</div></div>
+      </div>
+
+      <div class="pos-form-card" style="max-width: 100%; margin-bottom: 24px;">
+        <h3 style="margin-top: 0; margin-bottom: 16px; color: #334155;">每小時完成訂單數量</h3>
+        <div style="position: relative; height: 320px; width: 100%;">
+          <canvas id="hourlyOrdersChart"></canvas>
+        </div>
+      </div>
+
+      ${data.lowStock.length ? `
+        <div class="pos-form-card" style="max-width: 100%;">
+          <h3 style="margin-top:0; color: #dc2626;">庫存警報清單</h3>
+          <ul style="color: #64748b; line-height: 1.6;">
+            ${data.lowStock.map((p) => `<li><strong>${p.code}</strong> ${p.name} (剩餘: <span style="color:#dc2626; font-weight:bold;">${p.stock_count}</span>)</li>`).join('')}
+          </ul>
+        </div>
+      ` : ''}
+    `;
+
+    // 綁定「重新整理」按鈕
+    const btnRefresh = document.getElementById('btnRefreshDashboard');
+    btnRefresh.onclick = async () => {
+      // 加入旋轉動畫
+      btnRefresh.classList.add('is-spinning');
+      await renderDashboard(targetDateStr, true); // forceRefresh = true
+      // 如果渲染完成，動畫會因為 DOM 重建而自然消失；或者我們可以直接提示成功
+      window.ui.toast('數據已更新', 'success');
+    };
+
+    // 綁定「日期選擇器」
+    document.getElementById('btnDashboardDate').onclick = () => {
+      openSharedDatePicker((newDate) => {
+        renderDashboard(newDate, false);
+      });
+    };
+
+    // 繪製 Chart.js
+    const ctx = document.getElementById('hourlyOrdersChart').getContext('2d');
+    if (window.dashboardChartInstance) {
+      window.dashboardChartInstance.destroy();
+    }
+
+    window.dashboardChartInstance = new Chart(ctx, {
+      type: 'line',
+      data: {
+        labels: Array.from({length: 24}, (_, i) => `${String(i).padStart(2, '0')}:00`),
+        datasets: [{
+          label: '訂單數量 (單)',
+          data: data.hourlyData,
+          borderColor: '#3b82f6',
+          backgroundColor: 'rgba(59, 130, 246, 0.1)', 
+          borderWidth: 2,
+          fill: true,
+          tension: 0.4,
+          pointBackgroundColor: '#3b82f6',
+          pointHoverRadius: 6
+        }]
+      },
+      options: {
+        responsive: true,
+        maintainAspectRatio: false,
+        plugins: { legend: { display: false } },
+        scales: {
+          y: { beginAtZero: true, ticks: { stepSize: 1, precision: 0 } },
+          x: { grid: { display: false } }
+        }
+      }
+    });
+  }
   // ============================================================================
   // ⚙️ 模組 3：系統設定 (全新現代化卡片排版)
   // ============================================================================
@@ -444,12 +725,14 @@
         <div style="max-width: 760px; margin: 0 auto; padding-bottom: 40px; animation: cdispFadeIn 0.3s ease;">
           <div style="display:flex; align-items:center; justify-content:space-between; margin-bottom: 24px;">
             <h2 style="margin:0; color:#0f172a; font-size:24px; font-weight:800;">系統設定</h2>
-            <button class="pos-btn-secondary btn-refresh-spin" type="button" id="btnRefreshSettings" title="重新整理頁面以套用變更" style="padding: 10px; border-radius: 8px; display: flex; align-items: center; justify-content: center; background: #f8fafc; border: 1px solid #e2e8f0; color: #64748b; cursor: pointer; transition: all 0.2s;">
+            <div style="display: flex; gap: 12px; align-items: center;">
+            <button class="pos-btn-secondary btn-refresh-spin" type="button" id="btnRefreshSettings" title="請先儲存設定" disabled style="padding: 10px; border-radius: 8px; display: flex; align-items: center; justify-content: center; background: #f1f5f9; border: 1px solid #e2e8f0; color: #94a3b8; cursor: not-allowed; opacity: 0.6; transition: all 0.2s;">
               <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="transition: transform 0.4s cubic-bezier(0.4, 0, 0.2, 1);"><path d="M3 12a9 9 0 1 0 9-9 9.75 9.75 0 0 0-6.74 2.74L3 8"></path><path d="M3 3v5h5"></path></svg>
             </button>
             <button class="pos-btn-charge" type="button" id="btnSaveSettings" style="width:auto; padding: 10px 24px; font-size: 14px; margin: 0; box-shadow: 0 4px 12px rgba(59, 130, 246, 0.25); transition: all 0.2s;">
               💾 儲存所有設定
             </button>
+            </div>
           </div>
 
           <!-- 區塊 1：基本資訊 -->
@@ -565,13 +848,17 @@
           await window.posApi.upsertSetting('force_order_pinned', document.getElementById('setForceOrderPinned').value);
           
           window.ui.toast('設定已成功儲存！', 'success');
-          
-          // 如果設定更改，提示使用者重新整理
-          setTimeout(() => {
-            if(confirm('部份介面設定需要重新載入頁面才能生效，是否立即重新整理？')) {
-              window.location.reload();
+
+          const btnRefresh = document.getElementById('btnRefreshSettings');
+          if (btnRefresh) {
+              btnRefresh.disabled = false;                // 解除停用狀態
+              btnRefresh.style.cursor = 'pointer';        // 游標變回正常可點擊狀態
+              btnRefresh.style.opacity = '1';             // 恢復正常透明度
+              btnRefresh.style.background = '#16a34a';    // 變成綠色背景
+              btnRefresh.style.color = '#ffffff';         // 圖示變成白色
+              btnRefresh.style.borderColor = '#15803d';   // 邊框變成深綠色
+              btnRefresh.title = '重新整理顯示 (Refresh Display)';
             }
-          }, 400);
 
         } catch (err) {
           window.ui.toast(`儲存失敗: ${err.message}`, 'error');
@@ -581,6 +868,13 @@
           btnSave.style.opacity = '1';
         }
       };
+
+      const btnRefresh = document.getElementById('btnRefreshSettings');
+      if (btnRefresh) {
+        btnRefresh.onclick = () => {
+          window.location.reload();
+        };
+      }
 
     } catch (e) {
       el.innerHTML = `<div style="padding: 40px; text-align: center; color: #ef4444; font-weight:bold;">讀取設定失敗: ${e.message}</div>`;

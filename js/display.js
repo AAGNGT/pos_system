@@ -169,6 +169,9 @@
     }
   }
 
+  // -------------------------------------------------------------------------
+
+  // --------------------------------------------------------
 
   function render(state) {
     if (!state) return;
@@ -281,7 +284,7 @@
           el.textContent = el.textContent || '連線中...';
         }
         if (status === 'CHANNEL_ERROR') {
-          showError('Realtime 連線失敗，請檢查 Supabase 設定');
+          // showError('Realtime 連線失敗，請檢查 Supabase 設定');
         }
       });
   }

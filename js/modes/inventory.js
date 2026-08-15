@@ -1,18 +1,15 @@
 (function () {
   let selectedProduct = null;
-
   function bind(ctx) {
     const btn = document.getElementById('btnInvConfirm');
     if (!btn) return;
     btn.onclick = () => confirm(ctx);
   }
-
   function selectProduct(product) {
     selectedProduct = product;
     const el = document.getElementById('invSelectedName');
-    if (el) el.textContent = product ? `${product.name} (${product.code}) — 庫存 ${product.stock_count}` : '請點選商品';
+    if (el) el.textContent = product ? `${product.name} (${product.code}) - 庫存: ${product.stock_count}` : '請選擇商品';
   }
-
   async function confirm(ctx) {
     if (!selectedProduct) {
       window.ui.toast('請先選擇商品', 'error');
@@ -22,7 +19,7 @@
     const reason = document.getElementById('fieldInvReason')?.value?.trim() || '';
     const mode = ctx.getMode();
     if (qty <= 0) {
-      window.ui.toast('請輸入有效數量', 'error');
+      window.ui.toast('數量必須大於 0', 'error');
       return;
     }
     let delta = 0;
@@ -30,7 +27,6 @@
     else if (mode === 'return') delta = qty;
     else if (mode === 'damage') delta = -qty;
     else return;
-
     const staff = ctx.getStaff();
     window.ui.setLoading(true);
     try {
@@ -39,7 +35,6 @@
       const order = await window.posApi.createOrder({
         mode,
         payment_method: 'N/A',
-        payment_status: '已支付',
         subtotal: 0,
         discount_amount: 0,
         total: 0,
@@ -58,10 +53,10 @@
         order_id: order.id,
         staff_id: staff?.id,
       });
-      window.ui.toast(`${mode} 完成`, 'success');
+      window.ui.toast(`${mode} 操作成功`, 'success');
       document.getElementById('fieldInvQty').value = '1';
       selectedProduct = null;
-      document.getElementById('invSelectedName').textContent = '請點選商品';
+      document.getElementById('invSelectedName').textContent = '請選擇商品';
       await ctx.reloadProducts();
     } catch (e) {
       window.ui.toast(e.message, 'error');
@@ -69,7 +64,6 @@
       window.ui.setLoading(false);
     }
   }
-
   window.posModes = window.posModes || {};
   window.posModes.inventory = { bind, selectProduct, confirm };
 })();

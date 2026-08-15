@@ -75,6 +75,8 @@
       clearTimeout(thankYouTimer);
       thankYouTimer = null;
     }
+
+    thankYouActive = false;
     const items = window.posCart?.getItems?.() || [];
     if (!items.length) {
       await syncIdle();

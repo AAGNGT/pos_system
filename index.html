@@ -18,6 +18,9 @@
   <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
   
+  <!-- 在 <head> 中加入 Chart.js -->
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+
   <!-- 系統設定 -->
   <script src="config.js"></script>
 
@@ -240,7 +243,6 @@
         </div>
         
         <button type="button" class="pos-btn-note" id="btnToggleNote">新增備註</button>
-        
         <div class="pos-order__summary pos-order__summary--compact">
           <div><span>小計</span><span id="sumSubtotal">$0.00</span></div>
           <div><span>折扣</span><span id="sumDiscount">-$0.00</span></div>
@@ -320,6 +322,7 @@
         <input type="text" inputmode="decimal" id="discountInput" placeholder="0" autocomplete="off" aria-label="折扣金額">
         <span class="pos-discount-input-suffix">$</span>
       </label>
+      <p id="discountErrorMsg" class="hidden" style="color: #dc2626; font-size: 13px; margin-bottom: 12px; font-weight: 600; text-align: center;"></p>
       <div class="pos-discount-modal__actions">
         <button type="button" class="pos-modal__btn-secondary" id="btnDiscountCancel">取消</button>
         <button type="button" class="pos-btn-discount-clear" id="btnDiscountClear">清除</button>
