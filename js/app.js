@@ -9,6 +9,7 @@
   
   const ORDER_PIN_KEY = 'pos_order_pinned';
   let isOrderPinned = localStorage.getItem(ORDER_PIN_KEY) !== '0'; 
+  let currentProductClickAction = 'focus';
   let currentForceOrderPinned = ''; // 💡 保存從伺服器抓到的強制狀態
 
 
@@ -178,18 +179,26 @@
         </div>
       </article>`).join('');
     
-    grid.querySelectorAll('.pos-product-card').forEach((card) => {
-      card.addEventListener('click', () => {
+      grid.querySelectorAll('.pos-product-card').forEach((card) => {
+      // 加入了 (e) 作為事件參數
+      card.addEventListener('click', (e) => {
         const id = Number(card.dataset.id);
         const product = products.find((x) => x.id === id);
         if (!product) return;
+        
         if (mode === 'sale') {
-          window.posCart.add(product, 1);
+          // 加入 currentProductClickAction 判斷
+          if (currentProductClickAction === 'focus' && typeof focusProductCard === 'function') {
+            focusProductCard(card, product); // 新版：彈出詳情動畫
+          } else {
+            window.posCart.add(product, 1);  // 原版：直接加入購物車 1 件
+          }
         } else if (invModes.includes(mode)) {
           window.posModes.inventory.selectProduct(product);
         }
       });
     });
+
   }
 
   function renderCategoryPills() {
@@ -257,6 +266,133 @@
       chargeBtn.textContent = `結帳 $${total.toFixed(2)}`;
       chargeBtn.disabled = mode !== 'sale' || !items.length;
     }
+  }
+
+  function focusProductCard(originalCard, product) {
+    let overlay = document.getElementById('posFocusOverlay');
+    if (!overlay) {
+      overlay = document.createElement('div');
+      overlay.id = 'posFocusOverlay';
+      overlay.className = 'pos-focus-overlay';
+      document.body.appendChild(overlay);
+    }
+    
+    // 取得原始卡片尺寸 (通常為正方形)
+    const rect = originalCard.getBoundingClientRect();
+    const clone = document.createElement('div');
+    clone.className = 'pos-product-clone';
+    
+    // 初始狀態：完全覆蓋原卡片
+    clone.style.top = `${rect.top}px`;
+    clone.style.left = `${rect.left}px`;
+    clone.style.width = `${rect.width}px`;
+    clone.style.height = `${rect.height}px`;
+    
+    // 建立分離式結構
+    clone.innerHTML = `
+      <!-- 組件 1：圖片與內部文字 -->
+      <div class="pos-clone-hero" id="cloneHero" style="height: ${rect.width}px;">
+        <img src="${product.image_url || placeholderImg(product.name)}">
+        <div class="pos-hero-overlay" id="cloneHeroOverlay">
+          <h3 class="pos-clone-title">${product.name}</h3>
+          <p class="pos-clone-price">$${Number(product.price).toFixed(2)}</p>
+        </div>
+      </div>
+      
+      <!-- 組件 2：操作區與分隔線 -->
+      <div class="pos-clone-controls" id="cloneControls">
+        <div class="pos-pill-ctrl">
+          <button id="btnFocusMinus">-</button>
+          <span id="focusQtyDisplay">1</span>
+          <button id="btnFocusPlus">+</button>
+        </div>
+        <button class="pos-btn-charge" id="btnConfirmAdd" style="border-radius: 999px; padding: 14px; font-size: 16px;">
+          加入購物車
+        </button>
+      </div>
+    `;
+    
+    document.body.appendChild(clone);
+    originalCard.style.opacity = '0'; // 隱藏原卡片
+    
+    // 觸發進入動畫
+    requestAnimationFrame(() => {
+      requestAnimationFrame(() => {
+        overlay.classList.add('active');
+        
+        // 設定目標尺寸
+        const targetWidth = 360;
+        const heroHeight = 340;   // 上半部圖片高度
+        const controlsHeight = 160; // 下半部操作區高度
+        const targetHeight = heroHeight + controlsHeight; 
+        
+        const centerX = (window.innerWidth - targetWidth) / 2;
+        const centerY = (window.innerHeight - targetHeight) / 2;
+        
+        // 放大主體
+        clone.style.top = `${centerY}px`;
+        clone.style.left = `${centerX}px`;
+        clone.style.width = `${targetWidth}px`;
+        clone.style.height = `${targetHeight}px`;
+        
+        // 將圖片容器拉長
+        clone.querySelector('#cloneHero').style.height = `${heroHeight}px`;
+        
+        clone.classList.add('is-focused');
+      });
+    });
+    
+    // 關閉與返回動畫
+    const closeFocus = () => {
+      overlay.classList.remove('active');
+      clone.classList.remove('is-focused');
+      
+      // 關鍵細節：先將內部文字與底部操作區淡出，防止縮細時內容擠壓變形
+      clone.querySelector('#cloneHeroOverlay').style.opacity = '0';
+      clone.querySelector('#cloneControls').style.opacity = '0';
+      
+      // 復原至原卡片的精確座標與大小
+      clone.style.top = `${rect.top}px`;
+      clone.style.left = `${rect.left}px`;
+      clone.style.width = `${rect.width}px`;
+      clone.style.height = `${rect.height}px`;
+      
+      // 將圖片容器高度縮回原本的正方形，達到完美無縫吻合
+      clone.querySelector('#cloneHero').style.height = `${rect.width}px`;
+      
+      // 動畫結束後銷毀
+      setTimeout(() => {
+        clone.remove();
+        originalCard.style.opacity = '1'; // 顯示原卡片
+      }, 400);
+    };
+
+    overlay.onclick = closeFocus;
+    clone.onclick = (e) => e.stopPropagation();
+    
+    // 數量控制器邏輯
+    let currentQty = 1;
+    const qtyDisplay = clone.querySelector('#focusQtyDisplay');
+    
+    clone.querySelector('#btnFocusMinus').onclick = (e) => {
+      e.stopPropagation();
+      if (currentQty > 1) {
+        currentQty--;
+        qtyDisplay.textContent = currentQty;
+      }
+    };
+
+    clone.querySelector('#btnFocusPlus').onclick = (e) => {
+      e.stopPropagation();
+      currentQty++;
+      qtyDisplay.textContent = currentQty;
+    };
+    
+    clone.querySelector('#btnConfirmAdd').onclick = (e) => {
+      e.stopPropagation();
+      window.posCart.add(product, currentQty); 
+      closeFocus();
+    };
   }
 
   // 💡 2. 判斷並控制右側購物車面板顯示與否的共用函數
@@ -492,6 +628,8 @@
     const forceDark = settings.force_dark_mode;
     
     currentForceOrderPinned = settings.force_order_pinned || '';
+    currentProductClickAction = settings.product_click_action || 'focus';
+
     if (currentForceOrderPinned === 'true') {
       isOrderPinned = true;
     } else if (currentForceOrderPinned === 'false') {
@@ -568,7 +706,7 @@
     const forceDark = settings.force_dark_mode;
 
     currentForceOrderPinned = settings.force_order_pinned || '';
-
+    currentProductClickAction = settings.product_click_action || 'focus';
 
     if (settings.maintenance_mode === 'true' && row.role !== 'ADMIN') {
       window.ui.toast('系統維護中 (僅限 ADMIN 登入)', 'error');

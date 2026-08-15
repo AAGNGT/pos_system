@@ -154,12 +154,21 @@
       }
     }
   }
+  async function processCheckout(order, items) {
+    const client = db();
+    const { data, error } = await client.rpc('process_checkout', {
+      p_order_data: order,
+      p_order_items: items
+    });
+    if (error) throw error;
+    return data;
+  }
 
   window.posApi = {
     fetchCategories, fetchProducts, fetchStaff, verifyStaff,
     updateProductStock, addMovement, createOrder, applyStockDeltas,
     fetchOrders, fetchSettings, upsertSetting, fetchTodayStats,
     fetchLowStock, createEodReport, fetchTodayOrdersForEod,
-    voidOrder // 導出作廢 API
+    voidOrder, processCheckout // 導出作廢 API // <-- 新增這裡
   };
 })();

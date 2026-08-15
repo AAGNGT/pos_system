@@ -804,6 +804,17 @@
                 </select>
               </div>
 
+              <div style="display:flex; justify-content:space-between; align-items:center; padding:16px 20px; border-bottom:1px solid #f1f5f9;">
+                <div>
+                  <span style="font-weight:600; color:#1e293b; font-size:15px; display:block; margin-bottom:2px;">商品點擊行為</span>
+                  <span style="font-size:12px; color:#94a3b8;">選擇收銀時點擊商品的預設操作</span>
+                </div>
+                <select id="setProductClickAction" style="width:260px; padding:10px 14px; border:1px solid #cbd5e1; border-radius:8px; background:#f8fafc; font-size:14px; outline:none; cursor:pointer;">
+                  <option value="focus" ${s.product_click_action !== 'instant' ? 'selected' : ''}>彈出詳情及數量選擇 (新版)</option>
+                  <option value="instant" ${s.product_click_action === 'instant' ? 'selected' : ''}>直接加入購物車 (原版)</option>
+                </select>
+              </div>
+
             </div>
           </div>
 
@@ -841,6 +852,7 @@
           await window.posApi.upsertSetting('default_payment', document.getElementById('setPayment').value);
           await window.posApi.upsertSetting('force_dark_mode', document.getElementById('setForceDark').value);
           await window.posApi.upsertSetting('maintenance_mode', document.getElementById('setMaintenance').value);
+          await window.posApi.upsertSetting('product_click_action', document.getElementById('setProductClickAction').value);
                     // 儲存顯示風格
           await window.posApi.upsertSetting('display_theme', document.getElementById('setDisplayTheme').value);
 

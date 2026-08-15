@@ -46,13 +46,23 @@
         unit_price: Number(selectedProduct.price),
         line_total: Number(selectedProduct.price) * qty,
       }]);
+      // 定義長度不一的中文預設原因
+      const defaultReasons = {
+        restock: '補貨',          // 2 字
+        return: '退換貨',         // 3 字
+        damage: '貨品損壞報銷'    // 6 字
+      };
+      // 如果店員有手動輸入原因就用手動的，否則用中文預設名
+      const finalReason = reason || defaultReasons[mode] || mode;
+
       await window.posApi.addMovement({
         product_id: selectedProduct.id,
         delta,
-        reason: reason || mode,
+        reason: finalReason,
         order_id: order.id,
         staff_id: staff?.id,
       });
+
       window.ui.toast(`${mode} 操作成功`, 'success');
       document.getElementById('fieldInvQty').value = '1';
       selectedProduct = null;
