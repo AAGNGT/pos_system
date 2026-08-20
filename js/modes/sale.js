@@ -85,6 +85,23 @@
     appCtx = ctx || appCtx;
     if (window.__posCheckoutBound) return;
     window.__posCheckoutBound = true;
+
+    document.addEventListener('keydown', (e) => {
+    const modal = getModal();
+    if (!modal || !modal.classList.contains('active')) return; // 確保結帳視窗開啟中
+
+    if (e.key >= '0' && e.key <= '9') {
+      handleKey(e.key); // 處理數字鍵
+    } else if (e.key === 'Backspace' || e.key === 'Delete') {
+      handleKey('back'); // 處理刪除鍵
+    } else if (e.key === 'Enter') {
+      e.preventDefault();
+      const confirmBtn = document.getElementById('btnCheckoutConfirm');
+      if (confirmBtn && !confirmBtn.disabled) {
+        confirmCheckout(appCtx); // 處理確定鍵
+      }
+    }
+    });
     document.getElementById('btnExactAmount')?.addEventListener('click', setExactAmount);
     document.getElementById('btnCheckoutCancel')?.addEventListener('click', closeCheckoutModal);
     document.getElementById('btnCheckoutConfirm')?.addEventListener('click', () => confirmCheckout(appCtx));

@@ -114,6 +114,10 @@
     try {
       const client = window.posDb.getClient();
       
+      const settings = await window.posApi.fetchSettings();
+      const allowStaffVoid = settings.allow_staff_void === 'true';
+
+
       let query = client.from('pos_orders')
         .select('*, pos_order_items(*, pos_products(id, code, name, image_url, stock_count, price))')
         .order('created_at', { ascending: false });
@@ -151,6 +155,7 @@
                    const isSale = o.mode === 'sale';
           const isVoided = o.status === 'voided';
           const isAdmin = window.posApp?.getStaff?.()?.role === 'ADMIN';
+          const canVoid = isAdmin || allowStaffVoid;
           const modeStr = modeZh[o.mode] || o.mode;
           
           const rowOpacity = isVoided ? 'opacity: 0.5;' : '';
@@ -181,7 +186,7 @@
           }
 
           let voidBtnHtml = '';
-          if (isSale && isAdmin && !isVoided) {
+          if (isSale && canVoid && !isVoided) {
              voidBtnHtml = `<button class="pos-btn-secondary btn-void-order" style="padding: 6px 12px; font-size: 13px; border-radius: 6px; cursor: pointer; color: #dc2626; border-color: #fecaca; background: #fff;" data-id="${o.id}">作廢</button>`;
           }
 
@@ -834,6 +839,19 @@
                 </select>
               </div>
 
+              <!-- 新增：允許員工將訂單作廢設定 -->
+              <div style="display:flex; justify-content:space-between; align-items:center; padding:16px 20px;">
+                <div>
+                  <span style="font-weight:600; color:#b91c1c; font-size:15px; display:block; margin-bottom:2px;">員工退單權限</span>
+                  <span style="font-size:12px; color:#ef4444;">允許員工在交易記錄顯示「作廢」功能</span>
+                </div>
+                <select id="setAllowStaffVoid" style="width:260px; padding:10px 14px; border:1px solid #fca5a5; border-radius:8px; background:#fef2f2; color:#b91c1c; font-weight:bold; font-size:14px; outline:none; cursor:pointer;">
+                  <option value="false" ${s.allow_staff_void !== 'true' ? 'selected' : ''}>停用 (僅限 ADMIN)</option>
+                  <option value="true" ${s.allow_staff_void === 'true' ? 'selected' : ''}>啟用 (STAFF 可開啟作廢)</option>
+                </select>
+              </div>
+
+
             </div>
           </div>
         </div>
@@ -858,6 +876,7 @@
 
           // 💡 寫入全新的購物車釘選狀態設定
           await window.posApi.upsertSetting('force_order_pinned', document.getElementById('setForceOrderPinned').value);
+          await window.posApi.upsertSetting('allow_staff_void', document.getElementById('setAllowStaffVoid').value);
           
           window.ui.toast('設定已成功儲存！', 'success');
 

@@ -721,6 +721,12 @@
   window.addEventListener('DOMContentLoaded', () => {
     document.getElementById('btnLogin')?.addEventListener('click', doLogin);
     init();
+    document.getElementById('loginPin')?.addEventListener('keydown', (e) => {
+      if (e.key === 'Enter') {
+      e.preventDefault();
+      doLogin();
+      }
+    });
   });
 
   window.posApp = {
