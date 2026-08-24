@@ -291,16 +291,23 @@
     }
 
     async function getMyOrders() {
-        const client = getClient();
+    const client = this.getClient();
         if (!client) return [];
 
+        const session = await this.getSession();
+        if (!session || !session.user) return [];
+
+        const userId = session.user.id;
+
+        // 必須加上 .eq('user_id', userId)，確保只抓取該會員的訂單
         const { data, error } = await client
             .from('wanwu_orders')
             .select('*')
+            .eq('user_id', userId)
             .order('created_at', { ascending: false });
 
         if (error) {
-            console.warn('[卍物所] 訂單讀取失敗', error);
+            console.error('獲取會員訂單失敗:', error);
             return [];
         }
         return data || [];

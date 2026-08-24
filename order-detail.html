@@ -37,7 +37,6 @@
             var authContainer = document.getElementById('headerAuth');
             if (authContainer) {
                 if (cachedName) {
-                    // 防止 XSS 攻擊的字元過濾
                     var safeName = cachedName.replace(/</g, "&lt;").replace(/>/g, "&gt;");
                     authContainer.innerHTML = '<a href="account.html" class="header-auth-link">' + safeName + '</a>';
                 } else {
@@ -48,99 +47,146 @@
     </script>
     
     <main class="order-detail-page">
-        <div class="section-inner" style="max-width: 960px;">
-            <a href="account.html" class="back-link">← 返回我的帳單</a>
-            
-            <div class="order-detail-header">
-                <div>
-                    <h1 class="order-detail-title"><span class="icon-monitor">💻</span> 網上商店訂單 <span id="displayOrderId">#加載中...</span></h1>
-                    <p class="order-detail-date" id="displayOrderDate">訂單日期：加載中...</p>
-                </div>
+        <!-- 🔒 未驗證時顯示的精美 Loading / 鎖定解鎖畫面 -->
+        <div id="orderLockScreen" style="display: flex; flex-direction: column; align-items: center; justify-content: center; min-height: 60vh; text-align: center; padding: 40px 20px;">
+            <div style="font-size: 3.5rem; margin-bottom: 16px; animation: pulse 2s infinite;">🔐</div>
+            <h2 style="font-family: 'Noto Serif TC', serif; font-size: 1.5rem; margin-bottom: 8px; color: var(--text);">正在保護您的訂單私隱</h2>
+            <p style="color: var(--text-secondary); font-size: 0.95rem; margin-bottom: 24px;">請完成電話號碼驗證，以安全加載此訂單的所有詳細資料。</p>
+            <div style="width: 100%; max-width: 360px; background: var(--bg-card, #fff); border: 1.5px solid var(--border); border-radius: 16px; padding: 24px; box-shadow: 0 10px 30px rgba(0,0,0,0.05); text-align: left;">
+                <label style="display: block; font-size: 0.85rem; font-weight: 600; margin-bottom: 8px; color: var(--text);">輸入預訂電話號碼</label>
+                <input type="tel" id="initialPhoneInput" placeholder="例如：91234567" style="width: 100%; padding: 12px 16px; border: 1px solid var(--border); border-radius: 10px; font-size: 1rem; box-sizing: border-box; outline: none; margin-bottom: 12px;">
+                <div id="initialErrorMsg" style="color: #991b1b; font-size: 0.82rem; margin-bottom: 16px; display: none;"></div>
+                <button type="button" id="btnInitialVerify" style="width: 100%; padding: 12px; border-radius: 10px; border: none; background: #991b1b; color: #fff; font-weight: 600; cursor: pointer; font-size: 0.95rem;">確認並加載訂單</button>
+            </div>
+            <a href="index.html" style="margin-top: 20px; font-size: 0.85rem; color: var(--text-secondary); text-decoration: underline;">返回首頁</a>
+        </div>
+
+        <!-- 📦 真正的主內容組件 (未驗證前預設隱藏 display: none) -->
+        <div id="orderRealContent" style="display: none;">
+            <div class="section-inner" style="max-width: 960px;">
+                <a href="account.html" class="back-link">← 返回我的帳單</a>
                 
-            <div class="order-header-actions">
-                <a href="contact.html" class="btn-action-outline">💬 聯絡我們</a>
-                <button type="button" class="btn-action-solid" id="btnPrintReceipt">🖨️ 列印即場售賣訂單</button>
-                <a href="https://www.instagram.com/infinitymarket_hkrss/" target="_blank" rel="noopener noreferrer" class="btn-action-solid">📸 追蹤卍物所 IG</a>
-                
-            </div>
-
-
-            </div>
-
-            <div class="order-progress-container">
-                <div class="order-progress" id="orderProgress">
-                    <div class="progress-step step-1" data-step="1">
-                        <div class="progress-dot"></div>
-                        <span class="progress-label">已收到</span>
+                <div class="order-detail-header">
+                    <div>
+                        <h1 class="order-detail-title"><span class="icon-monitor">💻</span> 網上商店訂單 <span id="displayOrderId">#加載中...</span></h1>
+                        <p class="order-detail-date" id="displayOrderDate">訂單日期：加載中...</p>
                     </div>
-                    <div class="progress-step step-2" data-step="2">
-                        <div class="progress-dot"></div>
-                        <span class="progress-label">處理中</span>
-                    </div>
-                    <div class="progress-step step-3" data-step="3">
-                        <div class="progress-dot"></div>
-                        <span class="progress-label">已完成備貨</span>
-                    </div>
-                    <div class="progress-step step-4" data-step="4">
-                        <div class="progress-dot"></div>
-                        <span class="progress-label">已完成交易</span>
+                    
+                    <div class="order-header-actions">
+                        <a href="contact.html" class="btn-action-outline">💬 聯絡我們</a>
+                        <button type="button" class="btn-action-solid" id="btnPrintReceipt">🖨️ 列印即場售賣訂單</button>
+                        <a href="https://www.instagram.com/infinitymarket_hkrss/" target="_blank" rel="noopener noreferrer" class="btn-action-solid">📸 追蹤卍物所 IG</a>
                     </div>
                 </div>
-                <div class="progress-hint">
-                    <p>如你有任何問題，請聯絡我們。<br>有關產品檢查和維修的詳細資訊，請瀏覽 "產品退換及維修"</p>
-                </div>
-            </div>
 
-            <div class="order-details-grid">
-                <div class="order-info-column">
-                    <h3>訂單詳情</h3>
-                    <dl class="info-list">
-                        <dt>付款方法</dt>
-                        <dd id="displayPaymentMethod">到付（即場現金）</dd>
-                        
-                        <dt>收貨方式</dt>
-                        <dd>到店取貨</dd>
-                        
-                        <dt>預計取貨日期</dt>
-                        <dd id="displayPickupDate">加載中...</dd>
-                        
-                        <dt>收貨資訊</dt>
-                        <dd id="displayCustomerInfo">加載中...</dd>
-                        
-                        <dt>取貨地址</dt>
-                        <dd>香港維多利亞公園市集<br>卍物所專屬攤位</dd>
-                    </dl>
-                </div>
-                
-                <div class="order-summary-column">
-                    <h3>訂單總覽</h3>
-                    <div class="summary-row">
-                        <span>訂單總額</span>
-                        <span id="displaySubtotal">HK$0</span>
-                    </div>
-                    <div class="summary-row">
-                        <span><span class="icon">📦</span> 運費</span>
-                        <span>免費</span>
-                    </div>
-                    <div class="summary-row summary-total">
-                        <span>付款金額</span>
-                        <span class="total-price" id="displayTotal">HK$0</span>
+                <!-- 客戶與預訂資料專屬裝飾框 -->
+                <div class="customer-highlight-card" style="background: var(--bg-elevated, #fdfbf7); border: 1.5px solid var(--border, #e5e5ea); border-radius: 16px; padding: 24px; margin-bottom: 24px; box-shadow: 0 4px 12px rgba(0,0,0,0.03);">
+                    <h3 style="font-family: 'Noto Serif TC', serif; font-size: 1.1rem; margin-bottom: 16px; color: var(--text); border-bottom: 1px solid var(--border, #e5e5ea); padding-bottom: 8px; display: flex; align-items: center; gap: 8px;">
+                        <span>📋</span> 預訂與聯絡資料
+                    </h3>
+                    <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 16px;">
+                        <div>
+                            <span style="display: block; font-size: 0.8rem; color: var(--text-secondary, #666); margin-bottom: 4px;">1. 客戶名稱</span>
+                            <strong id="displayName" style="font-size: 1rem; color: var(--text);">加載中...</strong>
+                        </div>
+                        <div>
+                            <span style="display: block; font-size: 0.8rem; color: var(--text-secondary, #666); margin-bottom: 4px;">2. 電話號碼</span>
+                            <strong id="displayPhone" style="font-size: 1rem; color: var(--text);">加載中...</strong>
+                        </div>
+                        <div>
+                            <span style="display: block; font-size: 0.8rem; color: var(--text-secondary, #666); margin-bottom: 4px;">3. 預計取貨日期</span>
+                            <strong id="displayPickupDate" style="font-size: 1rem; color: var(--accent, #991b1b);">加載中...</strong>
+                        </div>
                     </div>
                 </div>
-            </div>
 
-            <div class="order-product-section">
-                <div class="product-section-header">
-                    <h3>產品列表</h3>
-                    <button class="btn-action-outline btn-sm">🛍️ 產品退換及維修</button>
+                <div class="order-progress-container">
+                    <div class="order-progress" id="orderProgress">
+                        <div class="progress-step step-1" data-step="1">
+                            <div class="progress-dot"></div>
+                            <span class="progress-label">已收到</span>
+                        </div>
+                        <div class="progress-step step-2" data-step="2">
+                            <div class="progress-dot"></div>
+                            <span class="progress-label">處理中</span>
+                        </div>
+                        <div class="progress-step step-3" data-step="3">
+                            <div class="progress-dot"></div>
+                            <span class="progress-label">已完成備貨</span>
+                        </div>
+                        <div class="progress-step step-4" data-step="4">
+                            <div class="progress-dot"></div>
+                            <span class="progress-label">已完成交易</span>
+                        </div>
+                    </div>
+                    <div class="progress-hint">
+                        <p>如你有任何問題，請聯絡我們。<br>有關產品檢查和維修的詳細資訊，請瀏覽 "產品退換及維修"</p>
+                    </div>
                 </div>
-                <div class="product-list-container" id="orderProductList">
-                    <p class="loading-placeholder">載入產品中...</p>
+
+                <div class="order-details-grid">
+                    <div class="order-info-column">
+                        <h3>交易與取貨詳情</h3>
+                        <dl class="info-list">
+                            <dt>付款方法</dt>
+                            <dd id="displayPaymentMethod">到付（即場現金）</dd>
+                            <dt>收貨方式</dt>
+                            <dd>到店取貨</dd>
+                            <dt>取貨地址</dt>
+                            <dd>維多利亞公園市集<br><strong>卍物所 第10號攤位</strong></dd>
+                        </dl>
+                    </div>
+                    
+                    <div class="order-summary-column">
+                        <h3>訂單總覽</h3>
+                        <div class="summary-row">
+                            <span>訂單總額</span>
+                            <span id="displaySubtotal">HK$0</span>
+                        </div>
+                        <div class="summary-row">
+                            <span><span class="icon">📦</span> 運費</span>
+                            <span>免費</span>
+                        </div>
+                        <div class="summary-row summary-total">
+                            <span>付款金額</span>
+                            <span class="total-price" id="displayTotal">HK$0</span>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="order-product-section">
+                    <div class="product-section-header">
+                        <h3>產品列表</h3>
+                        <button class="btn-action-outline btn-sm">🛍️ 產品退換及維修</button>
+                    </div>
+                    <div class="product-list-container" id="orderProductList">
+                        <p class="loading-placeholder">載入產品中...</p>
+                    </div>
                 </div>
             </div>
         </div>
     </main>
+
     
+<!-- 🔒 訪客手機號碼驗證彈窗 (絕對強制顯示，不受 CSS 衝突影響) -->
+    <div id="orderVerifyModal" style="display: none; position: fixed !important; top: 0 !important; left: 0 !important; width: 100vw !important; height: 100vh !important; background: rgba(0, 0, 0, 0.6) !important; z-index: 2147483647 !important; align-items: center !important; justify-content: center !important; padding: 16px !important; box-sizing: border-box !important;">
+        <div style="background: #ffffff !important; width: 100% !important; max-width: 400px !important; border-radius: 20px !important; padding: 32px 24px !important; box-shadow: 0 25px 50px rgba(0,0,0,0.25) !important; text-align: center !important; box-sizing: border-box !important; margin: auto !important;">
+            <div style="font-size: 2.5rem; margin-bottom: 12px; line-height: 1;">🔒</div>
+            <h3 style="font-family: 'Noto Serif TC', serif; font-size: 1.25rem; margin-bottom: 8px; color: #111111 !important;">訪客訂單安全驗證</h3>
+            <p style="font-size: 0.9rem; color: #666666 !important; margin-bottom: 20px; line-height: 1.5;">為保障私隱，請輸入您預訂時填寫的<br><strong style="color: #111111 !important;">電話號碼</strong>以解鎖訂單：</p>
+            
+            <div style="margin-bottom: 20px; text-align: left;">
+                <input type="tel" id="verifyPhoneInput" placeholder="請輸入電話號碼" style="width: 100% !important; padding: 12px 16px !important; border: 1px solid #ccc !important; border-radius: 10px !important; font-size: 1rem !important; box-sizing: border-box !important; outline: none !important;">
+                <div id="verifyErrorMsg" style="color: #991b1b !important; font-size: 0.82rem !important; margin-top: 6px !important; display: none;"></div>
+            </div>
+
+            <div style="display: flex !important; gap: 12px !important;">
+                <button type="button" id="btnCancelVerify" style="flex: 1 !important; padding: 12px !important; border-radius: 10px !important; cursor: pointer !important; background: #f3f4f6 !important; border: 1px solid #d1d5db !important; color: #374151 !important; font-weight: 600 !important;">返回首頁</button>
+                <button type="button" id="btnSubmitVerify" style="flex: 1 !important; padding: 12px !important; border-radius: 10px !important; border: none !important; cursor: pointer !important; background: #991b1b !important; color: #ffffff !important; font-weight: 600 !important;">確認解鎖</button>
+            </div>
+        </div>
+    </div>
+
     <div class="modal-overlay" id="customAlertModal" role="dialog" aria-modal="true">
         <div class="modal-sheet alert-sheet" style="max-width: 400px; text-align: center; padding: 40px 32px;">
             <div style="font-size: 3rem; margin-bottom: 20px; line-height: 1;">⚠️</div>

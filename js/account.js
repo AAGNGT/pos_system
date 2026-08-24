@@ -1,5 +1,6 @@
 /**
- * 卍物所 — 我的帳戶頁（個人資料 + 會員快速訂單 + 登入驗證狀態與密碼修改 + 管理員橫幅）
+ * 卍物所 — 我的帳戶頁（完美整合版）
+ * 包含：個人資料 + 密碼修改 + 模糊鎖定預訂 + 新版訂單查詢 (已加入會員/訪客分類與管理員檢視支援)
  */
 (function () {
     'use strict';
@@ -49,38 +50,6 @@
         el.className = 'form-feedback show ' + type;
     }
 
-    function renderMarketDatePicker(containerId, name) {
-        const container = document.getElementById(containerId);
-        if (!container || !window.WanwuAuth) return;
-
-        const dates = WanwuAuth.MARKET_DATES || [];
-        container.innerHTML = dates.map(function (d) {
-            const id = containerId + '-' + d.value;
-            return `
-                <div class="date-option">
-                    <input type="radio" name="${name}" id="${id}" value="${d.value}" required>
-                    <label for="${id}">
-                        <strong>${escapeHtml(d.label)}</strong>
-                        ${escapeHtml(d.day)}
-                    </label>
-                </div>`;
-        }).join('');
-    }
-
-    function buildProductOptions(products, selectedId) {
-        if (!products.length) {
-            return '<option value="">暫無產品</option>';
-        }
-        return '<option value="">請選擇產品 *</option>' + products.map(function (p) {
-            const sel = String(p.id) === String(selectedId) ? ' selected' : '';
-            return `<option value="${p.id}" data-price="${p.price}" data-name="${escapeAttr(p.name)}"${sel}>${escapeHtml(p.name)} — ${formatPrice(p.price)}</option>`;
-        }).join('');
-    }
-
-    function escapeAttr(s) {
-        return escapeHtml(s).replace(/'/g, '&#39;');
-    }
-
     async function renderAccount() {
         const container = document.getElementById('accountContent');
         if (!container || !window.WanwuAuth) return;
@@ -97,14 +66,13 @@
 
         const displayName = (profile && profile.display_name) || WanwuAuth.displayLabel(user);
         const phone = (profile && profile.phone) || '';
-        const products = await WanwuAuth.fetchOrderProducts();
 
         // 讀取當前用戶的所有登入身份類型
         const identities = user.identities || [];
         const hasEmail = identities.some(id => id.provider === 'email');
         const hasGoogle = identities.some(id => id.provider === 'google');
 
-        // ✨ 判斷並生成對應的橫幅 HTML
+        // 生成管理員/會員橫幅
         let bannerHtml = '';
         if (user.email === 'admin@market.local') {
             bannerHtml = `
@@ -124,15 +92,15 @@
             bannerHtml = `
             <div class="account-member-banner">
                 <p>已登入為 <strong>${escapeHtml(displayName)}</strong>（${escapeHtml(user.email)}）</p>
-                <p class="account-member-hint">快速訂單會自動使用帳戶資料，無需重複填寫聯絡欄位。</p>
             </div>`;
         }
 
-        // 寫入畫面內容（注意開頭加入了 ${bannerHtml}）
+        // 寫入主畫面內容
         container.innerHTML = `
             ${bannerHtml}
 
             <div class="account-grid">
+                <!-- 左側：個人資料及密碼設定 -->
                 <section class="account-panel">
                     <h2 class="account-panel-title">個人資料</h2>
                     <form id="profileForm" class="account-form">
@@ -201,37 +169,39 @@
                     </div>
                 </section>
 
-                <section class="account-panel account-panel--order">
-                    <h2 class="account-panel-title">快速預訂</h2>
-                    <p class="account-hint">選擇產品與取貨日，一鍵提交至 Supabase 訂單表。</p>
-                    <form id="orderForm" novalidate>
+                <!-- 右側：被鎖定的快速預訂區塊 -->
+                <section class="account-panel account-panel--order" style="position: relative; overflow: hidden;">
+                    <h2 class="account-panel-title">⚡ 快速預訂</h2>
+                    
+                    <div style="position: absolute; top: 0; left: 0; width: 100%; height: 100%; backdrop-filter: blur(5px); -webkit-backdrop-filter: blur(5px); background: rgba(255, 255, 255, 0.7); display: flex; flex-direction: column; align-items: center; justify-content: center; z-index: 10; text-align: center; padding: 20px;">
+                        <div style="font-size: 3rem; margin-bottom: 8px;">🔒</div>
+                        <h4 style="color: #991b1b; margin-bottom: 8px; font-family: 'Noto Serif TC', serif; font-size: 1.2rem; font-weight: 600;">技術問題，正在維護中</h4>
+                        <p style="font-size: 0.9rem; color: var(--text-secondary); margin-bottom: 24px; line-height: 1.5;">此區塊的快速預訂功能暫時關閉。<br>如需訂購，請點擊下方按鈕。</p>
+                        <a href="submit.html" class="btn btn-primary" style="text-decoration: none; padding: 12px 28px; box-shadow: 0 4px 6px rgba(153, 27, 27, 0.2);">📝 前往下單預訂</a>
+                    </div>
+
+                    <div style="pointer-events: none; opacity: 0.3; user-select: none;">
+                        <p class="account-hint">選擇產品與取貨日，一鍵提交至 Supabase 訂單表。</p>
                         <div class="form-group">
-                            <label for="orderProduct">購買產品 *</label>
-                            <select id="orderProduct" name="product_id" required>
-                                ${buildProductOptions(products)}
-                            </select>
+                            <label style="display:block; margin-bottom:8px; font-weight: 500;">購買產品 *</label>
+                            <select style="width:100%; padding:12px; border-radius:6px; border:1px solid #ccc; background:#f9f9f9;" disabled><option>寧磚 · 貓爪</option></select>
                         </div>
-                        <div class="form-group">
-                            <label for="orderQuantity">數量</label>
-                            <input type="number" id="orderQuantity" name="quantity" min="1" max="20" value="1">
+                        <div class="form-group" style="margin-top:20px;">
+                            <label style="display:block; margin-bottom:8px; font-weight: 500;">數量</label>
+                            <input type="number" value="1" style="width:100%; padding:12px; border-radius:6px; border:1px solid #ccc; background:#f9f9f9;" disabled>
                         </div>
-                        <div class="form-group">
-                            <label>取貨日期 *</label>
-                            <div class="date-picker" id="accountDatePicker"></div>
+                        <div class="form-group" style="margin-top:20px;">
+                            <label style="display:block; margin-bottom:8px; font-weight: 500;">取貨日期 *</label>
+                            <input type="date" style="width:100%; padding:12px; border-radius:6px; border:1px solid #ccc; background:#f9f9f9;" disabled>
                         </div>
-                        <div class="form-group">
-                            <label for="orderNotes">備註（選填）</label>
-                            <textarea id="orderNotes" name="notes" placeholder="特殊要求…"></textarea>
-                        </div>
-                        <button type="submit" class="btn btn-primary" style="width:100%">提交訂單</button>
-                        <p class="form-legal-note">提交即表示您同意我們依 <a href="privacy.html">《私隱權政策》</a> 處理資料。</p>
-                        <div class="form-feedback" id="orderFeedback" role="status"></div>
-                    </form>
+                        <button style="width:100%; padding:14px; margin-top:24px; background:#e5e7eb; color:#9ca3af; border:none; border-radius:6px; font-weight:600;" disabled>提交訂單</button>
+                    </div>
                 </section>
             </div>
 
+            <!-- 下方：我的訂單列表 -->
             <section class="account-panel account-orders-full">
-                <h2 class="account-panel-title">我的訂單</h2>
+                <h2 class="account-panel-title">我的訂單記錄</h2>
                 <div id="ordersList" class="reservation-list">
                     <p class="loading-placeholder">載入中…</p>
                 </div>
@@ -239,9 +209,8 @@
 
             <div class="account-actions">
                 <button type="button" class="btn btn-secondary" id="logoutBtn">登出</button>
-            </div>`;
-
-        renderMarketDatePicker('accountDatePicker', 'pickup_date');
+            </div>
+        `;
 
         // --- 綁定：個人資料更新 ---
         const profileForm = document.getElementById('profileForm');
@@ -307,17 +276,12 @@
                     const client = WanwuAuth.getClient();
                     if (!client) throw new Error('無法連線至認證服務');
 
-                    // 1. 安全步驟：利用當前 Email 及使用者輸入的舊密碼嘗試進行驗證
                     const { error: signInError } = await client.auth.signInWithPassword({
-                        email: user.email,
-                        password: oldPassword
+                        email: user.email, password: oldPassword
                     });
                     if (signInError) throw new Error('原有密碼不正確，請重新輸入');
 
-                    // 2. 驗證通過後，執行密碼更新
-                    const { error: updateError } = await client.auth.updateUser({
-                        password: newPassword
-                    });
+                    const { error: updateError } = await client.auth.updateUser({ password: newPassword });
                     if (updateError) throw updateError;
 
                     showFeedback(fb, '密碼已成功更新！', 'success');
@@ -338,52 +302,6 @@
             });
         }
 
-        // --- 綁定：提交快速預訂訂單 ---
-        const orderForm = document.getElementById('orderForm');
-        if (orderForm) {
-            orderForm.addEventListener('submit', async function (e) {
-                e.preventDefault();
-                const fb = document.getElementById('orderFeedback');
-                const btn = orderForm.querySelector('button[type="submit"]');
-                const productSel = document.getElementById('orderProduct');
-                const opt = productSel.options[productSel.selectedIndex];
-
-                if (!productSel.value) {
-                    showFeedback(fb, '請選擇產品', 'error');
-                    return;
-                }
-
-                const pickup = orderForm.querySelector('input[name="pickup_date"]:checked');
-                if (!pickup) {
-                    showFeedback(fb, '請選擇取貨日期', 'error');
-                    return;
-                }
-
-                btn.disabled = true;
-                showFeedback(fb, '提交中…', 'success');
-
-                try {
-                    await WanwuAuth.createOrder({
-                        product_id: Number(productSel.value),
-                        product_name: opt.dataset.name || opt.textContent.split(' — ')[0],
-                        unit_price: Number(opt.dataset.price) || null,
-                        quantity: parseInt(orderForm.quantity.value, 10) || 1,
-                        pickup_date: pickup.value,
-                        notes: orderForm.notes.value.trim() || null
-                    });
-                    orderForm.reset();
-                    orderForm.quantity.value = '1';
-                    renderMarketDatePicker('accountDatePicker', 'pickup_date');
-                    showFeedback(fb, '訂單已提交。我們會於市集為您備貨。', 'success');
-                    loadOrders();
-                } catch (err) {
-                    showFeedback(fb, err.message || '提交失敗', 'error');
-                } finally {
-                    btn.disabled = false;
-                }
-            });
-        }
-
         // --- 綁定：登出 ---
         const logoutBtn = document.getElementById('logoutBtn');
         if (logoutBtn) {
@@ -393,24 +311,34 @@
             });
         }
 
-        loadOrders();
+        // 載入訂單
+        loadOrders(user);
     }
 
-    async function loadOrders() {
+    // ✨ 完美分類與支援管理員檢視的載入訂單函數
+    async function loadOrders(user) {
         const list = document.getElementById('ordersList');
         if (!list || !window.WanwuAuth) return;
 
-        const orders = await WanwuAuth.getMyOrders();
-        const legacy = await WanwuAuth.getMyReservations();
+        const client = WanwuAuth.getClient();
+        if (!client) return;
 
-        if (!orders.length && !legacy.length) {
-            list.innerHTML = '<p class="account-empty">暫無訂單。使用上方「快速預訂」提交第一筆訂單。</p>';
+        let query = client.from('wanwu_orders').select('*').order('created_at', { ascending: false });
+
+        // 如果不是管理員，只撈取自己的訂單
+        if (user.email !== 'admin@market.local') {
+            query = query.eq('user_id', user.id);
+        }
+
+        const { data: allOrders, error } = await query;
+        const legacy = await WanwuAuth.getMyReservations(); // 保留舊版相容
+
+        if ((!allOrders || allOrders.length === 0) && !legacy.length) {
+            list.innerHTML = '<p class="account-empty">暫無訂單記錄。請前往 <a href="submit.html" style="color: #991b1b; text-decoration: underline;">下單預訂</a>。</p>';
             return;
         }
 
         let html = '';
-
-        // 狀態對應的 CSS Class 字典
         const statusClassMap = {
             'pending': 'status-pending',
             'processing': 'status-processing',
@@ -419,36 +347,69 @@
             'cancelled': 'status-cancelled'
         };
 
-        if (orders.length) {
-            html += orders.map(function (o) {
-                const total = o.unit_price ? formatPrice(Number(o.unit_price) * Number(o.quantity || 1)) : '—';
-                const statusClass = statusClassMap[o.status] || 'status-pending'; // 抓取專屬顏色 class
+        if (allOrders && allOrders.length > 0) {
+            // 分類：已註冊會員訂單 (user_id 有值) vs 未註冊訪客訂單 (user_id 為空)
+            const memberOrders = allOrders.filter(o => o.user_id !== null);
+            const guestOrders = allOrders.filter(o => o.user_id === null);
 
-                return `
-                    <article class="reservation-card ${statusClass}">
-                        <div class="reservation-card-head">
-                            <strong>${escapeHtml(o.product_name)}</strong>
-                            <span class="reservation-status ${statusClass}">${escapeHtml(statusLabel(o.status))}</span>
-                        </div>
-                        <dl class="reservation-meta">
-                            <div><dt>取貨日</dt><dd>${escapeHtml(formatDate(o.pickup_date))}</dd></div>
-                            <div><dt>數量</dt><dd>${escapeHtml(String(o.quantity || 1))}</dd></div>
-                            <div><dt>估計金額</dt><dd>${escapeHtml(total)}</dd></div>
-                            <div><dt>提交時間</dt><dd>${escapeHtml(formatDateTime(o.created_at))}</dd></div>
-                        </dl>
-                        ${o.notes ? `<p class="reservation-notes">${escapeHtml(o.notes)}</p>` : ''}
-                        <div style="margin-top: 16px; text-align: right; padding-top: 12px;">
-                            <a href="order-detail.html?id=${o.id}" class="btn btn-secondary" style="padding: 6px 16px; font-size: 0.82rem;">查看更多</a>
-                        </div>
-                    </article>`;
-            }).join('');
+            // 1. 渲染已註冊會員訂單
+            if (memberOrders.length > 0) {
+                html += `<h3 style="font-size: 1.05rem; margin: 16px 0 12px; color: var(--text); font-family: 'Noto Serif TC', serif;">👤 已註冊會員訂單</h3>`;
+                html += memberOrders.map(function (o) {
+                    const total = o.total_amount != null ? formatPrice(o.total_amount) : (o.unit_price ? formatPrice(Number(o.unit_price) * Number(o.quantity || 1)) : '—');
+                    const statusClass = statusClassMap[o.status] || 'status-pending';
+                    const summary = o.order_summary || o.product_name || '多項產品';
+
+                    return `
+                        <article class="reservation-card ${statusClass}">
+                            <div class="reservation-card-head">
+                                <strong>${escapeHtml(summary)}</strong>
+                                <span class="reservation-status ${statusClass}">${escapeHtml(statusLabel(o.status))}</span>
+                            </div>
+                            <dl class="reservation-meta">
+                                <div><dt>取貨日</dt><dd>${escapeHtml(formatDate(o.pickup_date))}</dd></div>
+                                <div><dt>總金額</dt><dd>${escapeHtml(total)}</dd></div>
+                                <div><dt>提交時間</dt><dd>${escapeHtml(formatDateTime(o.created_at))}</dd></div>
+                            </dl>
+                            ${o.notes ? `<p class="reservation-notes">${escapeHtml(o.notes)}</p>` : ''}
+                            <div style="margin-top: 16px; text-align: right; padding-top: 12px; border-top: 1px solid var(--border);">
+                                <a href="order-detail.html?id=${o.id}" class="btn btn-secondary" style="padding: 6px 16px; font-size: 0.82rem;">🔍 查看詳情</a>
+                            </div>
+                        </article>`;
+                }).join('');
+            }
+
+            // 2. 渲染未註冊訪客預訂 (管理員或該訪客可見)
+            if (guestOrders.length > 0) {
+                html += `<h3 style="font-size: 1.05rem; margin: 28px 0 12px; color: var(--text); font-family: 'Noto Serif TC', serif;">🌐 未註冊訪客預訂 (透過追蹤碼)</h3>`;
+                html += guestOrders.map(function (o) {
+                    const total = o.total_amount != null ? formatPrice(o.total_amount) : '—';
+                    const statusClass = statusClassMap[o.status] || 'status-pending';
+                    const summary = o.order_summary || o.product_name || '多項產品';
+
+                    return `
+                        <article class="reservation-card ${statusClass}" style="border-style: dashed; background: rgba(0,0,0,0.01);">
+                            <div class="reservation-card-head">
+                                <strong>${escapeHtml(summary)} (#${escapeHtml(o.tracking_code || 'N/A')})</strong>
+                                <span class="reservation-status ${statusClass}">${escapeHtml(statusLabel(o.status))}</span>
+                            </div>
+                            <dl class="reservation-meta">
+                                <div><dt>客戶名稱</dt><dd>${escapeHtml(o.customer_name || '訪客')}</dd></div>
+                                <div><dt>追蹤碼</dt><dd><code style="background:var(--bg-elevated); padding:2px 6px; border-radius:4px; font-weight:600;">${escapeHtml(o.tracking_code)}</code></dd></div>
+                                <div><dt>總金額</dt><dd>${escapeHtml(total)}</dd></div>
+                            </dl>
+                            <div style="margin-top: 16px; text-align: right; padding-top: 12px; border-top: 1px solid var(--border);">
+                                <a href="order-detail.html?code=${escapeHtml(o.tracking_code)}" class="btn btn-secondary" style="padding: 6px 16px; font-size: 0.82rem;">🔍 查看詳情</a>
+                            </div>
+                        </article>`;
+                }).join('');
+            }
         }
 
-        if (legacy.length) {
-            html += '<p class="account-legacy-label">舊版預訂記錄</p>';
+        if (legacy && legacy.length) {
+            html += '<p class="account-legacy-label">舊版預訂記錄（訪客轉換）</p>';
             html += legacy.map(function (r) {
                 const statusClass = statusClassMap[r.status] || 'status-pending';
-
                 return `
                     <article class="reservation-card reservation-card--legacy ${statusClass}">
                         <div class="reservation-card-head">
@@ -467,7 +428,7 @@
         list.innerHTML = html;
     }
 
-
+    // 啟動渲染
     document.addEventListener('DOMContentLoaded', function () {
         renderAccount();
     });

@@ -5,16 +5,16 @@
     'use strict';
 
     const MARKET_DATES = [
-        { value: '2026-08-22', label: '8 月 22 日', day: '週六' },
-        { value: '2026-08-23', label: '8 月 23 日', day: '週日' },
+        { value: '2026-08-29', label: '8 月 29 日', day: '週六' },
+        { value: '2026-08-30', label: '8 月 30 日', day: '週日' },
         { value: '2026-09-12', label: '9 月 12 日', day: '週六' },
         { value: '2026-09-13', label: '9 月 13 日', day: '週日' }
     ];
 
     /** 擺檔日：key = YYYY-MM-DD */
     const STALL_DAYS = {
-        '2026-08-22': { type: 'aug', title: '8月22日 · 維園設攤（週六）' },
-        '2026-08-23': { type: 'aug', title: '8月23日 · 維園設攤（週日）' },
+        '2026-08-29': { type: 'aug', title: '8月29日 · 維園設攤（週六）' },
+        '2026-08-30': { type: 'aug', title: '8月30日 · 維園設攤（週日）' },
         '2026-09-12': { type: 'sep', title: '9月12日 · 維園設攤（週六）' },
         '2026-09-13': { type: 'sep', title: '9月13日 · 維園設攤（週日）' }
     };
@@ -138,7 +138,6 @@
 
         renderProducts();
         populateProductSelects();
-        updateReserveFormMode();
     }
 
     function renderProducts() {
@@ -188,27 +187,27 @@
         }
     }
 
-    async function updateReserveFormMode() {
-        const guest = document.getElementById('guestContactFields');
-        const banner = document.getElementById('reserveLoggedInBanner');
-        const subtitle = document.getElementById('reserveFormSubtitle');
-        const nameInput = document.getElementById('customer_name');
-        const phoneInput = document.getElementById('phone');
-        if (!guest) return;
+    // async function updateReserveFormMode() {
+    //     const guest = document.getElementById('guestContactFields');
+    //     const banner = document.getElementById('reserveLoggedInBanner');
+    //     const subtitle = document.getElementById('reserveFormSubtitle');
+    //     const nameInput = document.getElementById('customer_name');
+    //     const phoneInput = document.getElementById('phone');
+    //     if (!guest) return;
 
-        const session = window.WanwuAuth ? await WanwuAuth.getSession() : null;
-        const loggedIn = !!(session && session.user);
+    //     const session = window.WanwuAuth ? await WanwuAuth.getSession() : null;
+    //     const loggedIn = !!(session && session.user);
 
-        guest.classList.toggle('hidden', loggedIn);
-        if (banner) banner.classList.toggle('hidden', !loggedIn);
-        if (subtitle) {
-            subtitle.textContent = loggedIn
-                ? '已登入 — 只需選擇產品與取貨日，聯絡資料從帳戶自動帶入。'
-                : '填寫以下資料，我們將於市集為您留貨。';
-        }
-        if (nameInput) nameInput.required = !loggedIn;
-        if (phoneInput) phoneInput.required = !loggedIn;
-    }
+    //     guest.classList.toggle('hidden', loggedIn);
+    //     if (banner) banner.classList.toggle('hidden', !loggedIn);
+    //     if (subtitle) {
+    //         subtitle.textContent = loggedIn
+    //             ? '已登入 — 只需選擇產品與取貨日，聯絡資料從帳戶自動帶入。'
+    //             : '填寫以下資料，我們將於市集為您留貨。';
+    //     }
+    //     if (nameInput) nameInput.required = !loggedIn;
+    //     if (phoneInput) phoneInput.required = !loggedIn;
+    // }
 
     function openProductModal(product) {
         const overlay = document.getElementById('productModal');
@@ -238,7 +237,7 @@
             </div>
             <div class="modal-stall-hint" style="margin-top:12px">
                 <p style="font-size:0.82rem;color:var(--text-tertiary);margin-bottom:8px">擺檔取貨日</p>
-                <p style="font-size:0.88rem;color:var(--text-secondary);line-height:1.6">8/22–23、9/12–13 · 維園 · 可即場預訂留貨</p>
+                <p style="font-size:0.88rem;color:var(--text-secondary);line-height:1.6">8/29–30、9/12–13 · 維園 · 可即場預訂留貨</p>
             </div>
             <a href="#market" class="btn btn-primary" style="width:100%;margin-top:20px" data-close-modal>即場預訂</a>`;
 
@@ -329,96 +328,104 @@
         }).join('');
     }
 
-    async function submitReservation(e) {
-        e.preventDefault();
-        const form = e.target;
-        const feedback = document.getElementById('reserveFeedback');
-        const btn = form.querySelector('button[type="submit"]');
+    // async function submitReservation(e) {
+    //     e.preventDefault();
+    //     const form = e.target;
+    //     const feedback = document.getElementById('reserveFeedback');
+    //     const btn = form.querySelector('button[type="submit"]');
 
-        const pickupDate = form.pickup_date.value;
-        const productSel = form.product_interest;
-        const productOpt = productSel.options[productSel.selectedIndex];
-        const quantity = parseInt(form.quantity.value, 10) || 1;
-        const notes = form.notes.value.trim() || null;
+    //     const pickupDate = form.pickup_date.value;
+    //     const productSel = form.product_interest;
+    //     const productOpt = productSel.options[productSel.selectedIndex];
+    //     const quantity = parseInt(form.quantity.value, 10) || 1;
+    //     const notes = form.notes.value.trim() || null;
 
-        if (!pickupDate) {
-            showFeedback(feedback, '請選擇取貨日期。', 'error');
-            return;
-        }
-        if (!productSel.value) {
-            showFeedback(feedback, '請選擇產品。', 'error');
-            return;
-        }
+    //     if (!pickupDate) {
+    //         showFeedback(feedback, '請選擇取貨日期。', 'error');
+    //         return;
+    //     }
+    //     if (!productSel.value) {
+    //         showFeedback(feedback, '請選擇產品。', 'error');
+    //         return;
+    //     }
 
-        const session = window.WanwuAuth ? await WanwuAuth.getSession() : null;
-        const loggedIn = !!(session && session.user);
+    //     const session = window.WanwuAuth ? await WanwuAuth.getSession() : null;
+    //     const loggedIn = !!(session && session.user);
 
-        btn.disabled = true;
-        showFeedback(feedback, '提交中…', 'success');
+    //     btn.disabled = true;
+    //     showFeedback(feedback, '提交中…', 'success');
 
-        try {
-            const client = initSupabase();
+    //     try {
+    //         const client = initSupabase();
 
-            if (loggedIn && window.WanwuAuth) {
-                await WanwuAuth.createOrder({
-                    product_id: Number(productOpt.dataset.id) || null,
-                    product_name: productOpt.dataset.name || productSel.value,
-                    unit_price: Number(productOpt.dataset.price) || null,
-                    quantity: quantity,
-                    pickup_date: pickupDate,
-                    notes: notes
-                });
-                form.reset();
-                showFeedback(feedback, '訂單已提交。我們會於市集當日為您備貨。', 'success');
-                return;
-            }
+    //         if (loggedIn && window.WanwuAuth) {
+    //             await WanwuAuth.createOrder({
+    //                 product_id: Number(productOpt.dataset.id) || null,
+    //                 product_name: productOpt.dataset.name || productSel.value,
+    //                 unit_price: Number(productOpt.dataset.price) || null,
+    //                 quantity: quantity,
+    //                 pickup_date: pickupDate,
+    //                 notes: notes
+    //             });
+    //             form.reset();
+    //             showFeedback(feedback, '訂單已提交。我們會於市集當日為您備貨。', 'success');
+    //             return;
+    //         }
 
-            const payload = {
-                customer_name: form.customer_name.value.trim(),
-                phone: form.phone.value.trim(),
-                email: form.email.value.trim() || null,
-                pickup_date: pickupDate,
-                product_interest: productSel.value || null,
-                quantity: quantity,
-                notes: notes
-            };
+    //         const payload = {
+    //             customer_name: form.customer_name.value.trim(),
+    //             phone: form.phone.value.trim(),
+    //             email: form.email.value.trim() || null,
+    //             pickup_date: pickupDate,
+    //             product_interest: productSel.value || null,
+    //             quantity: quantity,
+    //             notes: notes
+    //         };
 
-            if (!payload.customer_name || !payload.phone) {
-                showFeedback(feedback, '請填寫姓名及電話。', 'error');
-                btn.disabled = false;
-                return;
-            }
+    //         if (!payload.customer_name || !payload.phone) {
+    //             showFeedback(feedback, '請填寫姓名及電話。', 'error');
+    //             btn.disabled = false;
+    //             return;
+    //         }
 
-            if (client) {
-                const { error } = await client.from('wanwu_market_reservations').insert(payload);
-                if (error) throw error;
-            } else {
-                saveLocal('wanwu_reservations', payload);
-            }
-            form.reset();
-            showFeedback(feedback, '預訂已收到。我們會於市集當日為您備貨，請留意電話聯絡。', 'success');
-        } catch (err) {
-            console.error(err);
-            if (loggedIn) {
-                showFeedback(feedback, err.message || '提交失敗，請稍後再試。', 'error');
-            } else {
-                const payload = {
-                    customer_name: form.customer_name.value.trim(),
-                    phone: form.phone.value.trim(),
-                    email: form.email.value.trim() || null,
-                    pickup_date: pickupDate,
-                    product_interest: productSel.value || null,
-                    quantity: quantity,
-                    notes: notes
-                };
-                saveLocal('wanwu_reservations', payload);
-                showFeedback(feedback, '已暫存您的預訂（離線模式）。請稍後再試或於市集現場告知我們。', 'success');
-            }
-        } finally {
-            btn.disabled = false;
-            updateReserveFormMode();
-        }
-    }
+    //         if (client) {
+    //             const { error } = await client.from('wanwu_market_reservations').insert(payload);
+    //             if (error) throw error;
+    //         } else {
+    //             saveLocal('wanwu_reservations', payload);
+    //         }
+    //         form.reset();
+    //         showFeedback(feedback, '預訂已收到。我們會於市集當日為您備貨，請留意電話聯絡。', 'success');
+    //     } catch (err) {
+    //         console.error(err);
+    //         if (loggedIn) {
+    //             showFeedback(feedback, err.message || '提交失敗，請稍後再試。', 'error');
+    //         } else {
+    //             const payload = {
+    //                 customer_name: form.customer_name.value.trim(),
+    //                 phone: form.phone.value.trim(),
+    //                 email: form.email.value.trim() || null,
+    //                 pickup_date: pickupDate,
+    //                 product_interest: productSel.value || null,
+    //                 quantity: quantity,
+    //                 notes: notes
+    //             };
+    //             saveLocal('wanwu_reservations', payload);
+    //             showFeedback(feedback, '已暫存您的預訂（離線模式）。請稍後再試或於市集現場告知我們。', 'success');
+    //         }
+    //     } finally {
+    //         btn.disabled = false;
+    //         updateReserveFormMode();
+    //     }
+    // }
+// ==========================================
+// 動態新增多個產品與數量 UI 邏輯
+// ==========================================
+
+// ==========================================
+// 市集預訂：提交訂單邏輯 (融合舊有邏輯與多產品支援)
+// ==========================================
+
 
     async function submitArtistWork(e) {
         e.preventDefault();
@@ -616,13 +623,6 @@
         if (reserveForm) reserveForm.addEventListener('submit', submitReservation);
         if (artistForm) artistForm.addEventListener('submit', submitArtistWork);
 
-        updateReserveFormMode();
-        if (window.WanwuAuth) {
-            WanwuAuth.onAuthStateChange(function () {
-                updateReserveFormMode();
-            });
-        }
-        
         checkWelcomeBack();
     });
 
@@ -700,4 +700,28 @@ document.addEventListener('DOMContentLoaded', () => {
     }, true); // <--- 關鍵字 true，代表在「捕獲階段」優先執行，這是整個網站第一個被觸發的事件！
 });
 
+document.addEventListener('DOMContentLoaded', function() {
+        var noticeModal = document.getElementById('marketNoticeModal');
+        var closeBtn = document.getElementById('noticeModalClose');
+        var okBtn = document.getElementById('noticeModalBtn');
+
+        // 檢查 localStorage 是否已有記錄
+        if (!localStorage.getItem('hasSeenMarketNotice')) {
+            // 延遲 0.5 秒後顯示，讓背景（如全域載入畫面）先沉澱
+            setTimeout(function() {
+                noticeModal.classList.add('open');
+                document.body.style.overflow = 'hidden';
+            }, 500);
+        }
+
+        // 關閉視窗並寫入記錄
+        function closeNotice() {
+            noticeModal.classList.remove('open');
+            document.body.style.overflow = '';
+            localStorage.setItem('hasSeenMarketNotice', 'true');
+        }
+
+        if (closeBtn) closeBtn.addEventListener('click', closeNotice);
+        if (okBtn) okBtn.addEventListener('click', closeNotice);
+    });
 })();

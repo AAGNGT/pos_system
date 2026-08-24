@@ -87,121 +87,165 @@
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
     <script src="supabase-config.js"></script>
     <script src="js/auth.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <script src="supabase-config.js"></script>
+    <script src="js/auth.js"></script>
     <script>
-        (async function() {
-            'use strict';
-
-            function showCustomAlert(message, callback) {
-                const overlay = document.getElementById('customAlertModal');
-                const msgEl = document.getElementById('customAlertMessage');
-                const btn = document.getElementById('customAlertBtn');
-
-                if (msgEl) msgEl.textContent = message;
-                if (overlay) {
-                    overlay.classList.add('open');
-                    document.body.style.overflow = 'hidden';
-                }
-                btn.onclick = function() {
-                    if (callback) callback();
-                };
-            }
-
-            function escapeHtml(s) {
-                return String(s || '').replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
-            }
-
-            // 1. 嚴格驗證登入身份
-            const session = await WanwuAuth.requireAuth('index.html?auth=login');
-            if (!session) return;
-
-            if (session.user.email !== 'admin@market.local') {
-                showCustomAlert('您沒有權限存取管理員頁面。', () => {
-                    window.location.replace('account.html');
-                });
+        document.addEventListener('DOMContentLoaded', async () => {
+            const client = typeof getSupabaseClient === 'function' ? getSupabaseClient() : window.supabaseClient;
+            if (!client) {
+                alert("無法連接資料庫，請檢查設定。");
                 return;
             }
 
-            // 2. 驗證通過，顯示介面
-            document.getElementById('adminApp').style.display = 'block';
-
-            const client = WanwuAuth.getClient();
+            const adminApp = document.getElementById('adminApp');
+            const alertModal = document.getElementById('customAlertModal');
+            const alertMsg = document.getElementById('customAlertMessage');
+            const alertBtn = document.getElementById('customAlertBtn');
             const orderListEl = document.getElementById('adminOrderList');
+            const btnRefresh = document.getElementById('btnRefresh');
 
-            // 載入所有訂單
+            // 1. 驗證管理員身份 (防護機制)
+            const { data: { session }, error: authError } = await client.auth.getSession();
+            if (!session || session.user.email !== 'admin@market.local') {
+                alertMsg.textContent = "您沒有權限訪問此頁面，僅限管理員登入。";
+                alertModal.style.display = 'flex';
+                alertBtn.onclick = () => window.location.href = 'account.html';
+                return;
+            }
+
+            // 驗證通過，解鎖顯示介面
+            adminApp.style.display = 'block';
+
+            // 防止 XSS
+            function escapeHtml(unsafe) {
+                if (!unsafe) return '';
+                return unsafe.toString().replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;").replace(/'/g, "&#039;");
+            }
+
+            // 2. 載入所有訂單
             async function loadAllOrders() {
                 orderListEl.innerHTML = '<tr><td colspan="8" class="loading-placeholder">載入中...</td></tr>';
                 
-                const { data: orders, error } = await client
-                    .from('wanwu_orders')
-                    .select('*')
-                    .order('created_at', { ascending: false });
+                try {
+                    // 讀取主訂單
+                    const { data: orders, error } = await client
+                        .from('wanwu_orders')
+                        .select('*')
+                        .order('created_at', { ascending: false });
 
-                if (error) {
-                    orderListEl.innerHTML = `<tr><td colspan="8" style="color:red; text-align:center;">載入失敗: ${error.message} <br> <small>(請確保資料庫的 RLS Policy 允許 admin 讀取所有訂單)</small></td></tr>`;
-                    return;
+                    if (error) throw error;
+
+                    if (!orders || orders.length === 0) {
+                        orderListEl.innerHTML = '<tr><td colspan="8" style="text-align:center; padding: 30px;">目前沒有訂單</td></tr>';
+                        return;
+                    }
+
+                    // 讀取明細 (如有)
+                    const { data: itemsData } = await client.from('wanwu_order_items').select('*');
+                    const itemsMap = {};
+                    if (itemsData) {
+                        itemsData.forEach(item => {
+                            if (!itemsMap[item.order_id]) itemsMap[item.order_id] = [];
+                            itemsMap[item.order_id].push(item);
+                        });
+                    }
+
+                    // 渲染至表格
+                    orderListEl.innerHTML = orders.map(o => {
+                        const oItems = itemsMap[o.id] || [];
+                        let productsHtml = '';
+                        let totalQty = 0;
+
+                        if (oItems.length > 0) {
+                            productsHtml = oItems.map(i => `<div>• <strong>${escapeHtml(i.product_name)}</strong> (x${i.quantity})</div>`).join('');
+                            totalQty = oItems.reduce((sum, i) => sum + i.quantity, 0);
+                        } else {
+                            // 適配新架構的 order_summary 
+                            productsHtml = `<strong>${escapeHtml(o.order_summary || o.product_name || '多項產品')}</strong>`;
+                            totalQty = o.quantity || '-';
+                        }
+
+                        // 顯示總金額
+                        const totalAmountHtml = o.total_amount != null ? `<br><span style="color:#991b1b; font-size:0.8rem; font-weight:600;">總額: HK$${o.total_amount}</span>` : '';
+
+                        return `
+                            <tr>
+                                <td>#${o.id}</td>
+                                <td>${escapeHtml(o.customer_name)}</td>
+                                <td>${escapeHtml(o.customer_phone)}</td>
+                                <td style="line-height: 1.5; min-width: 180px;">${productsHtml}${totalAmountHtml}</td>
+                                <td><span style="background: #f3f4f6; padding: 4px 8px; border-radius: 4px; font-weight: 600;">${totalQty}</span></td>
+                                <td>${escapeHtml(o.pickup_date)}</td>
+                                <td>
+                                    <select class="status-select" id="status-${o.id}">
+                                        <option value="pending" ${o.status === 'pending' ? 'selected' : ''}>待確認</option>
+                                        <option value="processing" ${o.status === 'processing' ? 'selected' : ''}>處理中</option>
+                                        <option value="ready" ${o.status === 'ready' ? 'selected' : ''}>已完成備貨</option>
+                                        <option value="completed" ${o.status === 'completed' ? 'selected' : ''}>已完成交易</option>
+                                        <option value="cancelled" ${o.status === 'cancelled' ? 'selected' : ''}>已取消</option>
+                                    </select>
+                                </td>
+                                <td>
+                                    <button class="btn-update" onclick="window.updateOrderStatus(${o.id}, this)">儲存</button>
+                                </td>
+                            </tr>
+                        `;
+                    }).join('');
+
+                } catch (err) {
+                    orderListEl.innerHTML = `<tr><td colspan="8" style="color:red; text-align:center;">載入失敗: ${err.message}</td></tr>`;
                 }
-
-                if (!orders || orders.length === 0) {
-                    orderListEl.innerHTML = '<tr><td colspan="8" style="text-align:center; padding: 30px;">目前沒有訂單</td></tr>';
-                    return;
-                }
-
-                orderListEl.innerHTML = orders.map(o => `
-                    <tr>
-                        <td>#${o.id}</td>
-                        <td>${escapeHtml(o.customer_name)}</td>
-                        <td>${escapeHtml(o.customer_phone)}</td>
-                        <td><strong>${escapeHtml(o.product_name)}</strong></td>
-                        <td>${o.quantity}</td>
-                        <td>${escapeHtml(o.pickup_date)}</td>
-                        <td>
-                            <select class="status-select" id="status-${o.id}">
-                                <option value="pending" ${o.status === 'pending' ? 'selected' : ''}>待確認</option>
-                                <option value="processing" ${o.status === 'processing' ? 'selected' : ''}>處理中</option>
-                                <option value="ready" ${o.status === 'ready' ? 'selected' : ''}>已完成備貨</option>
-                                <option value="completed" ${o.status === 'completed' ? 'selected' : ''}>已完成交易</option>
-                                <option value="cancelled" ${o.status === 'cancelled' ? 'selected' : ''}>已取消</option>
-                            </select>
-                        </td>
-                        <td>
-                            <button class="btn-update" onclick="updateOrderStatus(${o.id})">儲存</button>
-                        </td>
-                    </tr>
-                `).join('');
             }
 
-            // 更新訂單狀態的全域函數
-            window.updateOrderStatus = async function(orderId) {
-                const selectEl = document.getElementById(`status-${orderId}`);
-                const newStatus = selectEl.value;
-                const btn = selectEl.parentElement.nextElementSibling.querySelector('button');
+            // 3. 執行更新狀態功能 (核心修復)
+            window.updateOrderStatus = async function(orderId, btnElement) {
+                const statusSelect = document.getElementById(`status-${orderId}`);
+                const newStatus = statusSelect.value;
                 
-                btn.textContent = '更新中...';
-                btn.disabled = true;
+                const originalText = btnElement.textContent;
+                btnElement.textContent = '處理中...';
+                btnElement.disabled = true;
 
-                const { error } = await client
-                    .from('wanwu_orders')
-                    .update({ status: newStatus })
-                    .eq('id', orderId);
+                try {
+                    const { error } = await client
+                        .from('wanwu_orders')
+                        .update({ status: newStatus })
+                        .eq('id', orderId);
 
-                if (error) {
-                    alert('更新失敗: ' + error.message);
-                } else {
-                    btn.style.background = '#16a34a';
-                    btn.textContent = '已更新';
+                    if (error) throw error;
+                    
+                    // 成功反饋
+                    btnElement.textContent = '✅ 已儲存';
+                    btnElement.style.background = '#059669'; // 轉為綠色
+                    
                     setTimeout(() => {
-                        btn.style.background = 'var(--text)';
-                        btn.textContent = '儲存';
-                        btn.disabled = false;
+                        btnElement.textContent = originalText;
+                        btnElement.style.background = ''; // 恢復原色
+                        btnElement.disabled = false;
+                    }, 2000);
+
+                } catch (err) {
+                    alert('更新失敗: ' + err.message);
+                    btnElement.textContent = '❌ 失敗';
+                    btnElement.style.background = '#991b1b'; // 轉為紅色
+                    setTimeout(() => {
+                        btnElement.textContent = originalText;
+                        btnElement.style.background = '';
+                        btnElement.disabled = false;
                     }, 2000);
                 }
             };
 
-            document.getElementById('btnRefresh').addEventListener('click', loadAllOrders);
+            // 綁定手動刷新按鈕
+            if (btnRefresh) {
+                btnRefresh.addEventListener('click', loadAllOrders);
+            }
 
-            // 初次載入
+            // 首次載入執行
             loadAllOrders();
-        })();
+        });
     </script>
+
 </body>
 </html>

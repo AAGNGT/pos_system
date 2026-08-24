@@ -8,6 +8,7 @@
     <meta name="description" content="卍物所：萬物皆可能。香磚 • 寧磚系列擴香石，貓爪、玫瑰、太陽花等造型。維園市集即場預訂，歡迎畫家投稿。">
     <link rel="icon" href="Logo.jpg" type="image/jpeg">
     <link rel="apple-touch-icon" href="Logo.jpg">
+    <link rel="canonical" href="https://hkrss.dpdns.org/" />
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&family=Noto+Serif+TC:wght@400;500;600&display=swap" rel="stylesheet">
@@ -59,7 +60,14 @@
                             更多工具 
                             <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M6 9l6 6 6-6"/></svg>
                         </a>
+                        
                         <ul class="dropdown-menu">
+                            <li>
+                                <a href="submit.html">
+                                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="9" cy="21" r="1"></circle><circle cx="20" cy="21" r="1"></circle><path d="M1 1h4l2.68 13.39a2 2 0 0 0 2 1.61h9.72a2 2 0 0 0 2-1.61L23 6H6"></path></svg>
+                                    立即下單預訂
+                                </a>
+                            </li>
                             <li>
                                 <a href="track.html">
                                     <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="8"></circle><line x1="21" y1="21" x2="16.65" y2="16.65"></line></svg>
@@ -254,18 +262,18 @@
             <div class="section-inner">
                 <p class="section-label reveal">Victoria Park</p>
                 <h2 class="section-title reveal">維園市集 · 即場售賣</h2>
-                <p class="section-lead reveal">我們將於 <strong>2026 年 8 月 22–23 日</strong> 及 <strong>9 月 12–13 日</strong> 在維多利亞公園設攤。您可提前預訂，市集當日為您備貨。</p>
+                <p class="section-lead reveal">我們將於 <strong>2026 年 8 月 29–30 日</strong> 及 <strong>9 月 12–13 日</strong> 在維多利亞公園設攤。您可提前預訂，市集當日為您備貨。</p>
 
                 <div class="market-block">
                     <div class="market-info reveal">
                         <h3 style="font-family:'Noto Serif TC',serif;font-size:1.25rem;margin-bottom:8px">市集詳情</h3>
                         <div class="market-dates">
                             <div class="date-chip">
-                                <strong>8 / 22</strong>
+                                <strong>8 / 29</strong>
                                 <span>週六 · 維園</span>
                             </div>
                             <div class="date-chip">
-                                <strong>8 / 23</strong>
+                                <strong>8 / 30</strong>
                                 <span>週日 · 維園</span>
                             </div>
                             <div class="date-chip">
@@ -302,54 +310,27 @@
                     </div>
 
                     <div class="form-panel reveal">
-                        <h3 class="form-title">即場售賣</h3>
-                        <p class="form-subtitle" id="reserveFormSubtitle">填寫以下資料，我們將於市集為您留貨。</p>
-                        <div class="account-member-banner account-member-banner--compact hidden" id="reserveLoggedInBanner">
-                            <p>已登入 — 聯絡資料將從帳戶自動帶入，只需選擇產品與取貨日。</p>
+                        <h3 class="form-title">即場售賣預訂</h3>
+                        <p class="form-subtitle">為縮短您在市集現場的等候時間，並確保心儀款式不會售罄，我們強烈建議您提前進行網上預訂。</p>
+                        
+                        <div style="margin-top: 32px;">
+                            <a href="submit.html" class="btn btn-primary" style="width:100%; display:block; text-align:center; padding: 16px; font-size: 1.1rem; border-radius: 8px;">
+                                📝 前往下單預訂
+                            </a>
                         </div>
-                        <form id="reserveForm" novalidate>
-                            <div id="guestContactFields">
-                            <div class="form-row">
-                                <div class="form-group">
-                                    <label for="customer_name">姓名 *</label>
-                                    <input type="text" id="customer_name" name="customer_name" required autocomplete="name">
-                                </div>
-                                <div class="form-group">
-                                    <label for="phone">電話 *</label>
-                                    <input type="tel" id="phone" name="phone" required autocomplete="tel">
-                                </div>
-                            </div>
-                            <div class="form-group">
-                                <label for="email">電郵（選填）</label>
-                                <input type="email" id="email" name="email" autocomplete="email">
-                            </div>
-                            </div>
-                            <div class="form-group">
-                                <label>取貨日期 *</label>
-                                <div class="date-picker" id="marketDatePicker"></div>
-                            </div>
-                            <div class="form-row">
-                                <div class="form-group">
-                                    <label for="reserveProduct">意向產品 *</label>
-                                    <select id="reserveProduct" name="product_interest" required>
-                                        <option value="">請選擇</option>
-                                    </select>
-                                </div>
-                                <div class="form-group">
-                                    <label for="quantity">數量</label>
-                                    <input type="number" id="quantity" name="quantity" min="1" max="20" value="1">
-                                </div>
-                            </div>
-                            <div class="form-group">
-                                <label for="notes">備註</label>
-                                <textarea id="notes" name="notes" placeholder="例如：希望取貨時段、特殊要求…"></textarea>
-                            </div>
-                            <button type="submit" class="btn btn-primary" style="width:100%">提交預訂</button>
-                            <p class="form-legal-note">提交即表示您同意我們依 <a href="privacy.html">《私隱權政策》</a> 處理您的個人資料。</p>
-                            <div class="form-feedback" id="reserveFeedback" role="status"></div>
-                        </form>
+                        <p class="form-legal-note" style="margin-top: 16px; text-align: center;">點擊前往專屬預訂頁面。確認後我們會以電話聯絡您。</p>
+
+                        <!-- 新增：訪客訂單查詢區塊 -->
+                        <hr style="margin: 32px 0 24px; border: none; border-top: 1px solid var(--border);">
+                        <h4 style="font-family:'Noto Serif TC',serif; font-size:1.1rem; margin-bottom:8px;">🔍 訪客訂單查詢</h4>
+                        <p class="form-subtitle" style="font-size: 0.85rem; margin-bottom: 12px;">請輸入您預訂成功後獲得的 5 位數追蹤碼。</p>
+                        <div style="display: flex; gap: 8px;">
+                            <input type="text" id="homeTrackingInput" placeholder="例如: AA???" style="flex: 1; padding: 10px; border-radius: 6px; border: 1px solid var(--border); text-transform: uppercase;">
+                            <button type="button" id="btnHomeTrack" class="btn btn-secondary" style="white-space: nowrap; padding: 10px 20px;">查詢</button>
+                        </div>
+                        <p id="homeTrackFeedback" style="color: #991b1b; font-size: 0.85rem; margin-top: 8px; display: none;"></p>
                     </div>
-                </div>
+
             </div>
         </section>
 
@@ -532,6 +513,86 @@
             <div id="modalBody"></div>
         </div>
     </div>
+
+<!-- Market Update Notice Modal -->
+    <div class="modal-overlay" id="marketNoticeModal" role="dialog" aria-modal="true">
+        <div class="modal-sheet alert-sheet" style="max-width: 460px; text-align: center; padding: 40px 32px;">
+            <button type="button" class="modal-close" id="noticeModalClose" aria-label="關閉">×</button>
+            <div style="font-size: 3rem; margin-bottom: 16px; line-height: 1;">🌧️</div>
+            <h3 style="font-family: 'Noto Serif TC', serif; font-size: 1.35rem; margin-bottom: 16px; color: var(--text);">【維園市集延期通知】</h3>
+
+            <div style="font-size: 0.95rem; color: var(--text-secondary); margin-bottom: 24px; line-height: 1.6; text-align: left; display: inline-block; width: 100%;">
+                <p style="margin-bottom: 12px;">親愛的顧客：</p>
+                <p style="margin-bottom: 16px;">因應最新天氣狀況預測，為保障公眾及提供更佳的市集體驗，原訂於 8 月 22 至 23 日舉行的維園市集，將順延至 <strong>8 月 29 及 30 日（本週末）</strong> 舉行。已提交的網上預訂將自動順延。</p>
+
+                <div style="background: var(--bg-elevated); padding: 16px; border-radius: 8px; border: 1px solid var(--border); font-size: 0.9rem;">
+                    🎪 <strong>活動：</strong>卍物所 @ 維多利亞公園市集<br>
+                    🗓️ <strong>最新日期：</strong>8 月 29 - 30 日（星期六及日）<br>
+                    📍 <strong>地點：</strong>銅鑼灣維多利亞公園<br>
+                    ⛺ <strong>攤位：</strong>第 10 號攤位
+                </div>
+
+                <p style="margin-top: 16px; font-size: 0.85rem; text-align: center; color: var(--text-tertiary);">不便之處，敬請見諒。期待在天氣晴朗的週末與您相見！</p>
+            </div>
+            <button type="button" id="noticeModalBtn" class="btn btn-primary" style="width: 100%;">我知道了</button>
+        </div>
+    </div>
+    <script>
+    document.addEventListener('DOMContentLoaded', () => {
+        const client = typeof getSupabaseClient === 'function' ? getSupabaseClient() : window.supabaseClient;
+        
+        const btnTrack = document.getElementById('btnHomeTrack');
+        const inputTrack = document.getElementById('homeTrackingInput');
+        const feedbackTrack = document.getElementById('homeTrackFeedback');
+        
+        const modal = document.getElementById('phoneVerifyModal');
+        const btnCloseModal = document.getElementById('phoneVerifyClose');
+        const btnVerify = document.getElementById('btnVerifyPhone');
+        const inputPhone = document.getElementById('verifyPhoneInput');
+        const verifyFeedback = document.getElementById('verifyFeedback');
+        
+        let tempOrderData = null; 
+
+        // 1. 點擊「查詢」按鈕
+        if (btnTrack) {
+            btnTrack.onclick = async function(e) {
+                e.preventDefault(); 
+                
+                const code = inputTrack.value.trim().toUpperCase();
+                if (!code) {
+                    feedbackTrack.innerHTML = '⚠️ 請輸入追蹤碼。';
+                    feedbackTrack.style.display = 'block';
+                    return;
+                }
+
+                btnTrack.disabled = true;
+                btnTrack.textContent = '搜尋中...';
+                feedbackTrack.style.display = 'none';
+
+                try {
+                    // 呼叫 RPC 函數安全查詢
+                    const { data, error } = await client.rpc('verify_tracking_code', { search_code: code });
+
+                    if (error) throw new Error('查詢失敗，請確保 Supabase 已加入 RPC 函數。');
+                    if (!data || data.length === 0) throw new Error('找不到此訂單，請核對追蹤碼。');
+
+                    window.location.href = `order-detail.html?track_code=${code}`;
+                } catch (err) {
+                    feedbackTrack.innerHTML = '❌ ' + err.message;
+                    feedbackTrack.style.display = 'block';
+                } finally {
+                    btnTrack.disabled = false;
+                    btnTrack.textContent = '查詢';
+                }
+            };
+        }
+
+    });
+    </script>
+</body>
+
+
+
 
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
     <script src="supabase-config.js"></script>

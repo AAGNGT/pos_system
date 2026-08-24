@@ -334,3 +334,209 @@ section { padding: 120px 24px; }
         padding-left: 32px !important; /* 子選單縮排 */
     }
 }
+
+/* =========================================
+   售賣訂單：多選產品 UI 優化
+========================================= */
+.product-item-row {
+    display: flex;
+    gap: 12px;
+    align-items: flex-end;
+    margin-bottom: 12px;
+}
+
+.dynamic-product-select {
+    width: 100%;
+}
+
+.btn-remove-product {
+    width: 44px;
+    height: 44px;
+    background: #fee2e2;
+    color: #dc2626;
+    border: none;
+    border-radius: 6px;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: 0.2s ease;
+}
+
+.btn-remove-product:hover {
+    background: #fca5a5;
+}
+
+/* 手機版極致顯示優化 */
+@media (max-width: 480px) {
+    .product-item-row {
+        gap: 8px; 
+    }
+    .dynamic-quantity-input {
+        padding-left: 8px;
+        padding-right: 8px;
+        text-align: center;
+    }
+    #add-product-btn {
+        font-size: 0.95rem;
+    }
+}
+
+/* =========================================
+   提交預訂頁面：購物車式 UI
+========================================= */
+.cart-product-list {
+    display: flex;
+    flex-direction: column;
+    gap: 16px;
+    margin-bottom: 24px;
+}
+.cart-item {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 16px;
+    background: var(--bg-elevated);
+    border: 1px solid var(--border);
+    border-radius: 12px;
+}
+.cart-item-info h4 {
+    margin: 0 0 4px 0;
+    font-size: 1.05rem;
+    color: var(--text);
+}
+.cart-item-price {
+    font-size: 0.9rem;
+    color: var(--text-secondary);
+}
+.cart-controls {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    background: var(--bg);
+    padding: 4px;
+    border-radius: 8px;
+    border: 1px solid var(--border);
+}
+.btn-qty {
+    width: 32px;
+    height: 32px;
+    border: none;
+    background: transparent;
+    font-size: 1.2rem;
+    color: var(--text);
+    cursor: pointer;
+    border-radius: 4px;
+    transition: 0.2s;
+}
+.btn-qty:hover { background: #e5e7eb; }
+.qty-display {
+    font-weight: 600;
+    width: 24px;
+    text-align: center;
+}
+/* 底部浮動總結列 (手機版尤為重要) */
+.cart-summary-bar {
+    position: sticky;
+    bottom: 0;
+    background: var(--bg-elevated);
+    padding: 16px 20px;
+    border-top: 1px solid var(--border);
+    border-radius: 12px;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    box-shadow: 0 -4px 12px rgba(0,0,0,0.05);
+    margin-top: 24px;
+    z-index: 10;
+}
+.summary-price {
+    font-size: 1.4rem;
+    font-weight: 600;
+    color: #991b1b;
+}
+
+/* 確保原本的框會顯示為可點擊 */
+.market-dates .date-chip {
+    cursor: pointer; /* 滑鼠移過去會變手指仔 */
+    transition: all 0.2s ease;
+}
+
+/* 點擊後被選中的 active 樣式 */
+.market-dates .date-chip.active {
+    border-color: #991b1b; /* 配合卍物所嘅主色調 */
+    background-color: #fef2f2; /* 加上淺紅色背景，加強視覺提示 */
+    box-shadow: 0 0 0 1px #991b1b; /* 增強邊框厚度 */
+}
+
+/* 確保彈窗背景在手機上能正確置中，並加點安全邊距 */
+.modal-overlay, 
+#phoneVerifyModal {
+    display: flex !important;
+    align-items: center !important;  /* 垂直置中 */
+    justify-content: center !important; /* 水平置中 */
+    padding: 16px;                  /* 防止貼邊 */
+    box-sizing: border-box;
+}
+
+/* 手機版彈窗本體的適配 */
+.modal-sheet, 
+.alert-sheet {
+    max-width: 400px;
+    width: 100% !important;
+    max-height: 90vh;               /* 限制最大高度不超過螢幕 */
+    overflow-y: auto;               /* 若內容太多可滾動 */
+    margin: auto;                   /* 配合 flex 確保在極端情況下也能置中 */
+}
+
+@media (max-width: 768px) {
+    .modal-overlay, 
+    #phoneVerifyModal {
+        align-items: center !important; /* 強制在手機上下置中 */
+        padding: 12px;
+    }
+    
+    .modal-sheet, 
+    .alert-sheet {
+        width: 92% !important;        /* 手機上佔畫面 92% 寬度 */
+        padding: 24px 20px !important;  /* 縮減手機上的內邊距，避免太擁擠 */
+    }
+}
+
+/* 隱藏右下角的 Google reCAPTCHA 浮動標誌 */
+.grecaptcha-badge {
+    visibility: hidden !important;
+    opacity: 0 !important;
+    display: none !important;
+}
+
+/* --- 預訂頁面頂部圖片 banner 樣式 (適度縮細、置中) --- */
+.submit-top-banner {
+    width: 100%;
+    margin: 10px 0 32px 0; /* 上下安全距離 */
+    text-align: center;
+    box-sizing: border-box;
+}
+
+.submit-banner-img {
+    width: 100%;
+    max-width: 680px;       /* 🔑 限制最大寬度，電腦版唔會橫跨太闊霸佔兩側 */
+    height: auto;           /* 保持圖片原始比例，絕對不變形 */
+    margin: 0 auto;         /* 左右自動置中 */
+    border-radius: 16px;    /* 柔和圓角 */
+    box-shadow: 0 8px 24px rgba(0, 0, 0, 0.08); /* 質感微陰影 */
+    border: 1px solid var(--border, #e5e5ea); /* 與網站邊框風格融合 */
+    display: block;
+}
+
+/* 針對手機螢幕（流動裝置）的適配 */
+@media (max-width: 768px) {
+    .submit-top-banner {
+        margin: 5px 0 20px 0;
+        padding: 0 12px;    /* 手機版兩側保留安全呼吸距離 */
+    }
+    .submit-banner-img {
+        max-width: 100%;    /* 手機版自動適應螢幕寬度 */
+        border-radius: 12px;
+    }
+}

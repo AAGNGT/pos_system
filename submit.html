@@ -1,0 +1,188 @@
+<!DOCTYPE html>
+<html lang="zh-HK">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>提交預訂 — 卍物所</title>
+    <link rel="icon" href="Logo.jpg" type="image/jpeg">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&family=Noto+Serif+TC:wght@400;500;600&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="css/main.css">
+    <link rel="stylesheet" href="css/home.css">
+    <style>
+        .submit-page { padding-top: calc(var(--header-h) + 20px); padding-bottom: 80px; min-height: 80vh; background: var(--bg); }
+        .submit-container { max-width: 680px; margin: 0 auto; padding: 0 20px; }
+
+        /* --- 頂部圖片 p8.png 專屬樣式 (適度縮細、居中、圓角陰影) --- */
+
+        /* --- 改善取貨日期選擇器 (.market-dates) 樣式 --- */
+        .market-dates {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(130px, 1fr)); /* 自動平均分配空間 */
+            gap: 12px;
+            margin-top: 8px;
+        }
+        .date-chip {
+            background: var(--bg-card, #ffffff);
+            border: 1.5px solid var(--border, #e5e5ea);
+            border-radius: 12px;
+            padding: 14px 12px;
+            text-align: center;
+            cursor: pointer;
+            transition: all 0.2s ease;
+            box-shadow: 0 2px 6px rgba(0, 0, 0, 0.02);
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            box-sizing: border-box;
+        }
+        .date-chip strong {
+            font-size: 1.05rem;
+            color: var(--text, #111111);
+            margin-bottom: 2px;
+        }
+        .date-chip span {
+            font-size: 0.8rem;
+            color: var(--text-secondary, #666666);
+        }
+        .date-chip:hover {
+            border-color: var(--accent, #991b1b);
+            transform: translateY(-2px);
+            box-shadow: 0 4px 12px rgba(153, 27, 27, 0.08);
+        }
+        /* 當日期被選中時的狀態 (適配常見的 active / selected 類別) */
+        .date-chip.active, .date-chip.selected {
+            background: var(--accent, #991b1b) !important;
+            border-color: var(--accent, #991b1b) !important;
+            color: #ffffff !important;
+            box-shadow: 0 4px 14px rgba(153, 27, 27, 0.2);
+        }
+        .date-chip.active strong, .date-chip.active span,
+        .date-chip.selected strong, .date-chip.selected span {
+            color: #ffffff !important;
+        }
+
+        /* 針對手機螢幕（流動裝置）的條理化微調 */
+        @media (max-width: 768px) {
+            .submit-top-banner {
+                padding: 0 16px;
+                margin-bottom: 20px;
+            }
+            .market-dates {
+                grid-template-columns: repeat(2, 1fr); /* 手機版每行整齊排列 2 個，或改成 3 個亦可 */
+                gap: 10px;
+            }
+            .date-chip {
+                padding: 12px 8px;
+            }
+        }
+    </style>
+</head>
+<body>
+    <!-- 頂部導航欄 -->
+    <header class="site-header scrolled">
+        <div class="header-inner">
+            <a href="index.html" class="brand">
+                <span class="logo-ring logo-ring--sm" aria-hidden="true"><img src="Logo.jpg" alt=""></span>
+                <span class="brand-name">卍物所</span>
+            </a>
+            <button class="nav-toggle" type="button" aria-label="開啟選單">
+                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" aria-hidden="true"><path d="M4 7h16M4 12h16M4 17h16"/></svg>
+            </button>
+            <nav>
+                <ul class="nav-links">
+                    <li><a href="index.html">返回首頁</a></li>
+                    <li><a href="account.html">我的帳戶</a></li>
+                </ul>
+            </nav>
+            <div class="header-auth" id="headerAuth"></div>
+        </div>
+    </header>
+
+    <main class="submit-page">
+        <!-- ✨ 頂部圖片 p8.png (電腦手機均自動縮細、置中、帶圓角陰影) -->
+        <div class="submit-top-banner">
+            <img src="p8.png" alt="卍物所市集預訂" class="submit-banner-img">
+        </div>
+
+        <div class="submit-container">
+            <a href="index.html#market" class="back-link" style="margin-bottom: 24px; display: inline-block;">← 返回市集資訊</a>
+            <h1 class="form-title" style="font-size: 1.8rem; margin-bottom: 8px;">🛒 市集即場售賣預訂</h1>
+            <p class="form-subtitle" style="margin-bottom: 32px;">為確保心儀款式不會售罄，請選擇產品與取貨日期。</p>
+
+            <div class="account-member-banner account-member-banner--compact hidden" id="reserveLoggedInBanner" style="margin-bottom: 24px;">
+                <p>已登入 — 聯絡資料將自動帶入，只需選擇產品與取貨日。</p>
+            </div>
+
+            <form id="cartReserveForm" novalidate>
+                <!-- 1. 聯絡資料區 -->
+                <div id="guestContactFields" style="background: var(--bg-elevated); padding: 20px; border-radius: 12px; border: 1px solid var(--border); margin-bottom: 24px;">
+                    <h3 style="margin-top:0; margin-bottom: 16px; font-size: 1.1rem;">1. 聯絡資料</h3>
+                    <div class="form-row">
+                        <div class="form-group"><label>姓名 *</label><input type="text" id="customer_name" required></div>
+                        <div class="form-group"><label>電話 *</label><input type="tel" id="phone" required></div>
+                    </div>
+                    <div class="form-group" style="margin-bottom:0;"><label>電郵（選填）</label><input type="email" id="email"></div>
+                </div>
+
+                <!-- 2. 取貨日期區 (完美美化後的格網按鈕) -->
+                <div style="background: var(--bg-elevated); padding: 20px; border-radius: 12px; border: 1px solid var(--border); margin-bottom: 24px;">
+                    <h3 style="margin-top:0; margin-bottom: 16px; font-size: 1.1rem;">2. 選擇取貨日期 *</h3>
+                    <div class="market-dates" id="marketDatePicker">
+                        <div class="date-chip" data-value="2026-08-29">
+                            <strong>8 / 29</strong><span>週六 · 維園</span>
+                        </div>
+                        <div class="date-chip" data-value="2026-08-30">
+                            <strong>8 / 30</strong><span>週日 · 維園</span>
+                        </div>
+                        <div class="date-chip" data-value="2026-09-12">
+                            <strong>9 / 12</strong><span>週六 · 維園</span>
+                        </div>
+                        <div class="date-chip" data-value="2026-09-13">
+                            <strong>9 / 13</strong><span>週日 · 維園</span>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- 3. 產品購物車區 -->
+                <div>
+                    <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 16px; flex-wrap: wrap; gap: 8px;">
+                        <h3 style="margin: 0; font-size: 1.1rem;">3. 選擇產品</h3>
+                        <span style="font-size: 0.82rem; color: var(--text-secondary); background: var(--bg-elevated); padding: 4px 10px; border-radius: 6px; border: 1px solid var(--border); display: inline-flex; align-items: center; gap: 6px;">
+                            <span>🔍 提示：點擊產品縮圖可放大檢視款式</span>
+                        </span>
+                    </div>
+                    <div id="dynamicCartContainer" class="cart-product-list">
+                        <p class="loading-placeholder">正在載入產品...</p>
+                    </div>
+                    <div class="form-group">
+                        <label>備註</label>
+                        <textarea id="notes" placeholder="例如：希望取貨時段、特殊要求…"></textarea>
+                    </div>
+                </div>
+
+                <!-- 4. 底部結算列 -->
+                <div class="cart-summary-bar">
+                    <div>
+                        <div style="font-size: 0.85rem; color: var(--text-secondary);">總計金額 (到付)</div>
+                        <div class="summary-price" id="cartTotalDisplay">HK$0</div>
+                    </div>
+                    <button type="submit" id="btnSubmitCart" class="btn btn-primary" style="padding: 12px 32px;">確認預訂</button>
+                </div>
+                
+                <!-- 系統提示方塊 -->
+                <div id="reserveFeedback"></div>
+            </form>
+        </div>
+    </main>
+
+    <footer class="site-footer">
+        <p class="footer-copy">© 2026 卍物所</p>
+    </footer>
+
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <script src="supabase-config.js"></script>
+    <script src="js/auth.js"></script>
+    <script src="js/submit.js"></script> 
+</body>
+</html>
