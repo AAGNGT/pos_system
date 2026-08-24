@@ -142,17 +142,69 @@ section { padding: 120px 24px; }
 .welcome-toast { position: fixed; top: 56px; left: 50%; transform: translate(-50%, -150%); background: rgba(255, 255, 255, 0.85); backdrop-filter: blur(12px); border: 1px solid var(--border); padding: 12px 28px; border-radius: 999px; box-shadow: var(--shadow-soft); z-index: 100000; display: flex; align-items: center; gap: 8px; font-family: "Noto Serif TC", serif; font-size: 0.95rem; font-weight: 500; color: var(--text); transition: transform 0.6s cubic-bezier(0.34, 1.56, 0.64, 1), opacity 0.4s; opacity: 0; pointer-events: none; }
 .welcome-toast.show { transform: translate(-50%, 0); opacity: 1; }
 
-/* ── Modals (Auth & Common) ── */
-.modal-overlay { position: fixed; inset: 0; z-index: 200; background: rgba(0, 0, 0, 0.4); backdrop-filter: blur(8px); display: flex; align-items: flex-end; justify-content: center; padding: 24px; opacity: 0; visibility: hidden; transition: opacity 0.35s var(--ease), visibility 0.35s; }
+/* ── Modals & Mobile Viewport Fixes (Unified) ── */
+.modal-overlay {
+    position: fixed !important;
+    top: 0 !important;
+    left: 0 !important;
+    width: 100vw !important;
+    width: 100dvw !important;
+    height: 100vh !important;
+    height: 100dvh !important;
+    background: rgba(0, 0, 0, 0.65) !important;
+    z-index: 200 !important;
+    display: flex !important;
+    align-items: center !important;
+    justify-content: center !important;
+    padding: 16px !important;
+    box-sizing: border-box !important;
+    overflow-y: auto !important;
+    opacity: 0;
+    visibility: hidden;
+    transition: opacity 0.35s var(--ease), visibility 0.35s;
+}
 .modal-overlay.open { opacity: 1; visibility: visible; }
-.modal-sheet { width: min(480px, 100%); background: var(--bg-elevated); border-radius: var(--radius-lg) var(--radius-lg) 0 0; padding: 32px; transform: translateY(100%); transition: transform 0.45s var(--ease-out); max-height: 85vh; overflow-y: auto; position: relative; }
-.modal-overlay.open .modal-sheet { transform: translateY(0); }
-@media (min-width: 640px) { .modal-overlay { align-items: center; } .modal-sheet { border-radius: var(--radius-lg); transform: translateY(24px) scale(0.96); } .modal-overlay.open .modal-sheet { transform: translateY(0) scale(1); } }
-.modal-close { position: absolute; top: 16px; right: 16px; width: 32px; height: 32px; border: none; background: var(--bg); border-radius: 50%; cursor: pointer; font-size: 1.2rem; color: var(--text-secondary); display: flex; align-items: center; justify-content: center; transition: background 0.2s; }
+
+.modal-sheet {
+    width: min(440px, 100%) !important;
+    max-height: 85dvh !important;
+    background: var(--bg-elevated) !important;
+    border-radius: var(--radius-lg) !important;
+    padding: 32px 24px 24px 24px !important;
+    box-shadow: 0 25px 50px rgba(0, 0, 0, 0.25) !important;
+    overflow-y: auto !important;
+    position: relative !important;
+    box-sizing: border-box !important;
+    display: flex !important;
+    flex-direction: column !important;
+    margin: auto !important;
+    transform: translateY(24px) scale(0.96);
+    transition: transform 0.45s var(--ease-out);
+}
+.modal-overlay.open .modal-sheet { transform: translateY(0) scale(1); }
+
+.modal-close { position: absolute; top: 16px; right: 16px; width: 32px; height: 32px; border: none; background: var(--bg); border-radius: 50%; cursor: pointer; font-size: 1.2rem; color: var(--text-secondary); display: flex; align-items: center; justify-content: center; transition: background 0.2s; z-index: 5; }
 .modal-close:hover { background: var(--border); }
 
+.modal-content-scrollable {
+    overflow-y: auto !important;
+    flex: 1 !important;
+    padding-right: 4px !important;
+    margin-bottom: 16px !important;
+}
+
+.modal-footer-action {
+    flex-shrink: 0 !important;
+    padding-top: 8px !important;
+}
+
+@media (max-width: 768px) {
+    .modal-overlay { padding: 12px !important; }
+    .modal-sheet { width: 92% !important; padding: 24px 20px !important; }
+}
+
 /* Auth Modal Specifics */
-.auth-sheet { max-width: 420px; }
+.auth-sheet { max-width: 420px !important; }
 .auth-modal-title { font-family: "Noto Serif TC", serif; font-size: 1.35rem; margin-bottom: 20px; text-align: center; }
 .auth-tabs { display: flex; gap: 4px; background: rgba(0, 0, 0, 0.04); border-radius: 12px; padding: 4px; margin-bottom: 20px; }
 .auth-tab { flex: 1; border: none; background: transparent; padding: 10px; font-size: 0.85rem; font-weight: 500; color: var(--text-secondary); border-radius: 9px; cursor: pointer; transition: all 0.25s var(--ease); }
@@ -179,14 +231,14 @@ section { padding: 120px 24px; }
 .form-legal-note { margin-top: 12px; font-size: 0.75rem; color: var(--text-tertiary); line-height: 1.5; text-align: center; }
 .form-legal-note a { color: var(--text-secondary); text-decoration: underline; text-underline-offset: 2px; }
 
-/* ── 共用帳戶 Banner (適用於首頁及帳戶頁) ── */
+/* ── 共用帳戶 Banner ── */
 .account-member-banner { background: var(--accent-soft); border: 1px solid rgba(122, 107, 88, 0.2); border-radius: var(--radius); padding: 16px 20px; margin-bottom: 24px; }
 .account-member-banner p { font-size: 0.85rem; color: var(--text-secondary); line-height: 1.65; margin: 0 0 6px; }
 .account-member-banner p:last-child { margin-bottom: 0; }
 .account-member-hint { font-size: 0.82rem !important; color: var(--text-tertiary) !important; }
 .account-member-banner--compact { margin-bottom: 16px; padding: 12px 16px; }
 
-/* ── 自訂通知框按鈕 (透明變實心) ── */
+/* ── 自訂通知框按鈕 ── */
 .btn-alert-custom {
     display: inline-flex;
     align-items: center;
@@ -209,13 +261,13 @@ section { padding: 120px 24px; }
     color: #fff;
     box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
 }
+
 /* =========================================
    導航列下拉選單 (更多工具)
 ========================================= */
-/* 桌面版預設樣式 */
 .nav-dropdown {
     position: relative;
-    display: block; /* 移除 flex，解決手機版擠壓與高度問題 */
+    display: block;
 }
 
 .dropdown-toggle {
@@ -229,6 +281,7 @@ section { padding: 120px 24px; }
     transition: transform 0.3s ease;
     margin-top: 1px;
 }
+
 .dropdown-menu {
     position: absolute;
     top: 100%;
@@ -264,51 +317,27 @@ section { padding: 120px 24px; }
 }
 
 .dropdown-menu a {
-    padding: 12px 20px !important;
-    display: flex;
-    align-items: center;
-    gap: 8px; /* 設定 SVG 圖示與文字的間距 */
-    color: var(--text, #1d1d1f);
-    font-size: 0.95rem;
-    transition: background 0.2s, color 0.2s;
-    text-align: left;
-    white-space: nowrap;
-}
-
-/* 滑鼠經過子選項的微底色 */
-.dropdown-menu a:hover {
-    background: rgba(0, 0, 0, 0.03); 
-    color: var(--text, #1d1d1f);
-}
-.dropdown-menu li {
-    margin: 0;
-}
-
-.dropdown-menu a {
     padding: 10px 20px !important;
     display: block;
-    color: var(--text, #0f172a);
+    color: var(--text, #1d1d1f);
     font-size: 0.95rem;
     transition: background 0.2s, color 0.2s;
     text-align: left;
     white-space: nowrap;
-}F
-
-.dropdown-menu a:hover {
-    background: #f1f5f9;
-    color: #0f172a;
 }
 
-/* =========================================
-   手機版響應式 (Accordion 展開效果)
-========================================= */
+.dropdown-menu a:hover {
+    background: rgba(0, 0, 0, 0.04);
+    color: var(--text, #1d1d1f);
+}
+
 @media (max-width: 768px) {
     .dropdown-menu {
         position: static;
         transform: none !important;
         box-shadow: none;
         border: none;
-        background: rgba(0, 0, 0, 0.03); /* 手機版內縮區域微灰背景 */
+        background: rgba(0, 0, 0, 0.03);
         backdrop-filter: none;
         -webkit-backdrop-filter: none;
         display: none; 
@@ -322,7 +351,7 @@ section { padding: 120px 24px; }
 
     .nav-dropdown {
         flex-direction: column;
-        align-items: flex-start; /* 讓文字靠左對齊 */
+        align-items: flex-start;
         width: 100%;
     }
 
@@ -331,12 +360,12 @@ section { padding: 120px 24px; }
     }
 
     .dropdown-menu a {
-        padding-left: 32px !important; /* 子選單縮排 */
+        padding-left: 32px !important;
     }
 }
 
 /* =========================================
-   售賣訂單：多選產品 UI 優化
+   售賣訂單與購物車 UI
 ========================================= */
 .product-item-row {
     display: flex;
@@ -345,9 +374,7 @@ section { padding: 120px 24px; }
     margin-bottom: 12px;
 }
 
-.dynamic-product-select {
-    width: 100%;
-}
+.dynamic-product-select { width: 100%; }
 
 .btn-remove-product {
     width: 44px;
@@ -362,29 +389,8 @@ section { padding: 120px 24px; }
     justify-content: center;
     transition: 0.2s ease;
 }
+.btn-remove-product:hover { background: #fca5a5; }
 
-.btn-remove-product:hover {
-    background: #fca5a5;
-}
-
-/* 手機版極致顯示優化 */
-@media (max-width: 480px) {
-    .product-item-row {
-        gap: 8px; 
-    }
-    .dynamic-quantity-input {
-        padding-left: 8px;
-        padding-right: 8px;
-        text-align: center;
-    }
-    #add-product-btn {
-        font-size: 0.95rem;
-    }
-}
-
-/* =========================================
-   提交預訂頁面：購物車式 UI
-========================================= */
 .cart-product-list {
     display: flex;
     flex-direction: column;
@@ -400,15 +406,8 @@ section { padding: 120px 24px; }
     border: 1px solid var(--border);
     border-radius: 12px;
 }
-.cart-item-info h4 {
-    margin: 0 0 4px 0;
-    font-size: 1.05rem;
-    color: var(--text);
-}
-.cart-item-price {
-    font-size: 0.9rem;
-    color: var(--text-secondary);
-}
+.cart-item-info h4 { margin: 0 0 4px 0; font-size: 1.05rem; color: var(--text); }
+.cart-item-price { font-size: 0.9rem; color: var(--text-secondary); }
 .cart-controls {
     display: flex;
     align-items: center;
@@ -430,12 +429,8 @@ section { padding: 120px 24px; }
     transition: 0.2s;
 }
 .btn-qty:hover { background: #e5e7eb; }
-.qty-display {
-    font-weight: 600;
-    width: 24px;
-    text-align: center;
-}
-/* 底部浮動總結列 (手機版尤為重要) */
+.qty-display { font-weight: 600; width: 24px; text-align: center; }
+
 .cart-summary-bar {
     position: sticky;
     bottom: 0;
@@ -450,93 +445,78 @@ section { padding: 120px 24px; }
     margin-top: 24px;
     z-index: 10;
 }
-.summary-price {
-    font-size: 1.4rem;
-    font-weight: 600;
-    color: #991b1b;
-}
+.summary-price { font-size: 1.4rem; font-weight: 600; color: #991b1b; }
 
-/* 確保原本的框會顯示為可點擊 */
+/* ── Market Dates Selection ── */
 .market-dates .date-chip {
-    cursor: pointer; /* 滑鼠移過去會變手指仔 */
+    cursor: pointer;
     transition: all 0.2s ease;
 }
-
-/* 點擊後被選中的 active 樣式 */
 .market-dates .date-chip.active {
-    border-color: #991b1b; /* 配合卍物所嘅主色調 */
-    background-color: #fef2f2; /* 加上淺紅色背景，加強視覺提示 */
-    box-shadow: 0 0 0 1px #991b1b; /* 增強邊框厚度 */
+    border-color: #991b1b;
+    background-color: #fef2f2;
+    box-shadow: 0 0 0 1px #991b1b;
 }
 
-/* 確保彈窗背景在手機上能正確置中，並加點安全邊距 */
-.modal-overlay, 
-#phoneVerifyModal {
-    display: flex !important;
-    align-items: center !important;  /* 垂直置中 */
-    justify-content: center !important; /* 水平置中 */
-    padding: 16px;                  /* 防止貼邊 */
-    box-sizing: border-box;
-}
-
-/* 手機版彈窗本體的適配 */
-.modal-sheet, 
-.alert-sheet {
-    max-width: 400px;
-    width: 100% !important;
-    max-height: 90vh;               /* 限制最大高度不超過螢幕 */
-    overflow-y: auto;               /* 若內容太多可滾動 */
-    margin: auto;                   /* 配合 flex 確保在極端情況下也能置中 */
-}
-
-@media (max-width: 768px) {
-    .modal-overlay, 
-    #phoneVerifyModal {
-        align-items: center !important; /* 強制在手機上下置中 */
-        padding: 12px;
-    }
-    
-    .modal-sheet, 
-    .alert-sheet {
-        width: 92% !important;        /* 手機上佔畫面 92% 寬度 */
-        padding: 24px 20px !important;  /* 縮減手機上的內邊距，避免太擁擠 */
-    }
-}
-
-/* 隱藏右下角的 Google reCAPTCHA 浮動標誌 */
+/* ── Google reCAPTCHA Badge Hide ── */
 .grecaptcha-badge {
     visibility: hidden !important;
     opacity: 0 !important;
     display: none !important;
 }
 
-/* --- 預訂頁面頂部圖片 banner 樣式 (適度縮細、置中) --- */
+/* ── Submit Page Top Banner ── */
 .submit-top-banner {
     width: 100%;
-    margin: 10px 0 32px 0; /* 上下安全距離 */
+    margin: 10px 0 32px 0;
     text-align: center;
     box-sizing: border-box;
 }
-
 .submit-banner-img {
     width: 100%;
-    max-width: 680px;       /* 🔑 限制最大寬度，電腦版唔會橫跨太闊霸佔兩側 */
-    height: auto;           /* 保持圖片原始比例，絕對不變形 */
-    margin: 0 auto;         /* 左右自動置中 */
-    border-radius: 16px;    /* 柔和圓角 */
-    box-shadow: 0 8px 24px rgba(0, 0, 0, 0.08); /* 質感微陰影 */
-    border: 1px solid var(--border, #e5e5ea); /* 與網站邊框風格融合 */
+    max-width: 680px;
+    height: auto;
+    margin: 0 auto;
+    border-radius: 16px;
+    box-shadow: 0 8px 24px rgba(0, 0, 0, 0.08);
+    border: 1px solid var(--border, #e5e5ea);
     display: block;
 }
 
-/* 針對手機螢幕（流動裝置）的適配 */
 @media (max-width: 768px) {
-    .submit-top-banner {
-        margin: 5px 0 20px 0;
-        padding: 0 12px;    /* 手機版兩側保留安全呼吸距離 */
-    }
-    .submit-banner-img {
-        max-width: 100%;    /* 手機版自動適應螢幕寬度 */
-        border-radius: 12px;
-    }
+    .product-item-row { gap: 8px; }
+    .submit-top-banner { margin: 5px 0 20px 0; padding: 0 12px; }
+    .submit-banner-img { max-width: 100%; border-radius: 12px; }
+}
+
+/* --- 天氣預報通知視窗內的「不要再顯示」勾選框專屬樣式 --- */
+#neverShowCheckboxContainer {
+    margin: 4px 0 16px 0 !important;
+    padding: 8px 12px !important;
+    background: var(--bg, #f7f6f3) !important;
+    border: 1px solid var(--border, rgba(0, 0, 0, 0.08)) !important;
+    border-radius: 10px !important;
+    display: flex !important;
+    align-items: center !important;
+    gap: 10px !important;
+    box-sizing: border-box !important;
+}
+
+#neverShowCheckboxContainer input[type="checkbox"] {
+    width: 18px !important;
+    height: 18px !important;
+    accent-color: var(--accent, #7a6b58) !important; /* 自動配合你網站的高級大地色系主調 */
+    cursor: pointer !important;
+    margin: 0 !important;
+    flex-shrink: 0 !important;
+}
+
+#neverShowCheckboxContainer label {
+    font-size: 0.88rem !important;
+    color: var(--text-secondary, #6e6e73) !important;
+    cursor: pointer !important;
+    user-select: none !important;
+    font-weight: 500 !important;
+    line-height: 1.3 !important;
+    margin: 0 !important;
 }

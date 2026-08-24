@@ -187,28 +187,6 @@
         }
     }
 
-    // async function updateReserveFormMode() {
-    //     const guest = document.getElementById('guestContactFields');
-    //     const banner = document.getElementById('reserveLoggedInBanner');
-    //     const subtitle = document.getElementById('reserveFormSubtitle');
-    //     const nameInput = document.getElementById('customer_name');
-    //     const phoneInput = document.getElementById('phone');
-    //     if (!guest) return;
-
-    //     const session = window.WanwuAuth ? await WanwuAuth.getSession() : null;
-    //     const loggedIn = !!(session && session.user);
-
-    //     guest.classList.toggle('hidden', loggedIn);
-    //     if (banner) banner.classList.toggle('hidden', !loggedIn);
-    //     if (subtitle) {
-    //         subtitle.textContent = loggedIn
-    //             ? '已登入 — 只需選擇產品與取貨日，聯絡資料從帳戶自動帶入。'
-    //             : '填寫以下資料，我們將於市集為您留貨。';
-    //     }
-    //     if (nameInput) nameInput.required = !loggedIn;
-    //     if (phoneInput) phoneInput.required = !loggedIn;
-    // }
-
     function openProductModal(product) {
         const overlay = document.getElementById('productModal');
         const body = document.getElementById('modalBody');
@@ -328,105 +306,6 @@
         }).join('');
     }
 
-    // async function submitReservation(e) {
-    //     e.preventDefault();
-    //     const form = e.target;
-    //     const feedback = document.getElementById('reserveFeedback');
-    //     const btn = form.querySelector('button[type="submit"]');
-
-    //     const pickupDate = form.pickup_date.value;
-    //     const productSel = form.product_interest;
-    //     const productOpt = productSel.options[productSel.selectedIndex];
-    //     const quantity = parseInt(form.quantity.value, 10) || 1;
-    //     const notes = form.notes.value.trim() || null;
-
-    //     if (!pickupDate) {
-    //         showFeedback(feedback, '請選擇取貨日期。', 'error');
-    //         return;
-    //     }
-    //     if (!productSel.value) {
-    //         showFeedback(feedback, '請選擇產品。', 'error');
-    //         return;
-    //     }
-
-    //     const session = window.WanwuAuth ? await WanwuAuth.getSession() : null;
-    //     const loggedIn = !!(session && session.user);
-
-    //     btn.disabled = true;
-    //     showFeedback(feedback, '提交中…', 'success');
-
-    //     try {
-    //         const client = initSupabase();
-
-    //         if (loggedIn && window.WanwuAuth) {
-    //             await WanwuAuth.createOrder({
-    //                 product_id: Number(productOpt.dataset.id) || null,
-    //                 product_name: productOpt.dataset.name || productSel.value,
-    //                 unit_price: Number(productOpt.dataset.price) || null,
-    //                 quantity: quantity,
-    //                 pickup_date: pickupDate,
-    //                 notes: notes
-    //             });
-    //             form.reset();
-    //             showFeedback(feedback, '訂單已提交。我們會於市集當日為您備貨。', 'success');
-    //             return;
-    //         }
-
-    //         const payload = {
-    //             customer_name: form.customer_name.value.trim(),
-    //             phone: form.phone.value.trim(),
-    //             email: form.email.value.trim() || null,
-    //             pickup_date: pickupDate,
-    //             product_interest: productSel.value || null,
-    //             quantity: quantity,
-    //             notes: notes
-    //         };
-
-    //         if (!payload.customer_name || !payload.phone) {
-    //             showFeedback(feedback, '請填寫姓名及電話。', 'error');
-    //             btn.disabled = false;
-    //             return;
-    //         }
-
-    //         if (client) {
-    //             const { error } = await client.from('wanwu_market_reservations').insert(payload);
-    //             if (error) throw error;
-    //         } else {
-    //             saveLocal('wanwu_reservations', payload);
-    //         }
-    //         form.reset();
-    //         showFeedback(feedback, '預訂已收到。我們會於市集當日為您備貨，請留意電話聯絡。', 'success');
-    //     } catch (err) {
-    //         console.error(err);
-    //         if (loggedIn) {
-    //             showFeedback(feedback, err.message || '提交失敗，請稍後再試。', 'error');
-    //         } else {
-    //             const payload = {
-    //                 customer_name: form.customer_name.value.trim(),
-    //                 phone: form.phone.value.trim(),
-    //                 email: form.email.value.trim() || null,
-    //                 pickup_date: pickupDate,
-    //                 product_interest: productSel.value || null,
-    //                 quantity: quantity,
-    //                 notes: notes
-    //             };
-    //             saveLocal('wanwu_reservations', payload);
-    //             showFeedback(feedback, '已暫存您的預訂（離線模式）。請稍後再試或於市集現場告知我們。', 'success');
-    //         }
-    //     } finally {
-    //         btn.disabled = false;
-    //         updateReserveFormMode();
-    //     }
-    // }
-// ==========================================
-// 動態新增多個產品與數量 UI 邏輯
-// ==========================================
-
-// ==========================================
-// 市集預訂：提交訂單邏輯 (融合舊有邏輯與多產品支援)
-// ==========================================
-
-
     async function submitArtistWork(e) {
         e.preventDefault();
         const form = e.target;
@@ -497,7 +376,6 @@
         return escapeHtml(s).replace(/'/g, '&#39;');
     }
 
-    // 修復了 setupHeader 內部嵌套的問題
     function setupHeader() {
         const header = document.querySelector('.site-header');
         const toggle = document.querySelector('.nav-toggle');
@@ -542,10 +420,7 @@
         const io = new IntersectionObserver(function (entries) {
             entries.forEach(function (entry) {
                 if (entry.isIntersecting) {
-                    // 停止觀察該元素
                     io.unobserve(entry.target);
-                    
-                    // ✨ 將延遲時間從 250 毫秒調快到 100 毫秒，更快觸發顯示
                     setTimeout(function() {
                         entry.target.classList.add('visible');
                     }, 200);
@@ -573,23 +448,18 @@
         });
     }
 
-    // === 1. 頂部歡迎回來通知邏輯 ===
     async function checkWelcomeBack() {
         if (!window.WanwuAuth) return;
-        
         const session = await WanwuAuth.getSession();
-        
         if (session && session.user) {
             if (!sessionStorage.getItem('wanwu_welcomed')) {
                 sessionStorage.setItem('wanwu_welcomed', 'true');
-                
                 let userName = '客人';
                 if (session.user.user_metadata && session.user.user_metadata.display_name) {
                     userName = session.user.user_metadata.display_name;
                 } else if (session.user.email) {
                     userName = session.user.email.split('@')[0];
                 }
-                
                 showWelcomeToast(`${userName}，歡迎你回來！ ✨`);
             }
         }
@@ -598,9 +468,7 @@
     function showWelcomeToast(message) {
         const toast = document.getElementById('welcomeToast');
         if (!toast) return;
-        
         toast.textContent = message;
-        
         setTimeout(() => {
             toast.classList.add('show');
             setTimeout(() => {
@@ -609,11 +477,61 @@
         }, 1200);
     }
 
+    // === 天氣預報通知視窗計時檢測與顯示控制 ===
+    function setupMarketNotice() {
+        var noticeModal = document.getElementById('marketNoticeModal');
+        if (!noticeModal) return;
+
+        var closeBtn = document.getElementById('noticeModalClose');
+        var okBtn = document.getElementById('noticeModalBtn');
+        var checkbox = document.getElementById('neverShowCheckbox');
+
+        // 1. 檢查是否勾選過「不要再顯示」
+        var neverShowAgain = localStorage.getItem('marketNotice_neverShow') === 'true';
+        if (neverShowAgain) return;
+
+        // 2. 檢查距離上次關閉是否已經超過 10 分鐘 (10分鐘 = 600,000 毫秒)
+        var lastClosedTime = localStorage.getItem('marketNotice_lastClosed');
+        var currentTime = new Date().getTime();
+        var tenMinutesInMs = 10 * 60 * 1000;
+        var shouldShow = false;
+
+        if (!lastClosedTime) {
+            shouldShow = true; // 從未關閉過
+        } else if ((currentTime - Number(lastClosedTime)) > tenMinutesInMs) {
+            shouldShow = true; // 超過 10 分鐘
+        }
+
+        if (shouldShow) {
+            setTimeout(function() {
+                noticeModal.classList.add('open');
+                document.body.style.overflow = 'hidden';
+            }, 500);
+        }
+
+        // 關閉視窗並儲存記錄
+        function closeNotice() {
+            noticeModal.classList.remove('open');
+            document.body.style.overflow = '';
+
+            // 記錄關閉當下的時間點
+            localStorage.setItem('marketNotice_lastClosed', new Date().getTime().toString());
+
+            // 檢查用戶是否有勾選「不要再顯示」
+            if (checkbox && checkbox.checked) {
+                localStorage.setItem('marketNotice_neverShow', 'true');
+            }
+        }
+
+        if (closeBtn) closeBtn.addEventListener('click', closeNotice);
+        if (okBtn) okBtn.addEventListener('click', closeNotice);
+    }
+
+
     // 唯一的 DOMContentLoaded
     document.addEventListener('DOMContentLoaded', function () {
         setupHeader();
         setupModal();
-        // 注意這裡不呼叫 setupReveals()，留給載入畫面結束後再呼叫
         renderMarketDates();
         renderStallCalendar();
         loadProducts();
@@ -624,104 +542,61 @@
         if (artistForm) artistForm.addEventListener('submit', submitArtistWork);
 
         checkWelcomeBack();
+        setupMarketNotice(); // 啟動市集通知定時檢測
     });
 
     // === 2. 加載畫面 (Loading Screen) 控制 ===
-
     window.addEventListener('load', function() {
-    const loader = document.getElementById('globalLoader');
-    if (loader) {
-        // 檢查該標籤頁 (Session) 是否已經載入過
-        const hasLoadedOnce = sessionStorage.getItem('wanwu_loaded_once');
-        let loadTime = 3500; // 第一次進入，維持 3.5 秒的寧靜沉澱
+        const loader = document.getElementById('globalLoader');
+        if (loader) {
+            const hasLoadedOnce = sessionStorage.getItem('wanwu_loaded_once');
+            let loadTime = 3500;
 
-        if (hasLoadedOnce) {
-            // 如果已經進入過，將等待時間大幅縮減至 1 秒
-            loadTime = 1000;
-            // 加入加速 class，讓 CSS 動畫跟著變快
-            loader.classList.add('fast-load');
-        } else {
-            // 標記為已經載入過
-            sessionStorage.setItem('wanwu_loaded_once', 'true');
-        }
+            if (hasLoadedOnce) {
+                loadTime = 1000;
+                loader.classList.add('fast-load');
+            } else {
+                sessionStorage.setItem('wanwu_loaded_once', 'true');
+            }
 
-        setTimeout(() => {
-            loader.classList.add('hidden');
-            
-            // 載入畫面隱藏的一刻，啟動首頁的文字漸出動畫！
-            setupReveals(); 
-            
             setTimeout(() => {
-                loader.style.display = 'none';
-            }, 800);
-        }, loadTime); 
-    } else {
-        // 防呆：如果沒有 loader，就直接執行
-        setupReveals();
-    }
-});
-
-document.addEventListener('DOMContentLoaded', () => {
-    // 使用 window 的「捕獲階段 (Capture)」來做最高優先級的攔截
-    window.addEventListener('click', function(e) {
-        const toggleBtn = e.target.closest('.dropdown-toggle');
-        const dropdownLink = e.target.closest('.dropdown-menu a');
-
-        // 情境 1：如果點擊的是「更多工具」按鈕 (或是旁邊的箭頭)
-        if (toggleBtn) {
-            e.preventDefault();
-            // 🔴 終極攔截：在事件傳遞給原本的 app.js 之前，直接在這裡砍斷！
-            // 這會完美防止觸發「點擊連結就關閉手機選單」的邏輯
-            e.stopPropagation();
-            e.stopImmediatePropagation();
-
-            const navDropdown = toggleBtn.closest('.nav-dropdown');
-            if (navDropdown) {
-                navDropdown.classList.toggle('active'); // 展開或收起子選單
-            }
-        } 
-        // 情境 2：如果點擊的是「子選單裡的連結」(例如 追蹤市集訂單 或 畫家投稿)
-        else if (dropdownLink) {
-            const navDropdown = dropdownLink.closest('.nav-dropdown');
-            if (navDropdown) {
-                // 順手把子選單的 active 移除，這樣下次打開手機選單時，就不會預設是展開的！
-                navDropdown.classList.remove('active');
-            }
-            // 注意：這裡我們「不攔截」事件，讓原本的 app.js 正常運作，
-            // 順利幫你關閉手機的主選單並跳轉頁面。
-        } 
-        // 情境 3：如果點擊網頁的「其他空白地方」
-        else {
-            const activeDropdown = document.querySelector('.nav-dropdown.active');
-            if (activeDropdown && !activeDropdown.contains(e.target)) {
-                activeDropdown.classList.remove('active'); // 自動收起子選單
-            }
+                loader.classList.add('hidden');
+                setupReveals(); 
+                setTimeout(() => {
+                    loader.style.display = 'none';
+                }, 800);
+            }, loadTime); 
+        } else {
+            setupReveals();
         }
-    }, true); // <--- 關鍵字 true，代表在「捕獲階段」優先執行，這是整個網站第一個被觸發的事件！
-});
-
-document.addEventListener('DOMContentLoaded', function() {
-        var noticeModal = document.getElementById('marketNoticeModal');
-        var closeBtn = document.getElementById('noticeModalClose');
-        var okBtn = document.getElementById('noticeModalBtn');
-
-        // 檢查 localStorage 是否已有記錄
-        if (!localStorage.getItem('hasSeenMarketNotice')) {
-            // 延遲 0.5 秒後顯示，讓背景（如全域載入畫面）先沉澱
-            setTimeout(function() {
-                noticeModal.classList.add('open');
-                document.body.style.overflow = 'hidden';
-            }, 500);
-        }
-
-        // 關閉視窗並寫入記錄
-        function closeNotice() {
-            noticeModal.classList.remove('open');
-            document.body.style.overflow = '';
-            localStorage.setItem('hasSeenMarketNotice', 'true');
-        }
-
-        if (closeBtn) closeBtn.addEventListener('click', closeNotice);
-        if (okBtn) okBtn.addEventListener('click', closeNotice);
     });
+
+    document.addEventListener('DOMContentLoaded', () => {
+        window.addEventListener('click', function(e) {
+            const toggleBtn = e.target.closest('.dropdown-toggle');
+            const dropdownLink = e.target.closest('.dropdown-menu a');
+
+            if (toggleBtn) {
+                e.preventDefault();
+                e.stopPropagation();
+                e.stopImmediatePropagation();
+
+                const navDropdown = toggleBtn.closest('.nav-dropdown');
+                if (navDropdown) {
+                    navDropdown.classList.toggle('active');
+                }
+            } else if (dropdownLink) {
+                const navDropdown = dropdownLink.closest('.nav-dropdown');
+                if (navDropdown) {
+                    navDropdown.classList.remove('active');
+                }
+            } else {
+                const activeDropdown = document.querySelector('.nav-dropdown.active');
+                if (activeDropdown && !activeDropdown.contains(e.target)) {
+                    activeDropdown.classList.remove('active');
+                }
+            }
+        }, true);
+    });
+
 })();

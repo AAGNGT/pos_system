@@ -328,8 +328,22 @@
                             <input type="text" id="homeTrackingInput" placeholder="例如: AA???" style="flex: 1; padding: 10px; border-radius: 6px; border: 1px solid var(--border); text-transform: uppercase;">
                             <button type="button" id="btnHomeTrack" class="btn btn-secondary" style="white-space: nowrap; padding: 10px 20px;">查詢</button>
                         </div>
+                        <!-- 放在「訪客訂單查詢」區塊的下方 -->
+                        <div id="recentSearchesSection" style="margin-top: 16px; padding-top: 16px; border-top: 1px solid var(--border); display: none;">
+                            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px;">
+                                <span style="font-size: 0.85rem; font-weight: 600; color: var(--text-secondary);">🕒 最近查詢記錄</span>
+                                <button type="button" id="btnClearRecentSearches" style="background: none; border: none; font-size: 0.75rem; color: var(--text-tertiary, #888); cursor: pointer; text-decoration: underline; padding: 0;">清除</button>
+                            </div>
+                            <div id="recentSearchesList" style="display: flex; flex-direction: column; gap: 6px;">
+                                <!-- 動態填入 -->
+                            </div>
+                        </div>
+
                         <p id="homeTrackFeedback" style="color: #991b1b; font-size: 0.85rem; margin-top: 8px; display: none;"></p>
                     </div>
+
+
+
 
             </div>
         </section>
@@ -531,63 +545,167 @@
                     📍 <strong>地點：</strong>銅鑼灣維多利亞公園<br>
                     ⛺ <strong>攤位：</strong>第 10 號攤位
                 </div>
-
-                <p style="margin-top: 16px; font-size: 0.85rem; text-align: center; color: var(--text-tertiary);">不便之處，敬請見諒。期待在天氣晴朗的週末與您相見！</p>
+<p style="margin-top: 16px; font-size: 0.85rem; text-align: center; color: var(--text-tertiary);">不便之處，敬請見諒。期待在天氣晴朗的週末與您相見！</p>               
             </div>
+                    <div class="modal-footer-action">
+            <!-- ✨ 直接融入在 HTML 裡的勾選框 -->
+            <div id="neverShowCheckboxContainer">
+                <input type="checkbox" id="neverShowCheckbox">
+                <label for="neverShowCheckbox">10 分鐘內不要再自動顯示</label>
+            </div>
+            
             <button type="button" id="noticeModalBtn" class="btn btn-primary" style="width: 100%;">我知道了</button>
         </div>
     </div>
     <script>
     document.addEventListener('DOMContentLoaded', () => {
-        const client = typeof getSupabaseClient === 'function' ? getSupabaseClient() : window.supabaseClient;
+    // 1. 頁面載入時自動渲染最近查詢記錄與綁定清除按鈕
+    renderRecentSearchesUI();
+    
+    const btnClear = document.getElementById('btnClearRecentSearches');
+    if (btnClear) {
+        btnClear.onclick = function() {
+            localStorage.removeItem('wanwu_recent_searches');
+            renderRecentSearchesUI();
+        };
+    }
+
+    const client = typeof getSupabaseClient === 'function' ? getSupabaseClient() : window.supabaseClient;
+    
+    const btnTrack = document.getElementById('btnHomeTrack');
+    const inputTrack = document.getElementById('homeTrackingInput');
+    const feedbackTrack = document.getElementById('homeTrackFeedback');
+    
+    const modal = document.getElementById('phoneVerifyModal');
+    const btnCloseModal = document.getElementById('phoneVerifyClose');
+    const btnVerify = document.getElementById('btnVerifyPhone');
+    const inputPhone = document.getElementById('verifyPhoneInput');
+    const verifyFeedback = document.getElementById('verifyFeedback');
+    
+    let tempOrderData = null; 
+
+    // 2. 點擊「查詢」按鈕
+    if (btnTrack) {
+        btnTrack.onclick = async function(e) {
+            e.preventDefault(); 
+            
+            const code = inputTrack.value.trim().toUpperCase();
+            if (!code) {
+                feedbackTrack.innerHTML = '⚠️ 請輸入追蹤碼。';
+                feedbackTrack.style.display = 'block';
+                return;
+            }
+
+            btnTrack.disabled = true;
+            btnTrack.textContent = '搜尋中...';
+            feedbackTrack.style.display = 'none';
+
+            try {
+                // 呼叫 RPC 函數安全查詢
+                const { data, error } = await client.rpc('verify_tracking_code', { search_code: code });
+
+                if (error) throw new Error('查詢失敗，請確保 Supabase 已加入 RPC 函數。');
+                if (!data || data.length === 0) throw new Error('找不到此訂單，請核對追蹤碼。');
+
+                // ✨ 取得正確的訂單資料，呼叫函數把它存入本地 localStorage 記錄中
+                const orderRecord = data[0];
+                saveRecentSearchedOrder(orderRecord);
+
+                // 成功後跳轉到訂單詳情頁
+                window.location.href = `order-detail.html?track_code=${code}`;
+            } catch (err) {
+                feedbackTrack.innerHTML = '❌ ' + err.message;
+                feedbackTrack.style.display = 'block';
+            } finally {
+                btnTrack.disabled = false;
+                btnTrack.textContent = '查詢';
+            }
+        };
+    }
+});
+
+// --- 💡 輔助函數：將正確的訪客訂單存入 localStorage (最多保留最近 5 筆) ---
+function saveRecentSearchedOrder(orderObj) {
+    try {
+        let history = JSON.parse(localStorage.getItem('wanwu_recent_searches')) || [];
+        if (!Array.isArray(history)) history = [];
+
+        // 避免重複，先移除舊的同 tracking_code 記錄
+        history = history.filter(item => item.tracking_code !== orderObj.tracking_code);
+
+        // 放到陣列最前面
+        history.unshift({
+            tracking_code: orderObj.tracking_code,
+            customer_name: orderObj.customer_name || orderObj.name || '訪客',
+            pickup_date: orderObj.pickup_date || '未定',
+            status: orderObj.status || 'pending',
+            searched_at: new Date().toLocaleDateString('zh-HK')
+        });
+
+        // 最多只保留最近 5 筆
+        if (history.length > 5) history = history.slice(0, 5);
+
+        localStorage.setItem('wanwu_recent_searches', JSON.stringify(history));
         
-        const btnTrack = document.getElementById('btnHomeTrack');
-        const inputTrack = document.getElementById('homeTrackingInput');
-        const feedbackTrack = document.getElementById('homeTrackFeedback');
-        
-        const modal = document.getElementById('phoneVerifyModal');
-        const btnCloseModal = document.getElementById('phoneVerifyClose');
-        const btnVerify = document.getElementById('btnVerifyPhone');
-        const inputPhone = document.getElementById('verifyPhoneInput');
-        const verifyFeedback = document.getElementById('verifyFeedback');
-        
-        let tempOrderData = null; 
+        // 立即重新渲染主頁下方的最近記錄 UI
+        renderRecentSearchesUI();
+    } catch (e) {
+        console.error('儲存最近查詢記錄失敗', e);
+    }
+}
 
-        // 1. 點擊「查詢」按鈕
-        if (btnTrack) {
-            btnTrack.onclick = async function(e) {
-                e.preventDefault(); 
-                
-                const code = inputTrack.value.trim().toUpperCase();
-                if (!code) {
-                    feedbackTrack.innerHTML = '⚠️ 請輸入追蹤碼。';
-                    feedbackTrack.style.display = 'block';
-                    return;
-                }
+// --- 💡 輔助函數：渲染主頁下方的最近記錄 UI ---
+function renderRecentSearchesUI() {
+    const section = document.getElementById('recentSearchesSection');
+    const listContainer = document.getElementById('recentSearchesList');
+    if (!section || !listContainer) return;
 
-                btnTrack.disabled = true;
-                btnTrack.textContent = '搜尋中...';
-                feedbackTrack.style.display = 'none';
-
-                try {
-                    // 呼叫 RPC 函數安全查詢
-                    const { data, error } = await client.rpc('verify_tracking_code', { search_code: code });
-
-                    if (error) throw new Error('查詢失敗，請確保 Supabase 已加入 RPC 函數。');
-                    if (!data || data.length === 0) throw new Error('找不到此訂單，請核對追蹤碼。');
-
-                    window.location.href = `order-detail.html?track_code=${code}`;
-                } catch (err) {
-                    feedbackTrack.innerHTML = '❌ ' + err.message;
-                    feedbackTrack.style.display = 'block';
-                } finally {
-                    btnTrack.disabled = false;
-                    btnTrack.textContent = '查詢';
-                }
-            };
+    try {
+        const history = JSON.parse(localStorage.getItem('wanwu_recent_searches')) || [];
+        if (history.length === 0) {
+            section.style.display = 'none';
+            return;
         }
 
-    });
+        section.style.display = 'block';
+        listContainer.innerHTML = '';
+
+        const statusMap = { pending: '待確認', processing: '處理中', ready: '已備貨', completed: '已完成', cancelled: '已取消' };
+
+        history.forEach(order => {
+            const itemEl = document.createElement('a');
+            itemEl.href = `order-detail.html?code=${order.tracking_code}`;
+            itemEl.style.cssText = `
+                display: flex; align-items: center; justify-content: space-between; 
+                padding: 10px 14px; background: var(--bg); border: 1px solid var(--border); 
+                border-radius: 10px; text-decoration: none; color: var(--text); 
+                transition: all 0.2s ease; font-size: 0.9rem;
+            `;
+            itemEl.onmouseover = () => itemEl.style.borderColor = 'var(--accent)';
+            itemEl.onmouseout = () => itemEl.style.borderColor = 'var(--border)';
+
+            itemEl.innerHTML = `
+                <div>
+                    <strong>#${order.tracking_code}</strong> 
+                    <span style="color: var(--text-secondary); font-size: 0.82rem; margin-left: 8px;">(${escapeHtml(order.customer_name)})</span>
+                </div>
+                <div style="display: flex; align-items: center; gap: 10px;">
+                    <span style="font-size: 0.8rem; background: var(--bg-elevated); padding: 2px 8px; border-radius: 4px; color: var(--text-secondary);">${statusMap[order.status] || '進行中'}</span>
+                    <span style="font-size: 0.85rem; color: var(--accent); font-weight: 600;">查看單據 &rarr;</span>
+                </div>
+            `;
+            listContainer.appendChild(itemEl);
+        });
+    } catch (e) {
+        console.error('渲染最近查詢記錄失敗', e);
+    }
+}
+
+function escapeHtml(unsafe) {
+    return (unsafe || '').toString()
+        .replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;").replace(/'/g, "&#039;");
+}
+
     </script>
 </body>
 

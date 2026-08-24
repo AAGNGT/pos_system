@@ -72,7 +72,6 @@
             const verifiedKey = `wanwu_verified_${cleanCode}`;
             const isVerified = localStorage.getItem(verifiedKey) === 'true';
 
-            // 如果是管理員，或者本地已經驗證過電話，直接解鎖並渲染
             if (isAdmin || isVerified) {
                 if (lockScreen) lockScreen.style.display = 'none';
                 if (realContent) realContent.style.display = 'block';
@@ -80,7 +79,6 @@
                 return;
             }
 
-            // 未驗證的訪客：顯示鎖定屏
             if (lockScreen) lockScreen.style.display = 'flex';
             if (realContent) realContent.style.display = 'none';
 
@@ -179,7 +177,7 @@
         }
     }
 
-    // --- ✨ 核心渲染函數（已加入管理員檢視標籤組件） ---
+    // --- ✨ 核心渲染函數（已加入備註、優惠折扣與總計金額顯示） ---
     async function renderOrderData(client, order, isGuest, isAdmin) {
         if (isGuest) {
             const mainContent = document.querySelector('.order-detail-page #orderRealContent .section-inner');
@@ -226,6 +224,22 @@
         const displayPaymentMethodEl = document.getElementById('displayPaymentMethod');
         if (displayPaymentMethodEl) displayPaymentMethodEl.textContent = isAlipay ? '線上交易（支付寶）' : '到付（即場現金）';
 
+        // 渲染備註欄位 (如果 HTML 內有對應的元素或動態建立)
+        let displayNotesEl = document.getElementById('displayNotes');
+        if (!displayNotesEl) {
+            // 如果頁面原本沒有 #displayNotes 元素，我們在聯絡資料區塊下方自動動態補一個
+            const infoCard = document.querySelector('.order-info-card') || document.querySelector('.order-detail-section');
+            if (infoCard) {
+                const notesContainer = document.createElement('div');
+                notesContainer.style.cssText = 'margin-top: 16px; padding-top: 12px; border-top: 1px solid var(--border); font-size: 0.92rem; color: var(--text);';
+                notesContainer.innerHTML = `<strong>💬 備註 / 優惠資訊：</strong> <span id="displayNotes" style="color: var(--text-secondary);">${escapeHtml(order.notes || '無')}</span>`;
+                infoCard.appendChild(notesContainer);
+                displayNotesEl = document.getElementById('displayNotes');
+            }
+        } else {
+            displayNotesEl.textContent = order.notes || '無';
+        }
+
         // 渲染狀態標籤與管理員檢視標籤
         const statusMap = { pending: '待確認', processing: '處理中', ready: '已完成備貨', completed: '已完成', cancelled: '已取消' };
         const statusClassMap = { pending: 'status-pending', processing: 'status-processing', ready: 'status-ready', completed: 'status-completed', cancelled: 'status-cancelled' };
@@ -236,18 +250,17 @@
         if (titleEl && !document.getElementById('displayOrderStatus')) {
             titleEl.innerHTML += `<span id="displayOrderStatus" style="margin-left: 14px; transform: translateY(-2px); display: inline-flex;"><span class="reservation-status ${sClass}">${sLabel}</span></span>`;
             
-            // 🛡️ 如果是管理員檢視，自動加上管理員標籤組件
             if (isAdmin) {
                 titleEl.innerHTML += `<span style="margin-left: 8px; transform: translateY(-2px); display: inline-flex;"><span class="reservation-status" style="background: #111; color: #fff; border: 1px solid #333;">🛡️ 管理員檢視</span></span>`;
             }
         }
 
-        // 渲染商品列表
+        // 渲染商品列表與金額計算
         const productListEl = document.getElementById('orderProductList');
         const displaySubtotal = document.getElementById('displaySubtotal');
         const displayTotal = document.getElementById('displayTotal');
         
-        let totalAmount = 0;
+        let rawSubtotal = 0;
         if (productListEl && order) {
             let orderItems = [];
             if (order.id) {
@@ -260,7 +273,7 @@
                 orderItems.forEach(item => {
                     const price = parseFloat(item.unit_price) || 0; 
                     const itemTotal = price * item.quantity;
-                    totalAmount += itemTotal;
+                    rawSubtotal += itemTotal;
                     productsHtml += `
                         <div class="product-card" style="display: flex; justify-content: space-between; padding: 16px 0; border-bottom: 1px solid var(--border);">
                             <div>
@@ -282,12 +295,44 @@
                         </div>
                     `;
                 });
-                totalAmount = order.total_amount || (168 * rawQty); 
+                rawSubtotal = order.total_amount || (168 * rawQty); 
             }
 
             productListEl.innerHTML = productsHtml;
-            if (displaySubtotal) displaySubtotal.textContent = formatPrice(totalAmount);
-            if (displayTotal) displayTotal.textContent = formatPrice(totalAmount);
+
+            // ✨ 提取訂單備註中的優惠金額（如果備註中含有「共折減 HK$XX」或類似字眼）
+            let discountAmount = 0;
+            if (order.notes) {
+                const match = order.notes.match(/折減\s*HK\$(\d+)/) || order.notes.match(/減\s*\$(\d+)/);
+                if (match) {
+                    discountAmount = parseInt(match[1], 10) || 0;
+                }
+            }
+
+            // 如果資料庫直接存了總金額，且比原價低，也可以反推折扣
+            let finalTotal = order.total_amount !== undefined ? parseFloat(order.total_amount) : Math.max(0, rawSubtotal - discountAmount);
+            if (finalTotal < rawSubtotal && discountAmount === 0) {
+                discountAmount = rawSubtotal - finalTotal;
+            }
+
+            // 渲染小計金額
+            if (displaySubtotal) displaySubtotal.textContent = formatPrice(rawSubtotal);
+
+            // 動態在小計下方加入「優惠折扣」顯示列（如果有的話）
+            let discountRowEl = document.getElementById('displayDiscountRow');
+            if (discountAmount > 0) {
+                const summaryContainer = displayTotal ? displayTotal.closest('.order-summary, div') : null;
+                if (summaryContainer && !discountRowEl) {
+                    const row = document.createElement('div');
+                    row.id = 'displayDiscountRow';
+                    row.style.cssText = 'display: flex; justify-content: space-between; margin-bottom: 8px; color: #059669; font-size: 0.95rem; font-weight: 500;';
+                    row.innerHTML = `<span>優惠折扣：</span><span>- ${formatPrice(discountAmount)}</span>`;
+                    displayTotal.parentElement.insertAdjacentElement('beforebegin', row);
+                }
+            }
+
+            // 渲染最終總計金額
+            if (displayTotal) displayTotal.textContent = formatPrice(finalTotal);
         }
 
         // 進度條處理

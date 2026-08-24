@@ -161,7 +161,40 @@
                     </div>
                 </div>
 
-                <!-- 4. 底部結算列 -->
+
+                <!-- 4. 優惠折扣選擇區 (雙卡片設計，附帶清晰規則與紅色提醒提示) -->
+                <div style="background: var(--bg-elevated); padding: 20px; border-radius: 12px; border: 1px solid var(--border); margin-bottom: 24px;">
+                    <h3 style="margin-top:0; margin-bottom: 16px; font-size: 1.1rem;">4. 優惠折扣選擇</h3>
+                    
+                    <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap: 16px; margin-bottom: 8px;">
+                        
+                        <!-- 優惠卡片 1：萌寵系列優惠 -->
+                        <div id="promoCard1" class="promo-card" style="display: flex; align-items: center; gap: 14px; padding: 14px; border-radius: 12px; border: 1.5px solid var(--border); background: var(--bg); transition: all 0.3s ease;">
+                            <img src="discount1.jpg" alt="萌寵優惠" style="width: 70px; height: 70px; object-fit: cover; border-radius: 8px; flex-shrink: 0; border: 1px solid var(--border);">
+                            <div style="flex: 1; min-width: 0;">
+                                <h4 style="margin: 0 0 4px 0; font-size: 0.95rem; color: var(--text);">［🌟創業優惠$70］萌寵系列：買兩件減 $10</h4>
+                                <p id="promoStatus1" style="margin: 0 0 8px 0; font-size: 0.8rem; color: var(--text-secondary);">不適用（需買滿 2 件，可累加）</p>
+                                <button type="button" id="btnApplyPromo1" class="btn btn-secondary" style="padding: 4px 12px; font-size: 0.78rem;" disabled>套用優惠</button>
+                            </div>
+                        </div>
+
+                        <!-- 優惠卡片 2：一般貨品優惠 -->
+                        <div id="promoCard2" class="promo-card" style="display: flex; align-items: center; gap: 14px; padding: 14px; border-radius: 12px; border: 1.5px solid var(--border); background: var(--bg); transition: all 0.3s ease;">
+                            <img src="discount2.jpg" alt="寧磚優惠" style="width: 70px; height: 70px; object-fit: cover; border-radius: 8px; flex-shrink: 0; border: 1px solid var(--border);">
+                            <div style="flex: 1; min-width: 0;">
+                                <h4 style="margin: 0 0 4px 0; font-size: 0.95rem; color: var(--text);">［🌟創業優惠$60]寧磚貨品：買三送一</h4>
+                                <p id="promoStatus2" style="margin: 0 0 8px 0; font-size: 0.8rem; color: var(--text-secondary);">不適用（需買滿 4 件，可累加）</p>
+                                <button type="button" id="btnApplyPromo2" class="btn btn-secondary" style="padding: 4px 12px; font-size: 0.78rem;" disabled>套用優惠</button>
+                            </div>
+                        </div>
+
+                    </div>
+                    <!-- 紅色字眼提醒顯示區 -->
+                    <div id="promoWarningMsg" style="color: #dc2626; font-size: 0.85rem; font-weight: 500; min-height: 20px; margin-top: 8px;"></div>
+                </div>
+
+
+                <!-- 5. 底部結算列 -->
                 <div class="cart-summary-bar">
                     <div>
                         <div style="font-size: 0.85rem; color: var(--text-secondary);">總計金額 (到付)</div>

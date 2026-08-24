@@ -1,5 +1,5 @@
 // =====================================================================
-// 卍物所 - submit.js 專屬購物車與預訂邏輯 (升級：標題統一提示 + 提交前確認視窗)
+// 卍物所 - submit.js 專屬購物車與預訂邏輯 (升級：標題提示 + 確認視窗 + 雙軌優惠系統)
 // =====================================================================
 
 document.addEventListener('DOMContentLoaded', function() {
@@ -8,6 +8,11 @@ document.addEventListener('DOMContentLoaded', function() {
     const cartContainer = document.getElementById('dynamicCartContainer');
     const totalDisplay = document.getElementById('cartTotalDisplay');
     const feedback = document.getElementById('reserveFeedback');
+
+    // 優惠全域變數宣告
+    let appliedPetDiscount = 0;     // 甜點·萌寵優惠已套用金額
+    let appliedNinjuanDiscount = 0; // 寧磚優惠已套用金額
+    let appliedDiscountDesc = '';   // 記錄優惠描述 (用來寫入備註)
 
     // --- 0. 動態注入縮圖動畫、放大鏡按鈕與標題提示的專屬 CSS ---
     const customStyle = document.createElement('style');
@@ -68,30 +73,6 @@ document.addEventListener('DOMContentLoaded', function() {
         .zoomable-thumb-wrapper:hover .zoom-overlay-btn span {
             transform: scale(1);
         }
-        /* 統一放置在「選擇產品」標題旁的官方指引樣式 */
-        .products-section-header {
-            display: flex;
-            align-items: center;
-            justify-content: space-between;
-            margin-bottom: 16px;
-            flex-wrap: wrap;
-            gap: 8px;
-        }
-        .products-section-header h3 {
-            margin: 0;
-            font-size: 1.1rem;
-        }
-        .global-zoom-hint {
-            font-size: 0.82rem;
-            color: var(--text-secondary);
-            background: var(--bg-elevated);
-            padding: 4px 10px;
-            border-radius: 6px;
-            border: 1px solid var(--border);
-            display: inline-flex;
-            align-items: center;
-            gap: 6px;
-        }
     `;
     document.head.appendChild(customStyle);
 
@@ -146,8 +127,7 @@ document.addEventListener('DOMContentLoaded', function() {
         });
     }
 
-    // --- 4. 自動為「3. 選擇產品」標題旁邊注入統一指引，並載入產品 UI ---
-       // --- 4. 載入產品與生成購物車 UI (指引已在 HTML 寫好，這裡只需專注載入產品) ---
+    // --- 4. 載入產品與生成購物車 UI ---
     async function loadProducts() {
         if (!client) {
             if (cartContainer) cartContainer.innerHTML = '<p style="color:red;">無法連接資料庫，請稍後再試。</p>';
@@ -164,21 +144,32 @@ document.addEventListener('DOMContentLoaded', function() {
                     const price = parseFloat(product.price) || 0;
                     const imgSrc = product.image_url || product.image || 'Logo.jpg';
                     const productName = product.name;
+                    
+                    // 簡單輕量的系列判斷
+                    const isNinjuan = productName.includes('寧磚') || (product.series && product.series.includes('寧磚'));
+                    const accessoriesText = isNinjuan 
+                        ? '📦 包裝盒、麻繩、卡片、碎紙' 
+                        : '🎁 透明包裝盒、掛繩、麻繩';
 
                     const itemHtml = `
                         <div class="cart-item" data-id="${product.id}" data-name="${productName}" data-price="${price}">
                             <div class="cart-item-info" style="display: flex; align-items: center; gap: 14px; flex: 1;">
-                                <!-- 🖼️ 帶動畫與放大鏡按鈕的縮圖容器 -->
+                                <!-- 縮圖容器 -->
                                 <div class="zoomable-thumb-wrapper" data-full="${imgSrc}" data-title="${productName}" title="點擊放大圖片">
                                     <img src="${imgSrc}" alt="${productName}">
-                                    <div class="zoom-overlay-btn">
-                                        <span>🔍</span>
-                                    </div>
+                                    <div class="zoom-overlay-btn"><span>🔍</span></div>
                                 </div>
                                 
-                                <div>
+                                <div style="flex: 1;">
                                     <h4 style="margin: 0 0 2px 0;">${productName}</h4>
-                                    <div class="cart-item-price">HK$${price}</div>
+                                    
+                                    <!-- 價錢在左，描述縮小字體緊隨其後 -->
+                                    <div style="display: flex; align-items: center; gap: 8px; margin-top: 4px; flex-wrap: wrap;">
+                                        <div class="cart-item-price" style="font-weight: 600; color: var(--accent);">HK$${price}</div>
+                                        <div style="font-size: 0.72rem; color: var(--text-secondary); background: var(--bg); padding: 1px 6px; border-radius: 4px; border: 1px solid var(--border);">
+                                            ${accessoriesText}
+                                        </div>
+                                    </div>
                                 </div>
                             </div>
                             <div class="cart-controls">
@@ -188,17 +179,18 @@ document.addEventListener('DOMContentLoaded', function() {
                             </div>
                         </div>
                     `;
+
                     cartContainer.insertAdjacentHTML('beforeend', itemHtml);
                 });
 
                 initImageZoomModal();
+                updatePromoState(); // 初始化優惠狀態
             }
         } catch (e) {
             if (cartContainer) cartContainer.innerHTML = '<p style="color:red;">載入產品失敗。</p>';
         }
     }
     loadProducts();
-
 
     // 處理圖片點擊放大彈窗的函數
     function initImageZoomModal() {
@@ -244,7 +236,202 @@ document.addEventListener('DOMContentLoaded', function() {
         };
     }
 
-    // 綁定購物車加減按鈕
+    // --- 核心：雙卡片獨立優惠檢測與按鈕狀態更新 ---
+    // --- 核心：雙卡片獨立優惠檢測與按鈕狀態更新 (具備保持已套用狀態機制) ---
+    function updatePromoState() {
+        let totalNinjuanQty = 0;
+        let totalPetQty = 0;
+        let rawTotal = 0;
+
+        if (cartContainer) {
+            cartContainer.querySelectorAll('.cart-item').forEach(item => {
+                const qty = parseInt(item.querySelector('.qty-display').innerText, 10) || 0;
+                const price = parseFloat(item.dataset.price) || 0;
+                const name = item.dataset.name || '';
+
+                rawTotal += price * qty;
+                if (name.includes('萌寵') || name.includes('甜點') || name.includes('貓爪')) {
+                    totalPetQty += qty;
+                } else if (name.includes('寧磚')) {
+                    totalNinjuanQty += qty;
+                }
+            });
+        }
+
+        const potentialPetDisc = Math.floor(totalPetQty / 2) * 10;        // 甜點·萌寵：買兩件減 $10 (可累加)
+        const potentialNinjuanDisc = Math.floor(totalNinjuanQty / 4) * 20; // 寧磚：買四件減 $20 (可累加)
+
+        // 清除紅字提示
+        const warningEl = document.getElementById('promoWarningMsg');
+        if (warningEl) warningEl.textContent = '';
+
+        // --- 卡片 1 (甜點·萌寵系列) 狀態維護 ---
+        const status1 = document.getElementById('promoStatus1');
+        const btn1 = document.getElementById('btnApplyPromo1');
+        const card1 = document.getElementById('promoCard1');
+
+        if (potentialPetDisc > 0) {
+            // 如果已經達標，計算當前應得的最大折扣
+            const currentMaxPetDisc = potentialPetDisc;
+            
+            // 如果之前已經套用過，或者數量增加，自動更新為最新可享折扣（支援累加升級）
+            if (appliedPetDiscount > 0) {
+                appliedPetDiscount = currentMaxPetDisc; // 自動累加更新
+            }
+
+            if (status1) {
+                status1.innerHTML = appliedPetDiscount > 0 
+                    ? `<span style="color: #059669; font-weight: 600;">已套用優惠！買 ${totalPetQty} 件 (已減 $${appliedPetDiscount})</span>`
+                    : `<span style="color: #059669; font-weight: 600;">已符合！買 ${totalPetQty} 件 (可減 $${potentialPetDisc})</span>`;
+            }
+            if (btn1) {
+                btn1.disabled = false;
+                if (appliedPetDiscount > 0) {
+                    btn1.textContent = '已套用 ✓';
+                    btn1.style.background = '#059669';
+                    btn1.style.color = '#fff';
+                } else {
+                    btn1.textContent = '套用優惠';
+                    btn1.style.background = 'transparent';
+                    btn1.style.color = 'var(--text)';
+                }
+            }
+            if (card1) card1.style.borderColor = '#059669';
+        } else {
+            // 數量不足，強制清空該優惠
+            if (status1) status1.textContent = '不適用（需買滿 2 件，可累加）';
+            if (btn1) {
+                btn1.disabled = true;
+                btn1.textContent = '套用優惠';
+                btn1.style.background = 'transparent';
+                btn1.style.color = 'var(--text)';
+            }
+            if (card1) card1.style.borderColor = 'var(--border)';
+            appliedPetDiscount = 0;
+        }
+
+        // --- 卡片 2 (寧磚系列) 狀態維護 ---
+        const status2 = document.getElementById('promoStatus2');
+        const btn2 = document.getElementById('btnApplyPromo2');
+        const card2 = document.getElementById('promoCard2');
+
+        if (potentialNinjuanDisc > 0) {
+            const currentMaxNinjuanDisc = potentialNinjuanDisc;
+            
+            if (appliedNinjuanDiscount > 0) {
+                appliedNinjuanDiscount = currentMaxNinjuanDisc; // 自動累加更新
+            }
+
+            if (status2) {
+                status2.innerHTML = appliedNinjuanDiscount > 0
+                    ? `<span style="color: #059669; font-weight: 600;">已套用優惠！買 ${totalNinjuanQty} 件 (已減 $${appliedNinjuanDiscount})</span>`
+                    : `<span style="color: #059669; font-weight: 600;">已符合！買 ${totalNinjuanQty} 件 (可減 $${potentialNinjuanDisc})</span>`;
+            }
+            if (btn2) {
+                btn2.disabled = false;
+                if (appliedNinjuanDiscount > 0) {
+                    btn2.textContent = '已套用 ✓';
+                    btn2.style.background = '#059669';
+                    btn2.style.color = '#fff';
+                } else {
+                    btn2.textContent = '套用優惠';
+                    btn2.style.background = 'transparent';
+                    btn2.style.color = 'var(--text)';
+                }
+            }
+            if (card2) card2.style.borderColor = '#059669';
+        } else {
+            if (status2) status2.textContent = '不適用（需買滿 4 件，可累加）';
+            if (btn2) {
+                btn2.disabled = true;
+                btn2.textContent = '套用優惠';
+                btn2.style.background = 'transparent';
+                btn2.style.color = 'var(--text)';
+            }
+            if (card2) card2.style.borderColor = 'var(--border)';
+            appliedNinjuanDiscount = 0;
+        }
+
+        // --- 組合總折扣與備註描述 ---
+        const totalDiscount = appliedPetDiscount + appliedNinjuanDiscount;
+        let descArr = [];
+        let summaryParts = [];
+
+        if (appliedPetDiscount > 0) {
+            descArr.push(`甜點萌寵系列優惠（減 $${appliedPetDiscount}）`);
+            summaryParts.push(`甜點萌寵系列減 $${appliedPetDiscount}`);
+        }
+        if (appliedNinjuanDiscount > 0) {
+            descArr.push(`寧磚系列優惠（減 $${appliedNinjuanDiscount}）`);
+            summaryParts.push(`寧磚系列減 $${appliedNinjuanDiscount}`);
+        }
+        
+        appliedDiscountDesc = descArr.length > 0 
+            ? `[已套用優惠項目：${summaryParts.join(' ＋ ')}，總共折減 HK$${totalDiscount}]` 
+            : '';
+
+        // 更新總金額顯示 (絕不亂跳原價)
+        const finalTotal = Math.max(0, rawTotal - totalDiscount);
+        if (totalDisplay) {
+            if (totalDiscount > 0) {
+                totalDisplay.innerHTML = `<span style="font-size: 0.85rem; text-decoration: line-through; color: var(--text-tertiary); margin-right: 6px;">HK$${rawTotal}</span>HK$${finalTotal}`;
+            } else {
+                totalDisplay.innerText = 'HK$' + rawTotal;
+            }
+        }
+    }
+
+
+    // 綁定兩張卡片的「套用優惠」按鈕點擊事件
+    document.addEventListener('click', function(e) {
+        if (e.target && e.target.id === 'btnApplyPromo1') {
+            let totalPetQty = 0;
+            cartContainer.querySelectorAll('.cart-item').forEach(item => {
+                const qty = parseInt(item.querySelector('.qty-display').innerText, 10) || 0;
+                const name = item.dataset.name || '';
+                if (name.includes('萌寵') || name.includes('甜點') || name.includes('貓爪')) totalPetQty += qty;
+            });
+            const disc = Math.floor(totalPetQty / 2) * 10;
+
+            if (appliedPetDiscount > 0) {
+                appliedPetDiscount = 0;
+                e.target.textContent = '套用優惠';
+                e.target.style.background = 'transparent';
+                e.target.style.color = 'var(--text)';
+            } else {
+                appliedPetDiscount = disc;
+                e.target.textContent = '已套用 ✓';
+                e.target.style.background = '#059669';
+                e.target.style.color = '#fff';
+            }
+            updatePromoState();
+        }
+
+        if (e.target && e.target.id === 'btnApplyPromo2') {
+            let totalNinjuanQty = 0;
+            cartContainer.querySelectorAll('.cart-item').forEach(item => {
+                const qty = parseInt(item.querySelector('.qty-display').innerText, 10) || 0;
+                const name = item.dataset.name || '';
+                if (name.includes('寧磚')) totalNinjuanQty += qty;
+            });
+            const disc = Math.floor(totalNinjuanQty / 4) * 20;
+
+            if (appliedNinjuanDiscount > 0) {
+                appliedNinjuanDiscount = 0;
+                e.target.textContent = '套用優惠';
+                e.target.style.background = 'transparent';
+                e.target.style.color = 'var(--text)';
+            } else {
+                appliedNinjuanDiscount = disc;
+                e.target.textContent = '已套用 ✓';
+                e.target.style.background = '#059669';
+                e.target.style.color = '#fff';
+            }
+            updatePromoState();
+        }
+    });
+
+    // 確保購物車加減時同步更新優惠狀態
     if (cartContainer) {
         cartContainer.addEventListener('click', function(e) {
             if (e.target.classList.contains('btn-plus') || e.target.classList.contains('btn-minus')) {
@@ -255,14 +442,21 @@ document.addEventListener('DOMContentLoaded', function() {
 
                 if (e.target.classList.contains('btn-plus') && qty < 20) qty++;
                 if (e.target.classList.contains('btn-minus') && qty > 0) qty--;
-
                 qtySpan.innerText = qty;
-                
-                let total = 0;
+
+                let totalPetQty = 0;
+                let totalNinjuanQty = 0;
                 cartContainer.querySelectorAll('.cart-item').forEach(item => {
-                    total += parseFloat(item.dataset.price) * parseInt(item.querySelector('.qty-display').innerText, 10);
+                    const q = parseInt(item.querySelector('.qty-display').innerText, 10) || 0;
+                    const name = item.dataset.name || '';
+                    if (name.includes('萌寵') || name.includes('甜點') || name.includes('貓爪')) totalPetQty += q;
+                    else if (name.includes('寧磚')) totalNinjuanQty += q;
                 });
-                if (totalDisplay) totalDisplay.innerText = 'HK$' + total;
+
+                if (Math.floor(totalPetQty / 2) * 10 === 0) appliedPetDiscount = 0;
+                if (Math.floor(totalNinjuanQty / 4) * 20 === 0) appliedNinjuanDiscount = 0;
+
+                updatePromoState();
             }
         });
     }
@@ -287,13 +481,38 @@ document.addEventListener('DOMContentLoaded', function() {
     }
     checkLogin();
 
-    // --- 6. 處理表單提交 (加入最後確認視窗 Modal) ---
+    // --- 6. 處理表單提交 (加入未啟用優惠防呆檢測與確認視窗) ---
     if (form) {
         form.addEventListener('submit', async function(e) {
             e.preventDefault();
             if (feedback) feedback.innerHTML = ''; 
 
             try {
+                // 🛑 防呆檢查：如果符合優惠條件，但用戶未點擊「套用優惠」
+                let totalPetQtyCheck = 0;
+                let totalNinjuanQtyCheck = 0;
+                cartContainer.querySelectorAll('.cart-item').forEach(item => {
+                    const qty = parseInt(item.querySelector('.qty-display').innerText, 10) || 0;
+                    const name = item.dataset.name || '';
+                    if (name.includes('萌寵') || name.includes('甜點') || name.includes('貓爪')) {
+                        totalPetQtyCheck += qty;
+                    } else if (name.includes('寧磚')) {
+                        totalNinjuanQtyCheck += qty;
+                    }
+                });
+
+                const potentialPetDiscCheck = Math.floor(totalPetQtyCheck / 2) * 10;
+                const potentialNinjuanDiscCheck = Math.floor(totalNinjuanQtyCheck / 4) * 20;
+                const warningEl = document.getElementById('promoWarningMsg');
+
+                if ((potentialPetDiscCheck > 0 && appliedPetDiscount === 0) || (potentialNinjuanDiscCheck > 0 && appliedNinjuanDiscount === 0)) {
+                    if (warningEl) {
+                        warningEl.textContent = '⚠️ 必須要啟用咗可以啟用嘅優惠先可以繼續！請先點擊上方優惠卡片嘅「套用優惠」按鈕。';
+                        warningEl.scrollIntoView({ behavior: 'smooth', block: 'center' });
+                    }
+                    throw new Error('必須要啟用咗可以啟用嘅優惠先可以繼續。');
+                }
+
                 if (!selectedDate) {
                     throw new Error('請選擇取貨日期。');
                 }
@@ -310,13 +529,20 @@ document.addEventListener('DOMContentLoaded', function() {
                     }
                 }
 
-                const notes = document.getElementById('notes') ? document.getElementById('notes').value.trim() : '';
+                const rawNotes = document.getElementById('notes') ? document.getElementById('notes').value.trim() : '';
+                
+                // 自動將優惠資訊寫入備註
+                let notes = rawNotes;
+                const totalDiscount = appliedPetDiscount + appliedNinjuanDiscount;
+                if (totalDiscount > 0 && appliedDiscountDesc) {
+                    notes = notes ? `${notes} | ${appliedDiscountDesc}` : appliedDiscountDesc;
+                }
 
                 const cartItemsDOM = cartContainer.querySelectorAll('.cart-item');
                 let itemsToInsert = [];
                 let totalQty = 0;
                 let summaryArr = [];
-                let totalAmount = 0;
+                let rawTotalAmount = 0;
                 
                 cartItemsDOM.forEach(item => {
                     const qtySpan = item.querySelector('.qty-display'); 
@@ -329,7 +555,7 @@ document.addEventListener('DOMContentLoaded', function() {
                             
                             itemsToInsert.push({ product_id: id, product_name: name, quantity: qty, unit_price: price });
                             totalQty += qty;
-                            totalAmount += (price * qty);
+                            rawTotalAmount += (price * qty);
                             summaryArr.push(`${name} (x${qty})`);
                         }
                     }
@@ -339,15 +565,18 @@ document.addEventListener('DOMContentLoaded', function() {
                     throw new Error('您的購物車是空的，請至少選擇一項產品。');
                 }
 
+                const totalAmount = Math.max(0, rawTotalAmount - totalDiscount);
                 const productSummaryString = summaryArr.join('，');
 
-                // 彈出「最後確定視窗」讓用戶核對金額、貨品、取貨日期與聯絡資料
+                // 彈出確認視窗
                 showCheckoutConfirmModal({
                     customerName: isLoggedIn ? '已登入會員' : customerName,
                     phone: isLoggedIn ? '會員綁定電話' : phone,
                     email: email || '未提供',
                     pickupDate: selectedDate,
                     summaryList: summaryArr,
+                    rawTotal: rawTotalAmount,
+                    discount: totalDiscount,
                     totalAmount: totalAmount,
                     notes: notes || '無'
                 }, async () => {
@@ -358,7 +587,10 @@ document.addEventListener('DOMContentLoaded', function() {
 
             } catch (err) {
                 console.error("錯誤:", err);
-                displayMsg(err.message || '提交失敗，請檢查資料後再試。', 'error');
+                const warningEl = document.getElementById('promoWarningMsg');
+                if (!warningEl || !warningEl.textContent) {
+                    displayMsg(err.message || '提交失敗，請檢查資料後再試。', 'error');
+                }
             }
         });
     }
@@ -392,13 +624,16 @@ document.addEventListener('DOMContentLoaded', function() {
         }
 
         const bodyEl = document.getElementById('confirmModalBody');
+        let discountRow = data.discount > 0 ? `<div style="margin-bottom: 6px; color: #059669;"><strong>🎉 優惠折扣：</strong> - HK$${data.discount}</div>` : '';
+
         bodyEl.innerHTML = `
-            <div style="margin-bottom: 10px;"><strong>👤 姓名 / 身份：</strong> ${escapeHtml(data.customerName)}</div>
-            <div style="margin-bottom: 10px;"><strong>📞 電話號碼：</strong> ${escapeHtml(data.phone)}</div>
-            <div style="margin-bottom: 10px;"><strong>📅 取貨日期：</strong> <span style="color: var(--accent); font-weight: 600;">${escapeHtml(data.pickupDate)}</span></div>
-            <div style="margin-bottom: 10px;"><strong>🛍️ 購買貨品：</strong><ul style="margin: 4px 0 0 18px; padding: 0;">${data.summaryList.map(item => `<li>${escapeHtml(item)}</li>`).join('')}</ul></div>
-            <div style="margin-bottom: 10px;"><strong>💬 備註：</strong> ${escapeHtml(data.notes)}</div>
-            <div style="border-top: 1px solid var(--border); padding-top: 10px; margin-top: 10px; display: flex; justify-content: space-between; align-items: center;">
+            <div style="margin-bottom: 8px;"><strong>👤 姓名 / 身份：</strong> ${escapeHtml(data.customerName)}</div>
+            <div style="margin-bottom: 8px;"><strong>📞 電話號碼：</strong> ${escapeHtml(data.phone)}</div>
+            <div style="margin-bottom: 8px;"><strong>📅 取貨日期：</strong> <span style="color: var(--accent); font-weight: 600;">${escapeHtml(data.pickupDate)}</span></div>
+            <div style="margin-bottom: 8px;"><strong>🛍️ 購買貨品：</strong><ul style="margin: 4px 0 0 18px; padding: 0;">${data.summaryList.map(item => `<li>${escapeHtml(item)}</li>`).join('')}</ul></div>
+            <div style="margin-bottom: 8px;"><strong>💬 備註：</strong> ${escapeHtml(data.notes)}</div>
+            ${discountRow}
+            <div style="border-top: 1px solid var(--border); padding-top: 10px; margin-top: 8px; display: flex; justify-content: space-between; align-items: center;">
                 <span style="font-weight: 600;">總計金額 (到付)：</span>
                 <span style="font-size: 1.2rem; font-weight: 700; color: var(--accent);">HK$${data.totalAmount}</span>
             </div>
@@ -410,20 +645,24 @@ document.addEventListener('DOMContentLoaded', function() {
         const btnConfirm = document.getElementById('btnConfirmCheckout');
         const btnCancel = document.getElementById('btnCancelCheckout');
 
-        const newBtnConfirm = btnConfirm.cloneNode(true);
-        const newBtnCancel = btnCancel.cloneNode(true);
-        btnConfirm.parentNode.replaceChild(newBtnConfirm, btnConfirm);
-        btnCancel.parentNode.replaceChild(newBtnCancel, btnCancel);
+        btnConfirm.disabled = false;
+        btnConfirm.textContent = '確認提交預訂';
 
-        document.getElementById('btnCancelCheckout').onclick = () => {
+        btnCancel.onclick = function() {
             modal.style.display = 'none';
             document.body.style.overflow = '';
         };
 
-        document.getElementById('btnConfirmCheckout').onclick = () => {
+        btnConfirm.onclick = async function() {
+            btnConfirm.disabled = true;
+            btnConfirm.textContent = '處理中...';
+            
             modal.style.display = 'none';
             document.body.style.overflow = '';
-            if (onConfirm) onConfirm();
+            
+            if (onConfirm) {
+                await onConfirm();
+            }
         };
     }
 
@@ -517,6 +756,10 @@ document.addEventListener('DOMContentLoaded', function() {
             if (totalDisplay) totalDisplay.innerText = 'HK$0';
             document.querySelectorAll('#marketDatePicker .date-chip').forEach(c => c.classList.remove('active'));
             selectedDate = '';
+            appliedPetDiscount = 0;
+            appliedNinjuanDiscount = 0;
+            appliedDiscountDesc = '';
+            updatePromoState();
 
         } catch (err) {
             console.error("錯誤:", err);
