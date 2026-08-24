@@ -64,31 +64,29 @@
             }
         }
 
-        // ==========================================
-        // 情況 A：透過追蹤碼查詢 (訪客或管理員點擊訪客單)
-        // ==========================================
-                // ==========================================
+               // ==========================================
         // 情況 A：透過追蹤碼查詢 (訪客或管理員點擊訪客單)
         // ==========================================
         if (trackCode) {
             const cleanCode = trackCode.trim().toUpperCase();
             const verifiedKey = `wanwu_verified_${cleanCode}`;
             
-            // ★ 新增：檢查是否在 24 小時內驗證過
+            // 1. 檢查是否在 24 小時內驗證過
             const verifiedTimestamp = localStorage.getItem(verifiedKey);
             let isVerified = false;
             
             if (verifiedTimestamp) {
                 const timePassed = Date.now() - parseInt(verifiedTimestamp, 10);
-                // 24小時 = 24 * 60 * 60 * 1000 = 86400000 毫秒
+                // 24小時 = 86400000 毫秒
                 if (timePassed <= 86400000) {
                     isVerified = true;
                 } else {
-                    // 超過 24 小時，自動清除該記錄
+                    // 超過 24 小時，自動清除
                     localStorage.removeItem(verifiedKey);
                 }
             }
 
+            // 2. 如果是管理員或 24 小時內已驗證，直接放行
             if (isAdmin || isVerified) {
                 if (lockScreen) lockScreen.style.display = 'none';
                 if (realContent) realContent.style.display = 'block';
@@ -96,6 +94,7 @@
                 return;
             }
 
+            // 3. 顯示鎖定畫面，要求輸入電話
             if (lockScreen) lockScreen.style.display = 'flex';
             if (realContent) realContent.style.display = 'none';
 
@@ -129,9 +128,8 @@
                         const realPhone = (orderData.customer_phone || orderData.phone || '').trim();
 
                         if (enteredPhone === realPhone) {
-                            // ★ 新增：儲存當下時間的時間戳 (毫秒)
+                            // ★ 驗證成功，僅發放 24 小時通行證即可，主頁會自己讀取！
                             localStorage.setItem(verifiedKey, Date.now().toString());
-                            markOrderAsVerified(cleanCode); // 同步更新最近查詢狀態
 
                             if (lockScreen) lockScreen.style.display = 'none';
                             if (realContent) realContent.style.display = 'block';
@@ -394,24 +392,30 @@
     document.addEventListener('DOMContentLoaded', loadOrderDetail);
 })();
 
-// ==========================================
-// 更新 localStorage 歷史記錄的驗證狀態 (加入時間戳)
-// ==========================================
-function markOrderAsVerified(trackingCode) {
+// (這段在你剛才的 order-detail.js 底部已經有了，確認一下即可)
+function syncRecentSearchStatus(trackingCode, isVerified, timestamp = null) {
     try {
         let history = JSON.parse(localStorage.getItem('wanwu_recent_searches')) || [];
-        
+        let needsUpdate = false;
+
         history = history.map(item => {
             if (item.tracking_code === trackingCode) {
-                // 將狀態改為記錄驗證的當下時間
-                return { ...item, verifiedAt: Date.now() };
+                needsUpdate = true;
+                if (isVerified) {
+                    // ★ 如果 24 小時內未過期，強行將查詢記錄 set 做「已驗證」
+                    return { ...item, verifiedAt: timestamp || Date.now() };
+                } else {
+                    // ★ 如果已過期，強行洗走驗證狀態，變回「未驗證」
+                    return { ...item, verifiedAt: null };
+                }
             }
             return item;
         });
         
-        localStorage.setItem('wanwu_recent_searches', JSON.stringify(history));
+        if (needsUpdate) {
+            localStorage.setItem('wanwu_recent_searches', JSON.stringify(history));
+        }
     } catch (e) {
-        console.error('更新驗證狀態失敗:', e);
+        console.error('同步驗證狀態失敗:', e);
     }
 }
-
