@@ -67,10 +67,27 @@
         // ==========================================
         // 情況 A：透過追蹤碼查詢 (訪客或管理員點擊訪客單)
         // ==========================================
+                // ==========================================
+        // 情況 A：透過追蹤碼查詢 (訪客或管理員點擊訪客單)
+        // ==========================================
         if (trackCode) {
             const cleanCode = trackCode.trim().toUpperCase();
             const verifiedKey = `wanwu_verified_${cleanCode}`;
-            const isVerified = localStorage.getItem(verifiedKey) === 'true';
+            
+            // ★ 新增：檢查是否在 24 小時內驗證過
+            const verifiedTimestamp = localStorage.getItem(verifiedKey);
+            let isVerified = false;
+            
+            if (verifiedTimestamp) {
+                const timePassed = Date.now() - parseInt(verifiedTimestamp, 10);
+                // 24小時 = 24 * 60 * 60 * 1000 = 86400000 毫秒
+                if (timePassed <= 86400000) {
+                    isVerified = true;
+                } else {
+                    // 超過 24 小時，自動清除該記錄
+                    localStorage.removeItem(verifiedKey);
+                }
+            }
 
             if (isAdmin || isVerified) {
                 if (lockScreen) lockScreen.style.display = 'none';
@@ -112,7 +129,10 @@
                         const realPhone = (orderData.customer_phone || orderData.phone || '').trim();
 
                         if (enteredPhone === realPhone) {
-                            localStorage.setItem(verifiedKey, 'true');
+                            // ★ 新增：儲存當下時間的時間戳 (毫秒)
+                            localStorage.setItem(verifiedKey, Date.now().toString());
+                            markOrderAsVerified(cleanCode); // 同步更新最近查詢狀態
+
                             if (lockScreen) lockScreen.style.display = 'none';
                             if (realContent) realContent.style.display = 'block';
                             await renderOrderData(client, orderData, true, false);
@@ -129,8 +149,8 @@
                     }
                 };
             }
-
         } 
+
         // ==========================================
         // 情況 B：透過訂單 ID 查詢 (已註冊會員或管理員看會員單)
         // ==========================================
@@ -373,3 +393,25 @@
 
     document.addEventListener('DOMContentLoaded', loadOrderDetail);
 })();
+
+// ==========================================
+// 更新 localStorage 歷史記錄的驗證狀態 (加入時間戳)
+// ==========================================
+function markOrderAsVerified(trackingCode) {
+    try {
+        let history = JSON.parse(localStorage.getItem('wanwu_recent_searches')) || [];
+        
+        history = history.map(item => {
+            if (item.tracking_code === trackingCode) {
+                // 將狀態改為記錄驗證的當下時間
+                return { ...item, verifiedAt: Date.now() };
+            }
+            return item;
+        });
+        
+        localStorage.setItem('wanwu_recent_searches', JSON.stringify(history));
+    } catch (e) {
+        console.error('更新驗證狀態失敗:', e);
+    }
+}
+

@@ -630,6 +630,10 @@ function saveRecentSearchedOrder(orderObj) {
         let history = JSON.parse(localStorage.getItem('wanwu_recent_searches')) || [];
         if (!Array.isArray(history)) history = [];
 
+        // 尋找是否已有此記錄，以保留其「驗證時間戳」
+        const existingItem = history.find(item => item.tracking_code === orderObj.tracking_code);
+        const existingVerifiedAt = existingItem ? existingItem.verifiedAt : null;
+
         // 避免重複，先移除舊的同 tracking_code 記錄
         history = history.filter(item => item.tracking_code !== orderObj.tracking_code);
 
@@ -639,7 +643,8 @@ function saveRecentSearchedOrder(orderObj) {
             customer_name: orderObj.customer_name || orderObj.name || '訪客',
             pickup_date: orderObj.pickup_date || '未定',
             status: orderObj.status || 'pending',
-            searched_at: new Date().toLocaleDateString('zh-HK')
+            searched_at: new Date().toLocaleDateString('zh-HK'),
+            verifiedAt: existingVerifiedAt // ★ 繼承舊的驗證時間
         });
 
         // 最多只保留最近 5 筆
@@ -654,14 +659,14 @@ function saveRecentSearchedOrder(orderObj) {
     }
 }
 
-// --- 💡 輔助函數：渲染主頁下方的最近記錄 UI ---
+// --- 💡 輔助函數：渲染主頁下方的最近記錄 UI (動態判斷過期) ---
 function renderRecentSearchesUI() {
     const section = document.getElementById('recentSearchesSection');
     const listContainer = document.getElementById('recentSearchesList');
     if (!section || !listContainer) return;
 
     try {
-        const history = JSON.parse(localStorage.getItem('wanwu_recent_searches')) || [];
+        let history = JSON.parse(localStorage.getItem('wanwu_recent_searches')) || [];
         if (history.length === 0) {
             section.style.display = 'none';
             return;
@@ -671,6 +676,7 @@ function renderRecentSearchesUI() {
         listContainer.innerHTML = '';
 
         const statusMap = { pending: '待確認', processing: '處理中', ready: '已備貨', completed: '已完成', cancelled: '已取消' };
+        let historyNeedsUpdate = false; // 記錄是否有過期的狀態被我們清除了
 
         history.forEach(order => {
             const itemEl = document.createElement('a');
@@ -684,10 +690,29 @@ function renderRecentSearchesUI() {
             itemEl.onmouseover = () => itemEl.style.borderColor = 'var(--accent)';
             itemEl.onmouseout = () => itemEl.style.borderColor = 'var(--border)';
 
+            // ★ 動態判斷驗證狀態是否在 24 小時以內
+            let isVerified = false;
+            if (order.verifiedAt) {
+                const timePassed = Date.now() - order.verifiedAt;
+                if (timePassed <= 86400000) { // 24小時以內
+                    isVerified = true;
+                } else {
+                    // 超過 24 小時，清除過期的時間戳
+                    order.verifiedAt = null; 
+                    historyNeedsUpdate = true;
+                }
+            }
+
+            const badgeText = isVerified ? '已驗證' : '未驗證';
+            const badgeColor = isVerified ? '#059669' : '#d97706'; 
+            const badgeBg = isVerified ? '#ecfdf5' : '#fffbeb';
+
             itemEl.innerHTML = `
-                <div>
-                    <strong>#${order.tracking_code}</strong> 
-                    <span style="color: var(--text-secondary); font-size: 0.82rem; margin-left: 8px;">(${escapeHtml(order.customer_name)})</span>
+                <div style="display: flex; align-items: center; gap: 8px;">
+                    <strong style="font-family: monospace; font-size: 1.05rem;">#${order.tracking_code}</strong> 
+                    <span style="font-size: 0.75rem; padding: 2px 6px; border-radius: 4px; background: ${badgeBg}; color: ${badgeColor}; font-weight: 600; margin-left: 4px;">
+                        ${badgeText}
+                    </span>
                 </div>
                 <div style="display: flex; align-items: center; gap: 10px;">
                     <span style="font-size: 0.8rem; background: var(--bg-elevated); padding: 2px 8px; border-radius: 4px; color: var(--text-secondary);">${statusMap[order.status] || '進行中'}</span>
@@ -696,6 +721,12 @@ function renderRecentSearchesUI() {
             `;
             listContainer.appendChild(itemEl);
         });
+
+        // 如果渲染過程中發現有記錄剛好過期了，就靜默寫回 localStorage 更新狀態
+        if (historyNeedsUpdate) {
+            localStorage.setItem('wanwu_recent_searches', JSON.stringify(history));
+        }
+
     } catch (e) {
         console.error('渲染最近查詢記錄失敗', e);
     }
