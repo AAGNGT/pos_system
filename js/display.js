@@ -170,13 +170,80 @@
   }
 
   // -------------------------------------------------------------------------
+  // 新增：宣傳輪播相關邏輯與數據
+  // -------------------------------------------------------------------------
+  const promoData = [
+    { img: 'https://dryvaibjsetigszkzxuh.supabase.co/storage/v1/object/public/product/dis1.png', title: '在線落單・預訂', desc: '維園市集即場售賣預訂。為確保您在市集現場等候時間更短，放心選購心儀產品，體驗安心無憂的預訂服務。' },
+    { img: 'https://dryvaibjsetigszkzxuh.supabase.co/storage/v1/object/public/product/dis2.png', title: '線上客服・數據安全', desc: '即時為您解答問題，貼心協助每一步。採用多重加密技術，嚴格保障您的個人隱私與資料安全。' },
+    { img: 'https://dryvaibjsetigszkzxuh.supabase.co/storage/v1/object/public/product/dis3.png', title: '訂單追蹤與管理', desc: '輕鬆管理個人帳戶資訊，全面掌握您的訂單與偏好。實時查看處理進度，讓購物過程更透明。' }
+  ];
+  let promoInterval = null;
+  let currentIdx = 0;
 
+  function renderPromo() {
+    const item = promoData[currentIdx];
+    const promoImage = document.getElementById('promoImage');
+    const promoTitle = document.getElementById('promoTitle');
+    const promoDesc = document.getElementById('promoDesc');
+
+    if (!promoImage || !promoTitle || !promoDesc) return;
+
+    // 重置動畫類別
+    promoImage.classList.remove('animate-slide-in-left');
+    promoTitle.parentElement.classList.remove('animate-slide-in-right');
+    
+    void promoImage.offsetWidth; // 觸發 reflow，確保每次切換都有滑入動畫
+    
+    promoImage.src = item.img;
+    promoTitle.textContent = item.title;
+    promoDesc.textContent = item.desc;
+    
+    // 套用動畫
+    promoImage.classList.add('animate-slide-in-left');
+    promoTitle.parentElement.classList.add('animate-slide-in-right');
+  }
+
+  function startPromoSlider() {
+    if (promoInterval) return;
+    renderPromo();
+    promoInterval = setInterval(() => {
+      currentIdx = (currentIdx + 1) % promoData.length;
+      renderPromo();
+    }, 6000); // 預設 6 秒切換一次
+  }
+
+  function stopPromoSlider() {
+    if (promoInterval) {
+      clearInterval(promoInterval);
+      promoInterval = null;
+    }
+    currentIdx = 0;
+  }
+
+  // --------------------------------------------------------
+  // 修改：主渲染函數 (結合宣傳判斷)
   // --------------------------------------------------------
 
   function render(state) {
     if (!state) return;
     const phase = state.phase || 'idle';
     setView(phase);
+
+    // 【新增】：處理宣傳輪播畫面的切換
+    const isPromoActive = state.is_promo_active === true;
+    const normalScreen = document.getElementById('idleScreenNormal');
+    const promoScreen = document.getElementById('idleScreenPromo');
+
+    if (phase === 'idle' && isPromoActive) {
+      if (normalScreen) normalScreen.classList.add('hidden');
+      if (promoScreen) promoScreen.classList.remove('hidden');
+      startPromoSlider();
+    } else {
+      if (normalScreen) normalScreen.classList.remove('hidden');
+      if (promoScreen) promoScreen.classList.add('hidden');
+      stopPromoSlider();
+    }
+
     if (phase === 'cart') renderCart(state);
     if (phase === 'checkout') renderCheckout(state);
     if (phase === 'thankyou') renderThankYou(state);
@@ -283,12 +350,8 @@
         if (status === 'SUBSCRIBED' && el) {
           el.textContent = el.textContent || '連線中...';
         }
-        if (status === 'CHANNEL_ERROR') {
-          // showError('Realtime 連線失敗，請檢查 Supabase 設定');
-        }
       });
   }
-
 
   async function init() {
     if (!window.posDb?.initSupabase?.()) {

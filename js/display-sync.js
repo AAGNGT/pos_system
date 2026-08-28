@@ -2,8 +2,8 @@
   const DISPLAY_ID = 1;
   let thankYouTimer = null;
   let thankYouActive = false;
+  let currentPromoActive = false; // 新增：追蹤目前的宣傳狀態
 
-  // 1. 新增 debounce 函數 (延遲執行)
   const debounce = (func, wait) => {
     let timeout;
     return (...args) => {
@@ -27,13 +27,12 @@
   function buildPayload(overrides) {
     const items = window.posCart?.getItems?.() || [];
     const { subtotal, discount, total } = window.posCart?.totals?.(getDiscount()) || {
-      subtotal: 0,
-      discount: 0,
-      total: 0,
+      subtotal: 0, discount: 0, total: 0,
     };
     return {
       id: DISPLAY_ID,
       session_key: 'main',
+      is_promo_active: currentPromoActive, // 新增：將宣傳狀態包裝進 Payload 傳給資料庫
       items: items.map((i) => ({
         product_id: i.product_id,
         name: i.name,
@@ -51,19 +50,16 @@
     };
   }
 
-  // 2. 將實際的 Upsert 動作包裝成 Debounced 版本 (延遲 400 毫秒)
   const debouncedUpsert = debounce(async (payload) => {
     const client = getClient();
     if (!client) return;
     try {
-      const { error } = await client.from('pos_display_state').upsert(payload, { onConflict: 'id' });
-      if (error) console.warn('[display-sync]', error.message);
+      await client.from('pos_display_state').upsert(payload, { onConflict: 'id' });
     } catch (e) {
       console.warn('[display-sync]', e);
     }
   }, 300);
 
-  // 3. 改寫 pushState，加入 immediate 參數控制是否需要即時同步
   async function pushState(payload, immediate = false) {
     if (immediate) {
       const client = getClient();
@@ -74,10 +70,27 @@
         console.warn('[display-sync]', e);
       }
     } else {
-      // 購物車變更會走這裡，過濾掉頻繁的重複寫入
       debouncedUpsert(payload);
     }
   }
+
+  // --- 新增：按鈕控制與自動中斷防呆機制 ---
+  async function setPromoActive(active) {
+    currentPromoActive = active;
+    // 只有在系統沒有訂單的情況下，才推播狀態更新
+    if (!thankYouActive && window.posCart?.getItems().length === 0) {
+      await pushState(buildPayload({ phase: 'idle' }), true);
+    }
+  }
+
+  function stopPromoInternally() {
+    if (currentPromoActive) {
+      currentPromoActive = false;
+      // 發出事件讓 index.html 的按鈕知道要變回「播放宣傳」
+      window.dispatchEvent(new CustomEvent('posPromoStopped'));
+    }
+  }
+  // ----------------------------------------
 
   async function syncIdle() {
     if (thankYouActive) return;
@@ -85,19 +98,11 @@
       clearTimeout(thankYouTimer);
       thankYouTimer = null;
     }
-    // 閒置狀態可以延遲同步
-    await pushState(buildPayload({
-      phase: 'idle',
-      items: [],
-      subtotal: 0,
-      discount: 0,
-      total: 0,
-      amount_received: 0,
-      change_amount: 0,
-    }));
+    await pushState(buildPayload({ phase: 'idle', items: [], subtotal: 0, discount: 0, total: 0, amount_received: 0, change_amount: 0 }));
   }
 
   async function syncCart() {
+    stopPromoInternally(); // 【防呆】：進入購物車，強制關閉宣傳
     if (thankYouTimer) {
       clearTimeout(thankYouTimer);
       thankYouTimer = null;
@@ -108,30 +113,24 @@
       await syncIdle();
       return;
     }
-    // 購物車更新使用延遲同步，防止連續按 + 號時產生大量請求
     await pushState(buildPayload({ phase: 'cart', amount_received: 0, change_amount: 0 }));
   }
 
   async function syncCheckout(total) {
+    stopPromoInternally(); // 【防呆】：進入結帳，強制關閉宣傳
     const t = Number(total) || 0;
-    // 結帳畫面必須「立刻」彈出，設定 immediate = true
-    await pushState(buildPayload({
-      phase: 'checkout',
-      total: t,
-      amount_received: 0,
-      change_amount: 0,
-    }), true);
+    await pushState(buildPayload({ phase: 'checkout', total: t, amount_received: 0, change_amount: 0 }), true);
   }
 
   async function syncThankYou({ total, received, change, order_code }) {
+    stopPromoInternally(); // 【防呆】：結帳完成，強制關閉宣傳
     thankYouActive = true;
-    // 感謝與找續畫面必須「立刻」彈出，設定 immediate = true
     await pushState(buildPayload({
       phase: 'thankyou',
       total: Number(total) || 0,
       amount_received: Number(received) || 0,
       change_amount: Number(change) || 0,
-      order_code: order_code || null 
+      order_code: order_code || null
     }), true);
     
     if (thankYouTimer) clearTimeout(thankYouTimer);
@@ -139,7 +138,7 @@
       thankYouTimer = null;
       thankYouActive = false;
       syncIdle();
-    }, 25000); 
+    }, 25000);
   }
 
   async function syncFromRegister() {
@@ -149,33 +148,25 @@
   }
 
   async function resetDisplay() {
+    stopPromoInternally(); // 【防呆】：重設螢幕時，強制關閉宣傳
     thankYouActive = false;
     if (thankYouTimer) {
       clearTimeout(thankYouTimer);
       thankYouTimer = null;
     }
-    // 重置指令必須立刻執行，設定 immediate = true
     await pushState({
       id: DISPLAY_ID,
       session_key: 'main',
       phase: 'idle',
+      is_promo_active: false, // 寫死關閉
       items: [],
-      subtotal: 0,
-      discount: 0,
-      total: 0,
-      amount_received: 0,
-      change_amount: 0,
+      subtotal: 0, discount: 0, total: 0, amount_received: 0, change_amount: 0,
       updated_at: new Date().toISOString(),
     }, true);
   }
 
   window.posDisplaySync = {
-    syncIdle,
-    syncCart,
-    syncCheckout,
-    syncThankYou,
-    syncFromRegister,
-    resetDisplay,
-    isThankYouActive,
+    syncIdle, syncCart, syncCheckout, syncThankYou, syncFromRegister, resetDisplay, isThankYouActive,
+    setPromoActive // 匯出控制函數給 app.js 使用
   };
 })();

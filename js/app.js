@@ -11,7 +11,8 @@
   let isOrderPinned = localStorage.getItem(ORDER_PIN_KEY) !== '0'; 
   let currentProductClickAction = 'focus';
   let currentForceOrderPinned = ''; // 💡 保存從伺服器抓到的強制狀態
-
+  
+  let isPromoPlaying = false; // 💡 新增：追蹤客顯屏宣傳狀態
 
   function getStaff() {
     try {
@@ -180,18 +181,16 @@
       </article>`).join('');
     
       grid.querySelectorAll('.pos-product-card').forEach((card) => {
-      // 加入了 (e) 作為事件參數
       card.addEventListener('click', (e) => {
         const id = Number(card.dataset.id);
         const product = products.find((x) => x.id === id);
         if (!product) return;
         
         if (mode === 'sale') {
-          // 加入 currentProductClickAction 判斷
           if (currentProductClickAction === 'focus' && typeof focusProductCard === 'function') {
-            focusProductCard(card, product); // 新版：彈出詳情動畫
+            focusProductCard(card, product); 
           } else {
-            window.posCart.add(product, 1);  // 原版：直接加入購物車 1 件
+            window.posCart.add(product, 1);  
           }
         } else if (invModes.includes(mode)) {
           window.posModes.inventory.selectProduct(product);
@@ -277,20 +276,16 @@
       document.body.appendChild(overlay);
     }
     
-    // 取得原始卡片尺寸 (通常為正方形)
     const rect = originalCard.getBoundingClientRect();
     const clone = document.createElement('div');
     clone.className = 'pos-product-clone';
     
-    // 初始狀態：完全覆蓋原卡片
     clone.style.top = `${rect.top}px`;
     clone.style.left = `${rect.left}px`;
     clone.style.width = `${rect.width}px`;
     clone.style.height = `${rect.height}px`;
     
-    // 建立分離式結構
     clone.innerHTML = `
-      <!-- 組件 1：圖片與內部文字 -->
       <div class="pos-clone-hero" id="cloneHero" style="height: ${rect.width}px;">
         <img src="${product.image_url || placeholderImg(product.name)}">
         <div class="pos-hero-overlay" id="cloneHeroOverlay">
@@ -299,7 +294,6 @@
         </div>
       </div>
       
-      <!-- 組件 2：操作區與分隔線 -->
       <div class="pos-clone-controls" id="cloneControls">
         <div class="pos-pill-ctrl">
           <button id="btnFocusMinus">-</button>
@@ -313,64 +307,54 @@
     `;
     
     document.body.appendChild(clone);
-    originalCard.style.opacity = '0'; // 隱藏原卡片
+    originalCard.style.opacity = '0'; 
     
-    // 觸發進入動畫
     requestAnimationFrame(() => {
       requestAnimationFrame(() => {
         overlay.classList.add('active');
         
-        // 設定目標尺寸
         const targetWidth = 360;
-        const heroHeight = 340;   // 上半部圖片高度
-        const controlsHeight = 160; // 下半部操作區高度
+        const heroHeight = 340;  
+        const controlsHeight = 160; 
         const targetHeight = heroHeight + controlsHeight; 
         
         const centerX = (window.innerWidth - targetWidth) / 2;
         const centerY = (window.innerHeight - targetHeight) / 2;
         
-        // 放大主體
         clone.style.top = `${centerY}px`;
         clone.style.left = `${centerX}px`;
         clone.style.width = `${targetWidth}px`;
         clone.style.height = `${targetHeight}px`;
         
-        // 將圖片容器拉長
         clone.querySelector('#cloneHero').style.height = `${heroHeight}px`;
         
         clone.classList.add('is-focused');
       });
     });
     
-    // 關閉與返回動畫
     const closeFocus = () => {
       overlay.classList.remove('active');
       clone.classList.remove('is-focused');
       
-      // 關鍵細節：先將內部文字與底部操作區淡出，防止縮細時內容擠壓變形
       clone.querySelector('#cloneHeroOverlay').style.opacity = '0';
       clone.querySelector('#cloneControls').style.opacity = '0';
       
-      // 復原至原卡片的精確座標與大小
       clone.style.top = `${rect.top}px`;
       clone.style.left = `${rect.left}px`;
       clone.style.width = `${rect.width}px`;
       clone.style.height = `${rect.height}px`;
       
-      // 將圖片容器高度縮回原本的正方形，達到完美無縫吻合
       clone.querySelector('#cloneHero').style.height = `${rect.width}px`;
       
-      // 動畫結束後銷毀
       setTimeout(() => {
         clone.remove();
-        originalCard.style.opacity = '1'; // 顯示原卡片
+        originalCard.style.opacity = '1'; 
       }, 400);
     };
 
     overlay.onclick = closeFocus;
     clone.onclick = (e) => e.stopPropagation();
     
-    // 數量控制器邏輯
     let currentQty = 1;
     const qtyDisplay = clone.querySelector('#focusQtyDisplay');
     
@@ -395,24 +379,17 @@
     };
   }
 
-  // 💡 2. 判斷並控制右側購物車面板顯示與否的共用函數
   function updateOrderPinUI() {
     const btn = document.getElementById('btnOrderPin');
-    
-    // 收銀、入貨、退貨、報銷這四個主要模式，必須強制顯示購物車欄位
     const alwaysShowModes = ['sale', 'restock', 'return', 'damage'];
     const isMainMode = alwaysShowModes.includes(mode);
 
     if (btn) {
-      // 💡 重點改動：如果是主要功能頁面，完全隱藏按鈕；其他管理頁面才顯示按鈕
       btn.style.display = isMainMode ? 'none' : 'flex';
       btn.classList.toggle('is-pinned', isOrderPinned);
     }
     
-    // 決定是否顯示右側面板：如果是主要功能 (必定顯示) 或 用戶手動點亮了按鈕 (isOrderPinned)
     const shouldShowOrder = isMainMode || isOrderPinned;
-    
-    // 切換隱藏 Class，控制右方購物車面板的出現/消失
     document.body.classList.toggle('hide-order-panel', !shouldShowOrder);
   }
 
@@ -420,7 +397,6 @@
     const badge = document.getElementById('orderModeBadge');
     if (badge) badge.textContent = MODE_BADGES[mode] || MODE_LABELS[mode] || mode;
     
-    // 💡 3. 執行購物車顯示/隱藏邏輯
     updateOrderPinUI();
 
     const showProducts = ['sale', 'restock', 'return', 'damage'].includes(mode);
@@ -533,6 +509,45 @@
       await window.posDisplaySync?.resetDisplay?.();
       window.ui.toast('客顯屏已重設為閒置狀態', 'success');
     });
+
+    // 💡 新增：客顯屏宣傳按鈕邏輯
+    const btnTogglePromo = document.getElementById('btnTogglePromo');
+    function updatePromoBtnUI() {
+      if (!btnTogglePromo) return;
+      if (isPromoPlaying) {
+        btnTogglePromo.textContent = '暫停宣傳';
+        btnTogglePromo.style.background = '#f59e0b';
+      } else {
+        btnTogglePromo.textContent = '播放宣傳';
+        btnTogglePromo.style.background = '#8b5cf6';
+      }
+    }
+    
+    if (btnTogglePromo) {
+      btnTogglePromo.addEventListener('click', async () => {
+        const cartItems = window.posCart?.getItems?.() || [];
+        // 【防呆機制】：如果有訂單，拒絕播放
+        if (cartItems.length > 0) {
+          window.ui.toast('當前有訂單正在處理中，無法播放宣傳動畫。', 'error');
+          return;
+        }
+
+        isPromoPlaying = !isPromoPlaying;
+        updatePromoBtnUI();
+        
+        if (window.posDisplaySync?.setPromoActive) {
+          await window.posDisplaySync.setPromoActive(isPromoPlaying);
+        }
+      });
+    }
+
+    // 接收來自 display-sync 觸發的自動中斷防呆事件
+    window.addEventListener('posPromoStopped', () => {
+      if (isPromoPlaying) {
+        isPromoPlaying = false;
+        updatePromoBtnUI();
+      }
+    });
     
     const notePopover = document.getElementById('notePopover');
     const fieldNote = document.getElementById('fieldNote');
@@ -562,7 +577,6 @@
     window.posModes.sale?.bindCheckoutModal?.(ctx());
     window.posModes.sale?.bindChargeButton?.();
     
-    // 💡 4. 綁定右方購物車按鈕點擊事件
     document.getElementById('btnOrderPin')?.addEventListener('click', () => {
     if (currentForceOrderPinned === 'true' || currentForceOrderPinned === 'false') {
         window.ui.toast('管理員已強制鎖定購物車面板顯示狀態', 'error');
@@ -639,7 +653,6 @@
     }
     updateOrderPinUI();
 
-
     if (forceDark === 'true') {
       document.body.classList.add('dark');
       document.getElementById('darkToggle')?.classList.add('on');
@@ -696,7 +709,6 @@
     }
     
     const settings = await window.posApi.fetchSettings();
-    // 💡 新增：讀取並套用預設付款方式到收銀台介面
     const defaultPayment = settings.default_payment || '現金';
     const fieldPayment = document.getElementById('fieldPayment');
     if (fieldPayment) {
@@ -733,4 +745,4 @@
     setMode, getStaff, ctx, openSidebar, closeSidebar, roleLabel,
     toggleSidebarPin, setSidebarPinned, isSidebarPinned,
   };
-})();
+})(); 
