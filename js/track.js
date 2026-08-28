@@ -1,4 +1,20 @@
-// js/track.js
+// 🌟 核心修復：監聽「上一頁」返回事件 (BFCache)，確保按鈕解凍
+window.addEventListener('pageshow', (event) => {
+    // 如果頁面是從快取中恢復的 (例如按了瀏覽器的上一頁)
+    if (event.persisted) {
+        const btnReceiptContact = document.getElementById('btnReceiptContact');
+        if (btnReceiptContact && btnReceiptContact.disabled) {
+            btnReceiptContact.textContent = '💬 聯絡我們';
+            btnReceiptContact.disabled = false;
+        }
+        
+        const btnSubmit = document.getElementById('btnSubmit');
+        if (btnSubmit && btnSubmit.disabled) {
+            btnSubmit.textContent = '查詢收據';
+            btnSubmit.disabled = false;
+        }
+    }
+});
 
 document.addEventListener('DOMContentLoaded', () => {
     // 1. 手機版漢堡選單開關邏輯
@@ -17,7 +33,7 @@ document.addEventListener('DOMContentLoaded', () => {
         }
     });
 
-    // 3. 綁定歷史記錄的點擊與刪除事件 (事件委派，解決誤判問題)
+    // 3. 綁定歷史記錄的點擊與刪除事件
     const historyList = document.getElementById('historyList');
     if (historyList) {
         historyList.addEventListener('click', (e) => {
@@ -26,7 +42,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
             // 如果點擊的是刪除按鈕
             if (deleteBtn) {
-                e.stopPropagation(); // 阻止事件冒泡到外層卡片
+                e.stopPropagation();
                 const id = deleteBtn.dataset.id;
                 deleteHistory(id);
                 return;
@@ -36,12 +52,12 @@ document.addEventListener('DOMContentLoaded', () => {
             if (historyItem) {
                 const id = historyItem.dataset.id;
                 document.getElementById('orderId').value = id;
-                document.getElementById('btnSubmit').click();
+                document.getElementById('btnSubmit').click(); // 直接觸發查詢
             }
         });
     }
 
-    // 4. 處理 URL 參數，判斷顯示哪一個視圖
+    // 4. 處理 URL 參數
     const urlParams = new URLSearchParams(window.location.search);
     const orderIdParam = urlParams.get('ID') || urlParams.get('id');
     
@@ -52,15 +68,15 @@ document.addEventListener('DOMContentLoaded', () => {
     } else {
         document.getElementById('searchView').style.display = 'block';
         document.getElementById('receiptView').style.display = 'none';
-        renderHistory(); // 顯示搜尋表單時渲染歷史記錄
+        renderHistory();
     }
 });
 
 // ---------------------------------------------------------
-// 連接 POS 系統 Supabase
+// 連接 POS 系統 Supabase (只負責唯讀查詢訂單)
 // ---------------------------------------------------------
 const POS_SUPABASE_URL = 'https://dryvaibjsetigszkzxuh.supabase.co';
-const POS_SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImRyeXZhaWJqc2V0aWdzemt6eHVoIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjgyMjQ4NjUsImV4cCI6MjA4MzgwMDg2NX0.3LdGe6NJya2mGs8s39RJfnOqftMjuC0bukeRbcR-fEk';
+const POS_SUPABASE_KEY = 'sb_publishable_rUaICkdFf6_6aAtxgvI90Q__shoTcRA';
 const posClient = supabase.createClient(POS_SUPABASE_URL, POS_SUPABASE_KEY);
 
 // 處理表單提交
@@ -74,30 +90,28 @@ document.getElementById('trackForm').addEventListener('submit', (e) => {
     newUrl.searchParams.set('id', inputVal);
     window.history.pushState({ path: newUrl.href }, '', newUrl.href);
 
-    // 切換視圖
-    document.getElementById('searchView').style.display = 'none';
-    document.getElementById('receiptView').style.display = 'block';
-    
-    // 執行查詢 (成功後才會在 fetchOrderDetails 中儲存歷史記錄)
+    const btnSubmit = document.getElementById('btnSubmit');
+    btnSubmit.textContent = '查詢中...';
+    btnSubmit.disabled = true;
+    document.getElementById('errorMsg').style.display = 'none';
+
+    // 執行查詢
     fetchOrderDetails(inputVal);
 });
 
 // 處理「查詢其他」按鈕
 document.getElementById('btnNewSearch').addEventListener('click', (e) => {
     e.preventDefault();
-    // 清除 URL 參數
     const newUrl = new URL(window.location);
     newUrl.searchParams.delete('id');
     newUrl.searchParams.delete('ID');
     window.history.pushState({ path: newUrl.href }, '', newUrl.href);
     
-    // 切換回搜尋視圖
     document.getElementById('receiptView').style.display = 'none';
     document.getElementById('searchView').style.display = 'block';
     document.getElementById('orderId').value = '';
     document.getElementById('errorMsg').style.display = 'none';
     
-    // 重新渲染歷史記錄
     renderHistory();
 });
 
@@ -105,7 +119,12 @@ document.getElementById('btnNewSearch').addEventListener('click', (e) => {
 async function fetchOrderDetails(queryVal) {
     const loadingEl = document.getElementById('receiptLoading');
     const contentEl = document.getElementById('receiptContent');
+    const btnSubmit = document.getElementById('btnSubmit');
+    const errorMsg = document.getElementById('errorMsg');
     
+    // 顯示載入中畫面前，先切換視圖
+    document.getElementById('searchView').style.display = 'none';
+    document.getElementById('receiptView').style.display = 'block';
     loadingEl.style.display = 'block';
     contentEl.style.display = 'none';
     
@@ -123,10 +142,10 @@ async function fetchOrderDetails(queryVal) {
         const { data, error } = await query.single();
 
         if (error || !data) {
-            throw new Error('Order not found');
+            throw new Error('找不到該訂單，請檢查編號是否正確。');
         }
 
-        // 查詢成功，才儲存到歷史記錄中 (以找到的實際代碼為準)
+        // 查詢成功，儲存到歷史記錄中
         const displayOrderCode = data.order_code ? data.order_code : data.id;
         saveToHistory(displayOrderCode);
 
@@ -138,10 +157,12 @@ async function fetchOrderDetails(queryVal) {
     } catch (err) {
         document.getElementById('receiptView').style.display = 'none';
         document.getElementById('searchView').style.display = 'block';
-        const errorMsg = document.getElementById('errorMsg');
-        errorMsg.textContent = '找不到該訂單，請檢查編號是否正確。';
+        errorMsg.textContent = err.message;
         errorMsg.style.display = 'block';
         renderHistory();
+    } finally {
+        btnSubmit.textContent = '查詢收據';
+        btnSubmit.disabled = false;
     }
 }
 
@@ -205,6 +226,7 @@ function renderReceipt(data) {
     contentEl.innerHTML = `
         <div class="receipt-header-actions">
             <h1 style="margin:0; font-size:1.5rem; color:#0f172a; font-family:'Noto Serif TC', serif;">🧾 訂單細節</h1>
+            <button type="button" class="btn-track-other" id="btnReceiptContact">💬 聯絡我們</button>
             <button type="button" class="btn-new-search" id="btnNewSearchBtn">🔍 查詢其他</button>
         </div>
 
@@ -217,7 +239,6 @@ function renderReceipt(data) {
         </div>
 
         <div class="pos-receipt-card">
-            <!-- 灰色資訊框 -->
             <div class="pos-receipt-meta">
                 <div class="pos-receipt-row">
                     <span>交易時間</span><span class="pos-receipt-val">${dateStr}</span>
@@ -236,17 +257,16 @@ function renderReceipt(data) {
                 </div>
             </div>
 
-            <!-- 購買項目 -->
             <h4 style="margin: 0 0 12px 0; font-size: 1.05rem; color: #0f172a;">🛍️ 購買項目</h4>
             <div class="pos-receipt-items">
                 ${itemsHtml || '<p style="padding:10px 0; color:#94a3b8; font-size:0.9rem; text-align:center;">無產品記錄</p>'}
             </div>
 
-            <!-- 結算總覽 -->
             ${summaryHtml}
         </div>
     `;
 
+    // 綁定「查詢其他」按鈕事件
     document.getElementById('btnNewSearchBtn').addEventListener('click', (e) => {
         e.preventDefault();
         const newUrl = new URL(window.location);
@@ -260,6 +280,30 @@ function renderReceipt(data) {
         document.getElementById('errorMsg').style.display = 'none';
         renderHistory();
     });
+
+    // 🌟 綁定「聯絡我們」按鈕事件：生成 Token 並無縫跳轉，且加入返回解凍機制
+    const btnReceiptContact = document.getElementById('btnReceiptContact');
+    if (btnReceiptContact) {
+        const newBtn = btnReceiptContact.cloneNode(true);
+        btnReceiptContact.parentNode.replaceChild(newBtn, btnReceiptContact);
+
+        newBtn.addEventListener('click', () => {
+            newBtn.textContent = '跳轉中...';
+            newBtn.disabled = true;
+
+            const trackingCode = data.order_code || data.id;
+            const token = Math.random().toString(36).substring(2, 10) + Date.now().toString(36);
+            
+            sessionStorage.setItem('chat_token_order_' + trackingCode, token);
+            
+            setTimeout(() => {
+                newBtn.textContent = '💬 聯絡我們';
+                newBtn.disabled = false;
+            }, 1500);
+
+            window.location.href = `contact.html?order_id=${trackingCode}&token=${token}`;
+        });
+    }
 }
 
 // =========================================================
@@ -292,7 +336,6 @@ function renderHistory() {
     }
     
     panel.style.display = 'block';
-    // 移除 inline onclick，改用 dataset 與 Event Delegation
     list.innerHTML = history.map(item => `
         <div class="history-item" data-id="${item.id}">
             <div class="history-info">
@@ -304,7 +347,6 @@ function renderHistory() {
     `).join('');
 }
 
-// 動態時間計算 (X秒前、X分鐘前、昨日等)
 function timeAgo(timestamp) {
     const now = Date.now();
     const diffInSeconds = Math.floor((now - timestamp) / 1000);

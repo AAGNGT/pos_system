@@ -324,3 +324,81 @@
     from { opacity: 0; transform: translateY(10px); }
     to { opacity: 1; transform: translateY(0); }
 }
+
+/* =========================================================
+   電子收據頂部按鈕區塊 (聯絡我們 & 查詢其他)
+   ========================================================= */
+
+/* 確保標題與按鈕在同一行並向右對齊 */
+.receipt-header-actions {
+    display: flex;
+    align-items: center;
+    margin-bottom: 20px;
+    gap: 12px; /* 按鈕之間的間距 */
+}
+
+.receipt-header-actions h1 {
+    flex: 1; /* 讓標題佔滿左側空間，將按鈕推向右邊 */
+}
+
+/* 💬 聯絡我們 按鈕 (微圓角、淺灰底) */
+.btn-track-other {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    background-color: #f8fafc; 
+    color: #334155; 
+    border: 1px solid #cbd5e1; 
+    border-radius: 6px; /* 圖片中的微圓角 */
+    padding: 6px 14px;
+    font-size: 0.85rem;
+    font-weight: 500;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    font-family: inherit;
+    margin-right: 0 !important; /* 覆蓋 HTML 中的 inline style */
+}
+
+.btn-track-other:hover {
+    background-color: #e2e8f0;
+    border-color: #94a3b8;
+    color: #0f172a;
+}
+
+.btn-track-other:disabled {
+    opacity: 0.6;
+    cursor: not-allowed;
+}
+
+/* 點擊時的回饋動畫 (配合上一頁解凍機制) */
+.btn-track-other:active:not(:disabled) {
+    transform: scale(0.95);
+}
+
+/* 🔍 查詢其他 按鈕 (全圓角、白底、輕微陰影) */
+.btn-new-search {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    background-color: #ffffff;
+    color: #0f172a;
+    border: 1px solid #e2e8f0;
+    border-radius: 999px; /* 圖片中的全圓角 (Pill shape) */
+    padding: 6px 16px;
+    font-size: 0.85rem;
+    font-weight: 600;
+    cursor: pointer;
+    box-shadow: 0 2px 4px rgba(0,0,0,0.03); /* 輕微立體感 */
+    transition: all 0.2s ease;
+    font-family: inherit;
+}
+
+.btn-new-search:hover {
+    background-color: #f8fafc;
+    box-shadow: 0 4px 8px rgba(0,0,0,0.06);
+    border-color: #cbd5e1;
+}
+
+.btn-new-search:active {
+    transform: scale(0.95);
+}

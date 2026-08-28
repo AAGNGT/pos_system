@@ -382,6 +382,23 @@
         if (btnPrint) {
             btnPrint.onclick = () => window.print();
         }
+
+        const btnContactUs = document.getElementById('btnContactUs');
+        if (btnContactUs && order && order.id) {
+            // 生成隨機一次性 Token
+            const chatToken = Math.random().toString(36).substring(2, 15);
+            
+            // 將 Token 安全地存入 sessionStorage
+            sessionStorage.setItem('chat_token_order_' + order.id, chatToken);
+            
+            // 如果是訪客，將已解鎖的電話號碼也暫存，供 contact.js 自動通關 RPC 驗證
+            if (isGuest) {
+                sessionStorage.setItem('chat_guest_phone_' + order.id, order.customer_phone || order.phone || '');
+            }
+
+            // 更新按鈕連結，帶上 order_id 與 token
+            btnContactUs.href = `contact.html?order_id=${order.id}&token=${chatToken}`;
+        }
     }
 
     function escapeHtml(unsafe) {

@@ -10,14 +10,263 @@
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&family=Noto+Serif+TC:wght@400;500;600&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="css/main.css">
     <link rel="stylesheet" href="css/contact.css">
+    <style>
+     /* =========================================
+       ✨ 歡迎頁面專屬 Pro Max 樣式
+       ========================================= */
+    .pro-welcome-container {
+        width: 95vw;
+        max-width: 1200px; /* 💻 擴大電腦版橫向闊度 */
+        margin: 40px auto 80px auto;
+        display: flex;
+        flex-direction: column;
+        gap: 80px; /* 💨 加大卡片與下方 FAQ 之間的空隙 */
+        animation: fadeUp 0.6s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+    }
+
+    /* 頂部標題區 */
+    .pro-header {
+        text-align: center;
+        padding-top: 20px;
+    }
+    .pro-header h2 {
+        font-size: 2.5rem;
+        font-weight: 700;
+        color: #111;
+        letter-spacing: -0.02em;
+        margin-bottom: 16px;
+    }
+    .pro-header p {
+        font-size: 1.1rem;
+        color: #64748b;
+        max-width: 600px;
+        margin: 0 auto;
+        line-height: 1.6;
+    }
+
+    /* 雙卡片佈局 */
+    .pro-cards {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(400px, 1fr));
+        gap: 40px; /* 增加左右卡片的間距 */
+    }
+
+    /* 獨立卡片設計 (常規實體卡片) */
+    .pro-card {
+        background: #ffffff;
+        border-radius: 24px;
+        padding: 40px;
+        box-shadow: 0 12px 32px rgba(0, 0, 0, 0.03), 0 2px 6px rgba(0, 0, 0, 0.02);
+        border: 1px solid rgba(226, 232, 240, 0.8);
+        transition: transform 0.4s cubic-bezier(0.16, 1, 0.3, 1), box-shadow 0.4s ease;
+        display: flex;
+        flex-direction: column;
+        justify-content: space-between;
+        position: relative;
+        overflow: hidden;
+    }
+    .pro-card:hover {
+        transform: translateY(-6px);
+        box-shadow: 0 24px 48px rgba(0, 0, 0, 0.08), 0 8px 16px rgba(0, 0, 0, 0.03);
+    }
+
+    /* 🔮 超細透明毛玻璃卡片 (Glassmorphism) */
+    .pro-card-glass {
+        background: linear-gradient(135deg, rgba(255, 255, 255, 0.4) 0%, rgba(248, 250, 252, 0.6) 100%);
+        backdrop-filter: blur(24px) saturate(180%);
+        -webkit-backdrop-filter: blur(24px) saturate(180%);
+        border: 1px solid rgba(255, 255, 255, 0.8);
+        box-shadow: 0 12px 40px rgba(31, 38, 135, 0.04), inset 0 0 0 1px rgba(255, 255, 255, 0.5);
+    }
+    
+    /* 卡片 Icon */
+    .pro-card-icon {
+        width: 64px;
+        height: 64px;
+        border-radius: 18px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 1.75rem;
+        margin-bottom: 24px;
+    }
+    .icon-order { background: #fef2f2; color: #991b1b; } 
+    .icon-chat { background: rgba(255,255,255,0.6); color: #334155; box-shadow: 0 4px 12px rgba(0,0,0,0.02); }
+
+    /* 卡片文字 */
+    .pro-card h3 {
+        font-size: 1.4rem;
+        font-weight: 600;
+        color: #0f172a;
+        margin-bottom: 12px;
+    }
+    .pro-card p {
+        font-size: 0.95rem;
+        color: #64748b;
+        line-height: 1.6;
+        margin-bottom: 32px;
+        flex-grow: 1;
+    }
+
+    /* 輸入框美化 */
+    .pro-input-group {
+        display: flex;
+        flex-direction: column;
+        gap: 12px;
+        margin-bottom: 16px;
+    }
+    .pro-input-group input {
+        width: 100%;
+        padding: 16px 20px;
+        border: 1.5px solid #e2e8f0;
+        border-radius: 12px;
+        font-size: 1rem;
+        outline: none;
+        transition: all 0.3s;
+        background: #f8fafc;
+        box-sizing: border-box;
+    }
+    .pro-input-group input:focus {
+        background: #fff;
+        border-color: #991b1b;
+        box-shadow: 0 0 0 4px rgba(153, 27, 27, 0.1);
+    }
+
+    /* 按鈕美化 */
+    .pro-btn {
+        padding: 16px 32px;
+        border-radius: 12px;
+        font-size: 1.05rem;
+        font-weight: 600;
+        border: none;
+        cursor: pointer;
+        transition: all 0.3s;
+        text-align: center;
+        width: 100%;
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        gap: 8px;
+    }
+    .pro-btn-primary {
+        background: #991b1b;
+        color: #ffffff;
+        box-shadow: 0 4px 12px rgba(153, 27, 27, 0.2);
+    }
+    .pro-btn-primary:hover {
+        background: #7f1d1d;
+        box-shadow: 0 6px 16px rgba(153, 27, 27, 0.3);
+        transform: translateY(-2px);
+    }
+    .pro-btn-glass {
+        background: rgba(255, 255, 255, 0.7);
+        color: #0f172a;
+        border: 1px solid rgba(255, 255, 255, 0.9);
+        box-shadow: 0 4px 12px rgba(0,0,0,0.03);
+        backdrop-filter: blur(10px);
+    }
+    .pro-btn-glass:hover {
+        background: rgba(255, 255, 255, 0.95);
+        transform: translateY(-2px);
+        box-shadow: 0 6px 16px rgba(0,0,0,0.06);
+    }
+
+    /* =========================================
+       📚 FAQ 區塊 (Apple Style Accordion)
+       ========================================= */
+    .pro-faq-section {
+        background: #ffffff;
+        border-radius: 24px;
+        padding: 48px;
+        box-shadow: 0 12px 32px rgba(0, 0, 0, 0.03);
+        border: 1px solid rgba(226, 232, 240, 0.8);
+    }
+    .pro-faq-section h3 {
+        font-size: 1.75rem;
+        font-weight: 700;
+        margin-bottom: 40px;
+        color: #0f172a;
+        text-align: center;
+    }
+    .pro-faq-category {
+        font-size: 1.15rem;
+        font-weight: 700;
+        color: #334155;
+        margin: 32px 0 16px 0;
+        padding-bottom: 8px;
+        border-bottom: 2px solid #f1f5f9;
+    }
+    .pro-faq-category:first-of-type {
+        margin-top: 0;
+    }
+    .pro-faq-item {
+        border-bottom: 1px solid #e2e8f0;
+    }
+    .pro-faq-item:last-child {
+        border-bottom: none;
+    }
+    .pro-faq-summary {
+        padding: 20px 0;
+        font-size: 1.05rem;
+        font-weight: 600;
+        color: #1e293b;
+        cursor: pointer;
+        list-style: none;
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        transition: color 0.2s;
+    }
+    .pro-faq-summary:hover {
+        color: #991b1b;
+    }
+    .pro-faq-summary::-webkit-details-marker {
+        display: none;
+    }
+    .pro-faq-summary::after {
+        content: '+';
+        font-size: 1.5rem;
+        color: #94a3b8;
+        transition: transform 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+        display: inline-block;
+    }
+    details[open] .pro-faq-summary::after {
+        transform: rotate(45deg);
+        color: #991b1b;
+    }
+    .pro-faq-content {
+        padding-bottom: 24px;
+        color: #475569;
+        line-height: 1.8;
+        font-size: 0.95rem;
+        animation: slideDown 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+    }
+
+    /* 動畫 */
+    @keyframes fadeUp { 
+        from { opacity: 0; transform: translateY(20px); } 
+        to { opacity: 1; transform: translateY(0); } 
+    }
+    @keyframes slideDown { 
+        from { opacity: 0; transform: translateY(-10px); } 
+        to { opacity: 1; transform: translateY(0); } 
+    }
+
+    /* RWD 適應手機版 */
+    @media (max-width: 768px) {
+        .pro-welcome-container { padding: 0 16px; gap: 48px; }
+        .pro-cards { grid-template-columns: 1fr; gap: 24px; }
+        .pro-card { padding: 32px 24px; }
+        .pro-faq-section { padding: 32px 24px; }
+        .pro-header h2 { font-size: 2rem; }
+    }
+    </style>
 </head>
 <body>
     <header class="site-header scrolled">
         <div class="header-inner">
             <a href="index.html" class="brand">
-                <span class="logo-ring logo-ring--sm" aria-hidden="true">
-                    <img src="Logo.jpg" alt="">
-                </span>
+                <span class="logo-ring logo-ring--sm" aria-hidden="true"><img src="Logo.jpg" alt=""></span>
                 <span class="brand-name">卍物所</span>
             </a>
             <nav>
@@ -36,7 +285,6 @@
             var authContainer = document.getElementById('headerAuth');
             if (authContainer) {
                 if (cachedName) {
-                    // 防止 XSS 攻擊的字元過濾
                     var safeName = cachedName.replace(/</g, "&lt;").replace(/>/g, "&gt;");
                     authContainer.innerHTML = '<a href="account.html" class="header-auth-link">' + safeName + '</a>';
                 } else {
@@ -46,38 +294,212 @@
         })();
     </script>
 
-    <main class="contact-page">
-        <div class="section-inner" style="max-width: 960px;">
-            <a href="javascript:history.back()" class="back-link">← 返回上一頁</a>
+    <main class="contact-page" style="padding-top: 100px; padding-bottom: 60px;">
+        
+        <div class="contact-layout">
 
-            <div class="chat-container">
-                <div class="chat-header">
-                    <div class="chat-title">
-                        <h2>卍物所 客服專員</h2>
-                        <span class="status online">目前在線 (服務時間: 10:00 - 22:00)</span>
+<!-- 🚫 未授權/錯誤提示視圖 (突破容器寬度，16:9 滿版圖片) -->
+<div id="unauthorizedView" style="display: none; width: 95vw; max-width: 1200px; position: relative; left: 50%; transform: translateX(-50%); background: var(--bg-elevated, #fff); border: 1px solid var(--border); border-radius: 16px; overflow: hidden; box-shadow: 0 12px 40px rgba(0,0,0,0.15); text-align: center;">
+
+    <!-- 頂部：Emoji 及 主標題 (獨立白底區域，絕對清晰) -->
+    <div style="padding: 40px 32px 24px 32px; background: #fff; z-index: 10; position: relative;">
+        <div style="font-size: 4rem; margin-bottom: 12px; line-height: 1;">🛑</div>
+        <h2 style="font-size: 1.75rem; color: #991b1b; margin: 0; font-weight: 600;">無效的連結或身分驗證失敗</h2>
+    </div>
+
+    <!-- 圖片區域 (強制 16:9 比例，極闊視野) -->
+    <div style="position: relative; width: 100%; aspect-ratio: 16 / 9; background: #111;">
+        
+        <!-- 圖片 (填滿 16:9 空間) -->
+        <img src="https://ysohdkbkhnsyowvzdlvn.supabase.co/storage/v1/object/public/image/guide.png" alt="請透過收據按鈕進入教學" style="width: 100%; height: 100%; object-fit: cover; object-position: center; display: block;" onerror="this.style.display='none'; this.nextElementSibling.style.display='block';">
+        
+
+        <!-- 底部陰影漸變層與文字 (緊貼圖片底部) -->
+        <div style="position: absolute; bottom: 0; left: 0; right: 0; background: linear-gradient(to top, rgba(0,0,0,0.95) 0%, rgba(0,0,0,0.7) 50%, transparent 100%); padding: 10% 32px 40px 32px; text-align: center; display: flex; flex-direction: column; align-items: center;">
+            <p style="color: #ffffff; font-size: 1.1rem; line-height: 1.6; margin-bottom: 24px; text-shadow: 0 2px 6px rgba(0,0,0,0.8); max-width: 650px;">
+                您存取的客服連結可能已失效，或身分驗證未能通過。<br>請透過您的<strong>電子收據</strong>或<strong>我的帳戶</strong>頁面，<br>重新點擊「聯絡我們」按鈕進入專屬聊天室。
+            </p>
+            <a href="index.html" class="btn-primary" style="display: inline-block; padding: 14px 40px; font-size: 1.1rem; background: #dc2626; color: #fff; border-radius: 8px; text-decoration: none; font-weight: 600; border: none; box-shadow: 0 4px 16px rgba(220, 38, 38, 0.4); transition: 0.2s;">確定返回主頁</a>
+        </div>
+    </div>
+</div>
+
+<div id="welcomeView" class="pro-welcome-container" style="display: none;">
+    
+    <!-- 頂部文案 -->
+    <div class="pro-header">
+        <h2>👋 歡迎聯絡 卍物所</h2>
+        <p>請選擇適合您的查詢方式，無論是追蹤進度還是產品諮詢，我們都會為您提供最貼心的解答。</p>
+    </div>
+
+    <!-- 雙動作卡片 -->
+    <div class="pro-cards">
+        
+        <!-- 💡 選項 1：代碼查詢 (已移除金額與密碼) -->
+        <div class="pro-card">
+            <div>
+                <div class="pro-card-icon icon-order">📦</div>
+                <h3>已有訂單 / 收據？</h3>
+                <p>請輸入您的訂單編號或電子收據代碼。系統將為您建立專屬連線，查看產品備貨與售後進度。</p>
+            </div>
+            
+            <div>
+                <form id="welcomeOrderForm">
+                    <div class="pro-input-group">
+                        <input type="text" id="welcome_order_id" placeholder="請輸入訂單編號 (例如: T9ADC 或 123)" required autocomplete="off">
+                        <!-- 🚨 注意：已根據要求移除實付總額 (amount) 輸入框 -->
                     </div>
+                    <button type="submit" class="pro-btn pro-btn-primary">
+                        查詢並進入聊天室 <span>→</span>
+                    </button>
+                </form>
+                <div id="welcomeOrderFeedback" style="color: #dc2626; font-size: 0.85rem; margin-top: 16px; text-align: center; font-weight: 500;"></div>
+            </div>
+        </div>
+
+        <!-- 💡 選項 2：一般查詢 -->
+        <div class="pro-card">
+            <div>
+                <div class="pro-card-icon icon-chat">💬</div>
+                <h3>一般查詢服務</h3>
+                <p>如果您尚未下單，或者想查詢關於香磚材質、市集擺檔時間、畫家聯名合作等資訊，請點擊這裡發起對話。</p>
+            </div>
+            
+            <div>
+                <button type="button" id="btnCreateGeneralTicket" class="pro-btn pro-btn-secondary">
+                    建立一般查詢
+                </button>
+            </div>
+        </div>
+
+    </div>
+
+    <!-- 📚 常見問題 FAQ (售後自問自答) -->
+    <div class="pro-faq-section">
+        <h3>常見問題與售後資訊</h3>
+
+        <h4 class="pro-faq-category">👥 針對「訪客 / 尚未下單的客人」</h4>
+        <details class="pro-faq-item">
+            <summary class="pro-faq-summary">呢個咖啡產品有冇添加任何防腐劑？</summary>
+            <div class="pro-faq-content">
+                係冇嘅，因為呢啲都係人手無添加製作，務求為您保留最純粹、最天然的品質。
+            </div>
+        </details>
+        <details class="pro-faq-item">
+            <summary class="pro-faq-summary">香磚/寧磚的香氣通常可以維持多久？</summary>
+            <div class="pro-faq-content">
+                擴香石本身不含揮發性香精，我們附帶的精油或香氣會根據擺放空間的大小與通風程度維持數日至數週。當香氣變淡時，只需在擴香石背面重新滴入幾滴您喜歡的精油即可循環使用。
+            </div>
+        </details>
+
+        <!-- 第二類 -->
+        <h4 class="pro-faq-category">👤 針對「註冊會員 / 帳戶使用者」</h4>
+        <details class="pro-faq-item">
+            <summary class="pro-faq-summary">註冊會員有什麼好處？如何查看我的預訂紀錄？</summary>
+            <div class="pro-faq-content">
+                註冊會員後，系統會自動將您註冊時的「電郵地址」與市集預訂紀錄進行配對。您隨時可以登入「我的帳戶」頁面，清晰查閱您過往的所有預訂與備貨狀態。
+            </div>
+        </details>
+        <details class="pro-faq-item">
+            <summary class="pro-faq-summary">忘記密碼了該怎麼辦？</summary>
+            <div class="pro-faq-content">
+                您可以在登入彈窗中點擊「忘記密碼？」，系統會發送一封安全重設連結至您的註冊電郵，點擊後即可安全更改新密碼。我們的工作人員絕不會透過電話或私訊向您索取密碼。
+            </div>
+        </details>
+
+        <!-- 第三類 -->
+        <h4 class="pro-faq-category">📦 針對「售後 / 持有預售收據的客人」</h4>
+        <details class="pro-faq-item">
+            <summary class="pro-faq-summary">我已經付款並拿到電子收據，請問如何聯繫客服或提供意見？</summary>
+            <div class="pro-faq-content">
+                您可以直接透過 收據編號  進入專屬聊天室。系統會自動進行身份驗證，讓您與客服專員一對一對話，查詢取貨日期或更改訂單。
+            </div>
+        </details>
+        <details class="pro-faq-item">
+            <summary class="pro-faq-summary">如果市集當天因天氣或其他原因無法前往取貨怎麼辦？</summary>
+            <div class="pro-faq-content">
+                請立即透過收據的「聯絡我們」按鈕通知客服。我們會為您保留訂單，並協調其他合適的取貨時間。
+            </div>
+        </details>
+                <details class="pro-faq-item">
+            <summary class="pro-faq-summary">如果在維園市集預訂，可以更改取貨日期嗎？</summary>
+            <div class="pro-faq-content">
+                可以的。請透過「我的帳戶」內的訂單「💬 聯絡我們」按鈕安全進入專屬聊天室，向客服專員提出更改取貨日期的要求，我們會在擺檔期間（8/22–23、9/12–13）為您彈性安排留貨。
+            </div>
+        </details>
+    </div>
+
+</div>
+            
+            <!-- 🌟 管理員專屬側邊欄 (預設隱藏) -->
+            <aside class="admin-sidebar" id="adminSidebar">
+                <div class="admin-sidebar-header">🛡️ 客服查詢列表</div>
+                <div class="admin-ticket-list" id="adminTicketList">
+                    <div style="padding: 20px; text-align: center; color: #666; font-size: 0.85rem;">載入中...</div>
+                </div>
+            </aside>
+
+            <!-- 💬 聊天室主體 -->
+            <div class="chat-container" id="mainChatContainer" style="display: none;">
+                <div class="chat-header" style="padding: 16px 20px; border-bottom: 1px solid var(--border); display: flex; justify-content: space-between; align-items: center;">
+                    <div class="chat-title">
+                        <h2 style="margin:0; font-size: 1.1rem; color: var(--text);">卍物所 客服專員</h2>
+                        <span style="font-size: 0.8rem; color: #059669;">● 目前在線 (服務時間: 10:00 - 22:00)</span>
+                    </div>
+                </div>
+
+                <!-- 🎫 身份提示列 (新增) -->
+                <div style="background: #f3f4f6; padding: 6px 20px; font-size: 0.8rem; color: #4b5563; text-align: center; border-bottom: 1px solid var(--border);">
+                    目前連線身份：<strong id="displayIdentity" style="color: #111;">載入中...</strong>
+                </div>
+
+                <!-- 📦 訂單摘要 -->
+                <div class="order-summary" id="chatOrderSummary" style="background: #fef2f2; padding: 10px 20px; border-bottom: 1px solid var(--border); font-size: 0.85rem; color: #991b1b; display: flex; justify-content: space-between;">
+                    <span>單號/追蹤碼: <strong id="summaryOrderCode">載入中...</strong></span>
+                    <span>狀態: <strong id="summaryTicketStatus">處理中</strong></span>
                 </div>
 
                 <div class="chat-history" id="chatHistory">
-                    <div class="message system">
-                        <div class="bubble">您好！請問有咩訂單問題需要協助？你可以隨時喺度留言，我們會盡快回覆您。</div>
-                        <span class="time">10:00 AM</span>
+                    <div class="message system" id="loadingMessage">
+                        <div class="bubble">系統正在載入對話，請稍候...</div>
                     </div>
                 </div>
 
-                <div class="chat-input-area">
-                    <form id="chatForm">
-                        <input type="text" id="messageInput" placeholder="輸入您的訊息..." required autocomplete="off">
-                        <button type="submit" class="btn-send">發送</button>
+                <div id="typingIndicator" class="typing-indicator" style="display: none; padding: 5px 20px; font-size: 0.8rem; color: #6b7280; font-style: italic; background: #fafafa;">
+                    對方正在輸入...
+                </div>
+
+                <div class="chat-input-area" style="padding: 16px; border-top: 1px solid var(--border); background: #fff;">
+                    <form id="chatForm" style="display: flex; gap: 10px;">
+                        <input type="text" id="messageInput" placeholder="輸入您的訊息..." required autocomplete="off" disabled style="flex: 1; padding: 12px 16px; border: 1px solid var(--border); border-radius: 20px; outline: none;">
+                        <button type="submit" class="btn-send" id="sendBtn" disabled style="padding: 0 24px; background: #991b1b; color: #fff; border: none; border-radius: 20px; font-weight: 600; cursor: pointer;">發送</button>
                     </form>
                 </div>
             </div>
         </div>
     </main>
 
+    <!-- 訪客/未登入 安全驗證 Modal -->
+    <div class="modal-overlay auth-modal" id="verificationModal" role="dialog" aria-modal="true" style="display: none; z-index: 1000;">
+        <div class="modal-sheet auth-sheet">
+            <h2 class="auth-modal-title">客服查詢驗證</h2>
+            <p style="text-align: center; margin-bottom: 20px; color: var(--text-secondary); font-size: 0.95rem; line-height: 1.5;">請輸入您下單時使用的聯絡電話，以便我們為您尋找對應的訂單與對話。</p>
+            
+            <form id="verifyForm" class="auth-form" novalidate>
+                <div class="form-group">
+                    <label for="verify_amount">實付總額 ($)</label>
+                    <input type="number" step="0.1" id="verify_amount" name="amount" required placeholder="例如: 168">             
+                </div>
+                <button type="submit" class="btn btn-primary" id="verifySubmitBtn" style="width:100%">驗證並進入</button>
+            </form>
+            <div class="form-feedback" id="verifyFeedback" role="status" style="margin-top: 15px; text-align: center;"></div>
+        </div>
+    </div>
+
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
     <script src="supabase-config.js"></script>
     <script src="js/auth.js"></script>
+    <script src="js/sounds.js"></script>
     <script src="js/contact.js"></script>
 </body>
 </html>

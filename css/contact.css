@@ -178,3 +178,56 @@
     .chat-input-area { padding: 12px 16px; }
     .message { max-width: 90%; }
 }
+
+/* 聯絡頁面排版 */
+.contact-layout { display: flex; gap: 24px; align-items: flex-start; max-width: 1000px; margin: 0 auto; }
+
+/* 管理員側邊欄列表 */
+.admin-sidebar { width: 340px; background: var(--bg-elevated, #fff); border: 1px solid var(--border); border-radius: 12px; height: 600px; display: none; flex-direction: column; overflow: hidden; box-shadow: 0 4px 12px rgba(0,0,0,0.05); }
+.admin-sidebar-header { padding: 16px; background: #fef2f2; border-bottom: 1px solid var(--border); font-weight: 600; color: #991b1b; }
+.admin-ticket-list { flex: 1; overflow-y: auto; }
+.ticket-item { padding: 16px; border-bottom: 1px solid var(--border); cursor: pointer; transition: 0.2s; }
+.ticket-item:hover { background: #f9fafb; }
+.ticket-item.active { background: #fef2f2; border-left: 4px solid #991b1b; }
+.ticket-item-title { font-size: 0.9rem; font-weight: 600; color: var(--text); }
+.ticket-item-meta { font-size: 0.75rem; color: var(--text-secondary); }
+
+/* 新增：列表中的未讀圓圈 Badge */
+.unread-badge { background: #ef4444; color: white; font-size: 0.7rem; font-weight: bold; padding: 2px 7px; border-radius: 12px; margin-left: 8px; }
+/* 聊天室主體 */
+.chat-container { flex: 1; min-width: 0; background: var(--bg-elevated, #fff); border: 1px solid var(--border); border-radius: 12px; height: 600px; display: flex; flex-direction: column; overflow: hidden; box-shadow: 0 4px 12px rgba(0,0,0,0.05); }
+/* 對話泡泡排版 */
+.chat-history { flex: 1; padding: 20px; overflow-y: auto; display: flex; flex-direction: column; gap: 16px; background: #fafafa; }
+.message { display: flex; flex-direction: column; max-width: 75%; }
+.message .sender-name { font-size: 0.75rem; color: #888; margin-bottom: 4px; }
+
+/* 新增：列表中的未讀圓圈 Badge */
+.unread-badge { display: inline-flex; align-items: center; justify-content: center; background: #ef4444; color: white; font-size: 0.75rem; font-weight: 600; min-width: 18px; height: 18px; border-radius: 999px; padding: 0 5px; margin-left: 8px; }
+/* 聊天室主體 */
+.chat-container { flex: 1; min-width: 0; background: var(--bg-elevated, #fff); border: 1px solid var(--border); border-radius: 12px; height: 600px; display: flex; flex-direction: column; overflow: hidden; box-shadow: 0 4px 12px rgba(0,0,0,0.05); }
+/* 對話泡泡排版 */
+.chat-history { flex: 1; padding: 20px; overflow-y: auto; display: flex; flex-direction: column; gap: 16px; background: #fafafa; }
+.message { display: flex; flex-direction: column; max-width: 75%; }
+.message .sender-name { font-size: 0.75rem; color: #888; margin-bottom: 4px; }
+/* 恢復舊版泡泡設計 (文字獨立包裝) */
+.bubble { display: inline-block; word-break: break-word; }
+/* 新增：時間與單剔的排版 (放喺泡泡下方) */
+.message-meta { display: flex; align-items: center; gap: 4px; margin-top: 4px; font-size: 0.65rem; }
+.message-meta .time { color: #aaa; }
+/* 狀態符號 (圓圈包住單剔) */
+.message-meta .tick-icon { display: inline-flex; align-items: center; justify-content: center; width: 14px; height: 14px; border-radius: 50%; font-size: 10px; font-weight: bold; transition: all 0.3s ease; }
+/* (a) 已傳送（未讀）：空心圓圈包住一個灰剔 */
+.message-meta .tick-icon.unread { border: 1.5px solid #9ca3af; color: #9ca3af; background: transparent; }
+/* (b) 對方已讀：實心藍色圓圈，入面白色剔 */
+.message-meta .tick-icon.read { border: 1.5px solid #3b82f6; color: #ffffff; background: #3b82f6; }
+/* 自己發送的訊息 (靠右) */
+.message.self { align-self: flex-end; align-items: flex-end; }
+.message.self .bubble { background: #991b1b !important; color: #ffffff !important; padding: 10px 16px; border-radius: 16px 16px 0 16px; }
+.message.self .message-meta { justify-content: flex-end; }
+/* 對方發送的訊息 (靠左) */
+.message.other { align-self: flex-start; align-items: flex-start; }
+.message.other .bubble { background: #e5e5ea !important; color: #111111 !important; padding: 10px 16px; border-radius: 16px 16px 16px 0; }
+.message.other .message-meta { justify-content: flex-start; }
+/* 系統訊息 (置中) */
+.message.system { align-self: center; align-items: center; max-width: 90%; margin: 10px 0; }
+.message.system .bubble { background: transparent !important; color: #6b7280 !important; font-size: 0.85rem; padding: 8px 16px; border: 1px dashed #d1d5db; border-radius: 8px; text-align: center; }
