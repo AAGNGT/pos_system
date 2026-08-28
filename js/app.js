@@ -10,6 +10,7 @@
   const ORDER_PIN_KEY = 'pos_order_pinned';
   let isOrderPinned = localStorage.getItem(ORDER_PIN_KEY) !== '0'; 
   let currentProductClickAction = 'focus';
+  let currentMenuLayout = 'default';
   let currentForceOrderPinned = ''; // 💡 保存從伺服器抓到的強制狀態
   
   let isPromoPlaying = false; // 💡 新增：追蹤客顯屏宣傳狀態
@@ -153,21 +154,21 @@
   function renderProducts() {
     const grid = document.getElementById('productGrid');
     if (!grid) return;
+
     let list = [...products];
-    if (activeCategoryId) list = list.filter((p) => p.category_id === activeCategoryId);
+
     if (productSearch) {
       const q = productSearch.toLowerCase();
       list = list.filter((p) => p.name.toLowerCase().includes(q) || p.code.toLowerCase().includes(q));
     }
+
     if (sortBy === 'price_asc') list.sort((a, b) => a.price - b.price);
     if (sortBy === 'price_desc') list.sort((a, b) => b.price - a.price);
     if (sortBy === 'name') list.sort((a, b) => a.name.localeCompare(b.name, 'zh-TW'));
-    if (!list.length) {
-      grid.innerHTML = '<p class="pos-order__empty" style="grid-column:1/-1">找不到符合的產品</p>';
-      return;
-    }
+
     const invModes = ['restock', 'return', 'damage'];
-    grid.innerHTML = list.map((p) => `
+
+    const generateCard = (p) => `
       <article class="pos-product-card" data-id="${p.id}">
         <div class="pos-product-card__img">
           <img src="${p.image_url || placeholderImg(p.name)}" alt="${p.name}" loading="lazy">
@@ -178,27 +179,82 @@
           <p class="pos-product-card__name">${p.name}</p>
           <p class="pos-product-card__code">${p.code}</p>
         </div>
-      </article>`).join('');
-    
-      grid.querySelectorAll('.pos-product-card').forEach((card) => {
+      </article>`;
+
+    // 啟動分區模式 (當沒有搜尋且沒有點擊單一分類按鈕時)
+    if (currentMenuLayout === 'grouped' && !productSearch && !activeCategoryId) {
+      // 根據分類名稱指定顏色
+      const colorMap = {
+        '擴香石': '#16a34a', // 綠色
+        '甜點×萌寵': '#16a34a', // 綠色
+        '🌟創業優惠': '#eab308', // 黃色
+        '裝飾': '#dc2626'  // 紅色
+      };
+      const defaultColor = '#64748b'; // 其他分類預設灰色
+
+      let html = '';
+      categories.forEach(cat => {
+        const catProducts = list.filter(p => p.category_id === cat.id);
+        if (catProducts.length === 0) return;
+
+        const catColor = colorMap[cat.name] || defaultColor;
+        
+        // 類別標題設計，grid-column 確保其佔滿整行
+        html += `
+          <div style="grid-column: 1 / -1; margin-top: 12px; margin-bottom: 4px; padding-bottom: 8px; border-bottom: 2px solid ${catColor}; display: flex; align-items: center; gap: 8px;">
+            <span style="width: 14px; height: 14px; border-radius: 50%; background: ${catColor}; box-shadow: 0 0 8px ${catColor}66;"></span>
+            <h3 style="margin: 0; font-size: 1.15rem; color: ${catColor}; font-weight: 700; letter-spacing: 0.05em;">${cat.name}</h3>
+          </div>
+        `;
+        html += catProducts.map(p => generateCard(p)).join('');
+      });
+
+      // 處理沒有綁定類別的商品
+      const uncategorized = list.filter(p => !p.category_id);
+      if (uncategorized.length > 0) {
+        html += `
+          <div style="grid-column: 1 / -1; margin-top: 12px; margin-bottom: 4px; padding-bottom: 8px; border-bottom: 2px solid ${defaultColor}; display: flex; align-items: center; gap: 8px;">
+            <span style="width: 14px; height: 14px; border-radius: 50%; background: ${defaultColor};"></span>
+            <h3 style="margin: 0; font-size: 1.15rem; color: ${defaultColor}; font-weight: 700;">未分類</h3>
+          </div>
+        `;
+        html += uncategorized.map(p => generateCard(p)).join('');
+      }
+      grid.innerHTML = html || '<p class="pos-order__empty" style="grid-column:1/-1">沒有找到商品</p>';
+      
+    } else {
+      // 舊版平鋪模式 (或正在搜尋、選定單一分類時)
+      let filteredList = list;
+      if (activeCategoryId) {
+        filteredList = list.filter((p) => p.category_id === activeCategoryId);
+      }
+      if (!filteredList.length) {
+        grid.innerHTML = '<p class="pos-order__empty" style="grid-column:1/-1">沒有找到商品</p>';
+        return;
+      }
+      grid.innerHTML = filteredList.map((p) => generateCard(p)).join('');
+    }
+
+    // 重新綁定點擊事件
+    grid.querySelectorAll('.pos-product-card').forEach((card) => {
       card.addEventListener('click', (e) => {
         const id = Number(card.dataset.id);
         const product = products.find((x) => x.id === id);
         if (!product) return;
-        
+
         if (mode === 'sale') {
           if (currentProductClickAction === 'focus' && typeof focusProductCard === 'function') {
-            focusProductCard(card, product); 
+            focusProductCard(card, product);
           } else {
-            window.posCart.add(product, 1);  
+            window.posCart.add(product, 1);
           }
         } else if (invModes.includes(mode)) {
           window.posModes.inventory.selectProduct(product);
         }
       });
     });
-
   }
+
 
   function renderCategoryPills() {
     const bar = document.getElementById('categoryPills');
@@ -643,6 +699,7 @@
     
     currentForceOrderPinned = settings.force_order_pinned || '';
     currentProductClickAction = settings.product_click_action || 'focus';
+    currentMenuLayout = settings.menu_layout || 'default';
 
     if (currentForceOrderPinned === 'true') {
       isOrderPinned = true;
@@ -719,6 +776,7 @@
 
     currentForceOrderPinned = settings.force_order_pinned || '';
     currentProductClickAction = settings.product_click_action || 'focus';
+    currentMenuLayout = settings.menu_layout || 'default';
 
     if (settings.maintenance_mode === 'true' && row.role !== 'ADMIN') {
       window.ui.toast('系統維護中 (僅限 ADMIN 登入)', 'error');

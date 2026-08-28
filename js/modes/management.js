@@ -800,17 +800,6 @@
 
               <div style="display:flex; justify-content:space-between; align-items:center; padding:16px 20px; border-bottom:1px solid #f1f5f9;">
                 <div>
-                  <span style="font-weight:600; color:#1e293b; font-size:15px; display:block; margin-bottom:2px;">客顯屏顯示風格</span>
-                  <span style="font-size:12px; color:#94a3b8;">設定面向顧客螢幕的色彩與主題</span>
-                </div>
-                <select id="setDisplayTheme" style="width:260px; padding:10px 14px; border:1px solid #cbd5e1; border-radius:8px; background:#f8fafc; font-size:14px; outline:none; cursor:pointer;">
-                  <option value="default" ${s.display_theme !== 'nature' ? 'selected' : ''}>🌌 經典深空 (深色科技)</option>
-                  <option value="nature" ${s.display_theme === 'nature' ? 'selected' : ''}>🌿 自然木質 (卍物所品牌)</option>
-                </select>
-              </div>
-
-              <div style="display:flex; justify-content:space-between; align-items:center; padding:16px 20px; border-bottom:1px solid #f1f5f9;">
-                <div>
                   <span style="font-weight:600; color:#1e293b; font-size:15px; display:block; margin-bottom:2px;">商品點擊行為</span>
                   <span style="font-size:12px; color:#94a3b8;">選擇收銀時點擊商品的預設操作</span>
                 </div>
@@ -819,9 +808,51 @@
                   <option value="instant" ${s.product_click_action === 'instant' ? 'selected' : ''}>直接加入購物車 (原版)</option>
                 </select>
               </div>
-
+              <div style="display:flex; justify-content:space-between; align-items:center; padding:16px 20px; border-bottom:1px solid #f1f5f9;">
+                <div>
+                  <span style="font-weight:600; color:#1e293b; font-size:15px; display:block; margin-bottom:2px;">菜單顯示方式</span>
+                  <span style="font-size:12px; color:#94a3b8;">選擇產品列表的排版風格</span>
+                </div>
+                <select id="setMenuLayout" style="width:260px; padding:10px 14px; border:1px solid #cbd5e1; border-radius:8px; background:#f8fafc; font-size:14px; outline:none; cursor:pointer;">
+                  <option value="default" ${s.menu_layout !== 'grouped' ? 'selected' : ''}>預設平鋪 (好似而家一樣)</option>
+                  <option value="grouped" ${s.menu_layout === 'grouped' ? 'selected' : ''}>按類別分區顯示</option>
+                </select>
+              </div>
             </div>
           </div>
+
+
+            <div style="margin-bottom: 32px;">
+            <h3 style="font-size:13px; color:#64748b; font-weight:700; margin:0 0 10px 12px; text-transform:uppercase; letter-spacing:1px;">客户顯示屏</h3>
+            <div style="background:#fff; border-radius:16px; border:1px solid #e2e8f0; box-shadow:0 1px 2px rgba(0,0,0,0.02); overflow:hidden;">
+              
+            
+            <div style="display:flex; justify-content:space-between; align-items:center; padding:16px 20px; border-bottom:1px solid #f1f5f9;">
+              <div>
+                <span style="font-weight:600; color:#1e293b; font-size:15px; display:block; margin-bottom:2px;">客顯屏顯示風格</span>
+                <span style="font-size:12px; color:#94a3b8;">設定面向顧客螢幕的色彩與主題</span>
+              </div>
+              <select id="setDisplayTheme" style="width:260px; padding:10px 14px; border:1px solid #cbd5e1; border-radius:8px; background:#f8fafc; font-size:14px; outline:none; cursor:pointer;">
+                <option value="default" ${s.display_theme !== 'nature' ? 'selected' : ''}>🌌 經典深空 (深色科技)</option>
+                <option value="nature" ${s.display_theme === 'nature' ? 'selected' : ''}>🌿 自然木質 (卍物所品牌)</option>
+              </select>
+            </div>
+
+            <div style="display:flex; justify-content:space-between; align-items:center; padding:16px 20px; border-bottom:1px solid #f1f5f9;">
+                <div>
+                  <span style="font-weight:600; color:#1e293b; font-size:15px; display:block; margin-bottom:2px;">客顯購物車顯示方式</span>
+                  <span style="font-size:12px; color:#94a3b8;">選擇面向客人的顯示屏購物車排版風格</span>
+                </div>
+                <select id="setDisplayCartLayout" style="width:260px; padding:10px 14px; border:1px solid #cbd5e1; border-radius:8px; background:#f8fafc; font-size:14px; outline:none; cursor:pointer;">
+                  <option value="default" ${s.display_cart_layout !== 'grouped' ? 'selected' : ''}>預設平鋪 (好似而家一樣)</option>
+                  <option value="grouped" ${s.display_cart_layout === 'grouped' ? 'selected' : ''}>按類別分區顯示</option>
+                </select>
+            </div>
+
+            
+            </div>
+          </div>
+
 
           <!-- 區塊 3：系統安全 -->
           <div style="margin-bottom: 32px;">
@@ -871,6 +902,10 @@
           await window.posApi.upsertSetting('force_dark_mode', document.getElementById('setForceDark').value);
           await window.posApi.upsertSetting('maintenance_mode', document.getElementById('setMaintenance').value);
           await window.posApi.upsertSetting('product_click_action', document.getElementById('setProductClickAction').value);
+          await window.posApi.upsertSetting('display_cart_layout', document.getElementById('setDisplayCartLayout').value);
+                    // 在其他 upsertSetting 的下方加入這行
+          await window.posApi.upsertSetting('menu_layout', document.getElementById('setMenuLayout').value);
+
                     // 儲存顯示風格
           await window.posApi.upsertSetting('display_theme', document.getElementById('setDisplayTheme').value);
 

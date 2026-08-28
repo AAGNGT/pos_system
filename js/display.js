@@ -2,6 +2,8 @@
   const DISPLAY_ID = 1;
   let channel = null;
   let storeName = 'POS 商店';
+  let displayCartLayout = 'default';
+  let categoryMap = {}; // 儲存分類資料的字典
 
   const tickerVals = new WeakMap();
   function animateValue(el, endVal, formatFn, duration = 450) {
@@ -15,7 +17,7 @@
     const startTime = performance.now();
     const step = (currentTime) => {
       const progress = Math.min((currentTime - startTime) / duration, 1);
-      const ease = 1 - Math.pow(1 - progress, 4); // easeOutQuart 緩動函數
+      const ease = 1 - Math.pow(1 - progress, 4); 
       const current = startVal + (endVal - startVal) * ease;
       el.textContent = formatFn(current);
       if (progress < 1) {
@@ -30,8 +32,53 @@
   function formatMoney(n) {
     const val = Number(n) || 0;
     const absVal = Math.abs(val);
-    // 正確處理負數顯示，如 -$20
     return `${val < 0 ? '-' : ''}$${absVal % 1 === 0 ? absVal.toFixed(0) : absVal.toFixed(2)}`;
+  }
+
+  function showImageEnlargeOverlay(src, titleText) {
+    let overlay = document.getElementById('displayImageOverlay');
+    if (!overlay) {
+      overlay = document.createElement('div');
+      overlay.id = 'displayImageOverlay';
+      Object.assign(overlay.style, {
+        position: 'fixed', inset: '0', backgroundColor: 'rgba(0,0,0,0.85)',
+        zIndex: '9999', display: 'flex', flexDirection: 'column',
+        alignItems: 'center', justifyContent: 'center', opacity: '0',
+        transition: 'opacity 0.3s ease', cursor: 'zoom-out', backdropFilter: 'blur(8px)'
+      });
+
+      const img = document.createElement('img');
+      img.id = 'displayOverlayImg';
+      Object.assign(img.style, {
+        maxWidth: '85%', maxHeight: '75%', objectFit: 'contain',
+        borderRadius: '16px', boxShadow: '0 20px 50px rgba(0,0,0,0.5)',
+        transform: 'scale(0.9)', transition: 'transform 0.3s cubic-bezier(0.2, 0.8, 0.2, 1)'
+      });
+
+      const title = document.createElement('p');
+      title.id = 'displayOverlayTitle';
+      Object.assign(title.style, {
+        color: '#fff', fontSize: '2.5rem', marginTop: '24px', fontWeight: 'bold',
+        textShadow: '0 4px 12px rgba(0,0,0,0.6)', fontFamily: 'var(--font-heading)'
+      });
+
+      overlay.appendChild(img);
+      overlay.appendChild(title);
+      document.body.appendChild(overlay);
+
+      overlay.addEventListener('click', () => {
+        overlay.style.opacity = '0';
+        img.style.transform = 'scale(0.9)';
+        setTimeout(() => overlay.style.display = 'none', 300);
+      });
+    }
+
+    document.getElementById('displayOverlayImg').src = src;
+    document.getElementById('displayOverlayTitle').textContent = titleText;
+    overlay.style.display = 'flex';
+    void overlay.offsetWidth;
+    overlay.style.opacity = '1';
+    document.getElementById('displayOverlayImg').style.transform = 'scale(1)';
   }
 
   function formatDiscountMoney(n) {
@@ -70,13 +117,27 @@
     root.classList.add('show');
   }
 
+  let currentDisplayPhase = 'idle';
+
+  function closeImageEnlargeOverlay() {
+    const overlay = document.getElementById('displayImageOverlay');
+    if (overlay) {
+      overlay.style.display = 'none';
+      overlay.style.opacity = '0';
+    }
+  }
+
   function setView(phase) {
+    if (currentDisplayPhase !== phase) {
+      currentDisplayPhase = phase;
+      closeImageEnlargeOverlay();
+    }
     document.querySelectorAll('.cdisp-view').forEach((v) => {
       v.classList.toggle('active', v.dataset.view === phase);
     });
     const status = document.getElementById('displayStatus');
     if (status) {
-      const labels = { idle: '待機', cart: '購物中', checkout: '請付款', thankyou: '多謝惠顧' };
+      const labels = { idle: '歡迎光臨', cart: '購物中', checkout: '結帳處理中', thankyou: '交易完成' };
       status.textContent = labels[phase] || phase;
     }
   }
@@ -86,33 +147,123 @@
     const totalEl = document.getElementById('cartTotal');
     const items = Array.isArray(state.items) ? state.items : [];
     if (!list) return;
+
     if (!items.length) {
       list.innerHTML = '<p style="text-align:center;color:#64748b;font-size:1.2rem">尚無商品</p>';
     } else {
       const thumb = window.posProductThumb;
-      list.innerHTML = items.map((i, index) => {
+
+      const generateItemHtml = (i, delay) => {
         const imgSrc = thumb?.thumbSrc?.(i, productCatalog) || thumb?.svgPlaceholder?.(i.name) || '';
         const fallback = thumb?.svgPlaceholder?.(i.name) || '';
-        const delay = index * 0.05;
-        
+
+        let priceSectionHtml = '';
+        if (Number(i.unit_price) !== 0 || Number(i.line_total) !== 0) {
+          const isNegative = Number(i.line_total) < 0;
+          const totalColorStyle = isNegative ? 'color: #ef4444 !important; font-weight: 900; text-shadow: 0 0 10px rgba(239, 68, 68, 0.4);' : '';
+          const unitPriceColor = isNegative ? 'color: #ef4444 !important;' : '';
+
+          priceSectionHtml = `
+            <div style="display: flex; align-items: center; gap: 16px; margin-left: auto;">
+              <div style="background: var(--c-logo-bg); border: 1px solid var(--c-border-line); border-radius: 8px; padding: 6px 14px; box-shadow: 0 2px 6px rgba(0,0,0,0.03);">
+                <p class="cdisp-cart__meta" style="margin: 0; font-size: clamp(0.95rem, 1.5vw, 1.15rem); color: var(--c-text-sub); font-weight: 600; letter-spacing: 0.05em;">
+                  ${i.qty} &times; <span style="${unitPriceColor}">${formatMoney(i.unit_price)}</span>
+                </p>
+              </div>
+              <span class="cdisp-cart__line-total" style="margin: 0; ${totalColorStyle}">${formatMoney(i.line_total)}</span>
+            </div>
+          `;
+        } else {
+          priceSectionHtml = `
+            <div style="display: flex; align-items: center; gap: 16px; margin-left: auto;">
+              <div style="background: var(--c-logo-bg); border: 1px solid var(--c-border-line); border-radius: 8px; padding: 6px 14px; box-shadow: 0 2px 6px rgba(0,0,0,0.03);">
+                <p class="cdisp-cart__meta" style="margin: 0; font-size: clamp(0.95rem, 1.5vw, 1.15rem); color: var(--c-text-sub); font-weight: 600; letter-spacing: 0.05em;">
+                  ${i.qty} 件
+                </p>
+              </div>
+            </div>
+          `;
+        }
+
         return `
-        <div class="cdisp-cart__item" style="animation-delay: ${delay}s">
-          <img class="cdisp-cart__thumb" src="${safeImgAttr(imgSrc)}" data-fallback="${safeImgAttr(fallback)}" alt="${escapeHtml(i.name)}" loading="lazy">
+        <div class="cdisp-cart__item" style="animation-delay: ${delay}s;">
+          <img class="cdisp-cart__thumb" src="${safeImgAttr(imgSrc)}" data-fallback="${safeImgAttr(fallback)}" alt="${escapeHtml(i.name)}" loading="lazy" style="cursor: zoom-in; transition: transform 0.2s;" onmouseover="this.style.transform='scale(1.05)'" onmouseout="this.style.transform='scale(1)'">
           <div class="cdisp-cart__info">
             <p class="cdisp-cart__name">${escapeHtml(i.name)}</p>
-            <p class="cdisp-cart__meta">${escapeHtml(i.code || '')} × ${i.qty} @ ${formatMoney(i.unit_price)}</p>
+            <p class="cdisp-cart__meta">${escapeHtml(i.code || '')}</p>
           </div>
-          <span class="cdisp-cart__line-total">${formatMoney(i.line_total)}</span>
+          ${priceSectionHtml}
         </div>
-      `;
-      }).join('');
+        `;
+      };
+
+      if (displayCartLayout === 'grouped') {
+        
+        // 1. 初始化分類群組 (智慧歸類邏輯)
+        const displayGroups = {};
+        
+        items.forEach(i => {
+          const catalogItem = productCatalog.find(p => Number(p.id) === Number(i.product_id));
+          const dbCategoryName = catalogItem && catalogItem.category_id ? (categoryMap[catalogItem.category_id] || '') : '';
+          
+          let groupName = '其他項目';
+          let groupColor = '#64748b'; // 灰色 (預設/未分類/裝飾)
+
+          // 智慧歸類判斷
+          if (dbCategoryName.includes('擴香石') || dbCategoryName.includes('甜點') || dbCategoryName.includes('萌寵')) {
+            groupName = '產品系列';
+            groupColor = '#16a34a'; // 綠色
+          } else if (dbCategoryName.includes('優惠') || dbCategoryName.includes('創業')) {
+            groupName = '🌟創業優惠';
+            groupColor = '#ef4444'; // 紅色
+          }
+
+          if (!displayGroups[groupName]) {
+            displayGroups[groupName] = { color: groupColor, items: [] };
+          }
+          displayGroups[groupName].items.push(i);
+        });
+
+        let html = '';
+        let globalIndex = 0;
+
+        // 2. 指定畫面上的顯示順序
+        const renderOrder = ['產品系列', '🌟創業優惠', '其他項目'];
+
+        renderOrder.forEach(gName => {
+          if (displayGroups[gName] && displayGroups[gName].items.length > 0) {
+            const catColor = displayGroups[gName].color;
+            html += `
+              <div style="margin-top: 16px; margin-bottom: 8px; padding-bottom: 8px; border-bottom: 2px solid ${catColor}; display: flex; align-items: center; gap: 8px; animation: cdispFadeIn 0.3s ease;">
+                <span style="width: 14px; height: 14px; border-radius: 50%; background: ${catColor}; box-shadow: 0 0 8px ${catColor}66;"></span>
+                <h3 style="margin: 0; font-size: 1.25rem; color: ${catColor}; font-weight: 700; letter-spacing: 0.05em; font-family: var(--font-heading);">${gName}</h3>
+              </div>
+            `;
+            displayGroups[gName].items.forEach(i => {
+              html += generateItemHtml(i, globalIndex * 0.05);
+              globalIndex++;
+            });
+          }
+        });
+
+        list.innerHTML = html;
+
+      } else {
+        list.innerHTML = items.map((i, index) => generateItemHtml(i, index * 0.05)).join('');
+      }
+
       list.querySelectorAll('.cdisp-cart__thumb').forEach((img) => {
         img.addEventListener('error', () => {
           const fb = img.dataset.fallback;
           if (fb && img.src !== fb) img.src = fb;
         }, { once: true });
+        
+        img.addEventListener('click', () => {
+          showImageEnlargeOverlay(img.src, img.alt);
+        });
       });
     }
+
     const discount = Math.max(0, Number(state.discount) || 0);
     const discountWrap = document.getElementById('cartDiscountWrap');
     const discountEl = document.getElementById('cartDiscount');
@@ -133,7 +284,7 @@
     if (el) animateValue(el, state.total, formatMoney);
   }
 
-  let qrCodeInstance = null; // 在最外層宣告一個變數存放 QR 實例
+  let qrCodeInstance = null; 
 
   function renderThankYou(state) {
     const total = document.getElementById('thankTotal');
@@ -144,20 +295,16 @@
     if (received) animateValue(received, state.amount_received, formatMoney);
     if (change) animateValue(change, state.change_amount, formatMoney);
 
-    // 處理 QR Code 顯示
     const orderCodeEl = document.getElementById('displayOrderCode');
     const qrContainer = document.getElementById('qrcode');
     
     if (state.order_code && qrContainer) {
       if (orderCodeEl) orderCodeEl.textContent = `單號: ${state.order_code}`;
       
-      // 拼接對應的 track.html 網址
       const receiptUrl = `https://hkrss.dpdns.org/track.html?id=${state.order_code}`;
       
-      // 清空舊的 QR Code
       qrContainer.innerHTML = ''; 
       
-      // 生成新的 QR Code
       qrCodeInstance = new QRCode(qrContainer, {
         text: receiptUrl,
         width: 210,
@@ -169,9 +316,6 @@
     }
   }
 
-  // -------------------------------------------------------------------------
-  // 新增：宣傳輪播相關邏輯與數據
-  // -------------------------------------------------------------------------
   const promoData = [
     { img: 'https://dryvaibjsetigszkzxuh.supabase.co/storage/v1/object/public/product/dis1.png', title: '在線落單・預訂', desc: '維園市集即場售賣預訂。為確保您在市集現場等候時間更短，放心選購心儀產品，體驗安心無憂的預訂服務。' },
     { img: 'https://dryvaibjsetigszkzxuh.supabase.co/storage/v1/object/public/product/dis2.png', title: '線上客服・數據安全', desc: '即時為您解答問題，貼心協助每一步。採用多重加密技術，嚴格保障您的個人隱私與資料安全。' },
@@ -188,17 +332,15 @@
 
     if (!promoImage || !promoTitle || !promoDesc) return;
 
-    // 重置動畫類別
     promoImage.classList.remove('animate-slide-in-left');
     promoTitle.parentElement.classList.remove('animate-slide-in-right');
     
-    void promoImage.offsetWidth; // 觸發 reflow，確保每次切換都有滑入動畫
+    void promoImage.offsetWidth; 
     
     promoImage.src = item.img;
     promoTitle.textContent = item.title;
     promoDesc.textContent = item.desc;
     
-    // 套用動畫
     promoImage.classList.add('animate-slide-in-left');
     promoTitle.parentElement.classList.add('animate-slide-in-right');
   }
@@ -209,7 +351,7 @@
     promoInterval = setInterval(() => {
       currentIdx = (currentIdx + 1) % promoData.length;
       renderPromo();
-    }, 6000); // 預設 6 秒切換一次
+    }, 6000); 
   }
 
   function stopPromoSlider() {
@@ -220,16 +362,11 @@
     currentIdx = 0;
   }
 
-  // --------------------------------------------------------
-  // 修改：主渲染函數 (結合宣傳判斷)
-  // --------------------------------------------------------
-
   function render(state) {
     if (!state) return;
     const phase = state.phase || 'idle';
     setView(phase);
 
-    // 【新增】：處理宣傳輪播畫面的切換
     const isPromoActive = state.is_promo_active === true;
     const normalScreen = document.getElementById('idleScreenNormal');
     const promoScreen = document.getElementById('idleScreenPromo');
@@ -263,11 +400,20 @@
     return s.replace(/"/g, '&quot;');
   }
 
+  async function loadCategories(client) {
+    try {
+      const { data, error } = await client.from('pos_categories').select('id, name');
+      if (!error && data) {
+        data.forEach(c => categoryMap[c.id] = c.name);
+      }
+    } catch (_) {}
+  }
+
   async function loadProductCatalog(client) {
     try {
       const { data, error } = await client
         .from('pos_products')
-        .select('id, code, name, image_url')
+        .select('id, code, name, image_url, category_id')
         .eq('is_active', true);
       if (error) throw error;
       productCatalog = data || [];
@@ -283,14 +429,16 @@
         const settings = {};
         data.forEach(r => { settings[r.key] = r.value; });
         
-        // 1. 設定商店名稱
+        if (settings.display_cart_layout) {
+          displayCartLayout = settings.display_cart_layout;
+        }
+
         if (settings.store_name) {
           storeName = settings.store_name;
           const el = document.getElementById('storeName');
           if (el) el.textContent = storeName;
         }
         
-        // 2. 套用顯示屏風格 (若為 nature，則加上 class)
         if (settings.display_theme === 'nature') {
           document.body.classList.add('theme-nature');
         } else {
@@ -313,7 +461,6 @@
   function subscribeRealtime(client) {
     channel = client
       .channel('pos-display-main')
-      // 1. 原有的：監聽購物車狀態變化
       .on(
         'postgres_changes',
         { event: '*', schema: 'public', table: 'pos_display_state', filter: `id=eq.${DISPLAY_ID}` },
@@ -321,14 +468,12 @@
           render(payload.new || payload.old);
         }
       )
-      // 2. 新增的：監聽系統設定 (pos_settings) 變化
       .on(
         'postgres_changes',
         { event: '*', schema: 'public', table: 'pos_settings' },
         (payload) => {
           const row = payload.new;
           if (row) {
-            // 如果更改了顯示風格
             if (row.key === 'display_theme') {
               if (row.value === 'nature') {
                 document.body.classList.add('theme-nature');
@@ -336,11 +481,14 @@
                 document.body.classList.remove('theme-nature');
               }
             }
-            // 順便讓「商店名稱」也能即時更新！
             else if (row.key === 'store_name') {
               storeName = row.value;
               const el = document.getElementById('storeName');
               if (el) el.textContent = storeName;
+            }
+            else if (row.key === 'display_cart_layout') {
+              displayCartLayout = row.value;
+              window.location.reload(); 
             }
           }
         }
@@ -361,6 +509,7 @@
     }
     const client = window.posDb.getClient();
     await loadSettings(client);
+    await loadCategories(client);
     await loadProductCatalog(client);
     try {
       await loadInitial(client);
